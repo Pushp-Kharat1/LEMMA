@@ -1,0 +1,15 @@
+[package]
+name = "mm-rules"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Mathematical transformation rules for Math Monster"
+
+[dependencies]
+mm-core = { path = "../mm-core" }
+thiserror.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

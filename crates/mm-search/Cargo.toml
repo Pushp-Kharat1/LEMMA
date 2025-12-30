@@ -1,0 +1,18 @@
+[package]
+name = "mm-search"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Search algorithms for Math Monster (Beam Search, MCTS)"
+
+[dependencies]
+mm-core = { path = "../mm-core" }
+mm-rules = { path = "../mm-rules" }
+mm-verifier = { path = "../mm-verifier" }
+mm-brain = { path = "../mm-brain" }
+rand.workspace = true
+rand_chacha.workspace = true
+thiserror.workspace = true
+candle-core.workspace = true
+

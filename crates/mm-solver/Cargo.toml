@@ -1,0 +1,41 @@
+[package]
+name = "mm-solver"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Unified solver API for Math Monster"
+
+[dependencies]
+mm-core = { path = "../mm-core" }
+mm-rules = { path = "../mm-rules" }
+mm-verifier = { path = "../mm-verifier" }
+mm-search = { path = "../mm-search" }
+mm-brain = { path = "../mm-brain" }
+thiserror.workspace = true
+candle-core.workspace = true
+candle-nn.workspace = true
+
+[[example]]
+name = "solve_quadratic"
+path = "examples/solve_quadratic.rs"
+
+[[example]]
+name = "derivative"
+path = "examples/derivative.rs"
+
+[[example]]
+name = "debug_rules"
+path = "examples/debug_rules.rs"
+
+[[example]]
+name = "train_network"
+path = "examples/train_network.rs"
+
+[[example]]
+name = "neural_mcts"
+path = "examples/neural_mcts.rs"
+
+[[example]]
+name = "test_new_rules"
+path = "examples/test_new_rules.rs"

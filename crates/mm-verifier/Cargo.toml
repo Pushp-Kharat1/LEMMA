@@ -1,0 +1,14 @@
+[package]
+name = "mm-verifier"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Step verification system for Math Monster"
+
+[dependencies]
+mm-core = { path = "../mm-core" }
+mm-rules = { path = "../mm-rules" }
+rand.workspace = true
+rand_chacha.workspace = true
+thiserror.workspace = true

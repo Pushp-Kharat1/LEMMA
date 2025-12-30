@@ -1,0 +1,18 @@
+[package]
+name = "mm-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Core expression types and canonicalization for Math Monster"
+
+[dependencies]
+num-rational.workspace = true
+num-traits.workspace = true
+string-interner.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+rand.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

@@ -1,0 +1,23 @@
+# Build artifacts
+/target/
+*/target/
+
+# Cargo lock for libraries (optional)
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Model weights (if any)
+*.safetensors
+*.ot

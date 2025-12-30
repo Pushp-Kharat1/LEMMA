@@ -1,0 +1,50 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/mm-core",
+    "crates/mm-rules",
+    "crates/mm-verifier",
+    "crates/mm-search",
+    "crates/mm-brain",
+    "crates/mm-solver",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Pushpak Sharma"]
+license = "MPL-2.0"
+repository = "https://github.com/Pushp-Kharat1/LEMMA"
+description = "Logical Engine for Multi-domain Mathematical Analysis"
+
+[workspace.dependencies]
+# Core
+num-rational = "0.4"
+num-traits = "0.2"
+string-interner = "0.15"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Random & Search
+rand = "0.8"
+rand_chacha = "0.3"
+
+# Neural (Phase 4)
+candle-core = "0.8"
+candle-nn = "0.8"
+
+# CLI & Utilities
+clap = { version = "4.0", features = ["derive"] }
+
+# Testing
+criterion = "0.5"
+proptest = "1.0"
+
+# Internal workspace crates
+mm-core = { path = "crates/mm-core" }
+mm-rules = { path = "crates/mm-rules" }
+mm-verifier = { path = "crates/mm-verifier" }
+mm-search = { path = "crates/mm-search" }
+mm-brain = { path = "crates/mm-brain" }
+mm-solver = { path = "crates/mm-solver" }
