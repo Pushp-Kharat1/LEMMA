@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+//
+// Author: Pushp Kharat
+
 //! Neural network architecture for mathematical reasoning.
 
 use candle_core::{DType, Device, IndexOp, Module, Result, Tensor};

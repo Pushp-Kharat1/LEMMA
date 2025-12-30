@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+//
+// Author: Pushp Kharat
+
 //! Comprehensive synthetic training data generation.
 //!
 //! Generates 10K+ training examples covering all 29 rules:
