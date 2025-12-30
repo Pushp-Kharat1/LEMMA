@@ -39,3 +39,7 @@ path = "examples/neural_mcts.rs"
 [[example]]
 name = "test_new_rules"
 path = "examples/test_new_rules.rs"
+
+[[example]]
+name = "train_beast"
+path = "examples/train_beast.rs"
