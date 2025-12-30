@@ -9,6 +9,7 @@
 use candle_core::{Device, Result, Tensor};
 use mm_core::Expr;
 use std::collections::HashMap;
+use string_interner::Symbol; // For to_usize() method on symbols
 
 /// Token IDs for special tokens
 pub const PAD_TOKEN: u32 = 0;
@@ -129,9 +130,12 @@ impl ExpressionEncoder {
                     }
                 }
             }
-            Expr::Var(_) => {
-                // Default to x for now - could use symbol table later
-                tokens.push("x".to_string());
+            Expr::Var(sym) => {
+                // Map symbol index to variable tokens (x, y, z, a, b, c, n, t, u, v)
+                // This preserves variable identity - different symbols get different tokens
+                let var_tokens = ["x", "y", "z", "a", "b", "c", "n", "t", "u", "v"];
+                let idx = sym.to_usize() % var_tokens.len();
+                tokens.push(var_tokens[idx].to_string());
             }
             Expr::Neg(e) => {
                 tokens.push("neg".to_string());

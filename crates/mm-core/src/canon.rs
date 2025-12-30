@@ -27,35 +27,67 @@ impl Expr {
     /// Two expressions are mathematically equal if and only if their
     /// canonical forms are structurally equal.
     pub fn canonicalize(&self) -> Expr {
+        self.canonicalize_with_depth(0)
+    }
+
+    /// Maximum recursion depth for canonicalization to prevent stack overflow.
+    const MAX_CANON_DEPTH: usize = 100;
+
+    /// Canonicalize with depth tracking to prevent stack overflow.
+    fn canonicalize_with_depth(&self, depth: usize) -> Expr {
+        if depth >= Self::MAX_CANON_DEPTH {
+            // Return as-is if we've hit the depth limit
+            return self.clone();
+        }
+
         // First, recursively canonicalize children
-        let simplified = self.simplify_recursive();
+        let simplified = self.simplify_recursive_with_depth(depth + 1);
 
         // Then apply top-level simplifications
         simplified.simplify_top()
     }
 
-    /// Recursively simplify all children.
-    fn simplify_recursive(&self) -> Expr {
+    /// Recursively simplify all children with depth tracking.
+    fn simplify_recursive_with_depth(&self, depth: usize) -> Expr {
+        if depth >= Self::MAX_CANON_DEPTH {
+            return self.clone();
+        }
+
         match self {
             // Atoms don't need simplification
             Expr::Const(_) | Expr::Var(_) => self.clone(),
 
             // Unary operations
-            Expr::Neg(e) => Expr::Neg(Box::new(e.canonicalize())),
-            Expr::Sqrt(e) => Expr::Sqrt(Box::new(e.canonicalize())),
-            Expr::Sin(e) => Expr::Sin(Box::new(e.canonicalize())),
-            Expr::Cos(e) => Expr::Cos(Box::new(e.canonicalize())),
-            Expr::Tan(e) => Expr::Tan(Box::new(e.canonicalize())),
-            Expr::Ln(e) => Expr::Ln(Box::new(e.canonicalize())),
-            Expr::Exp(e) => Expr::Exp(Box::new(e.canonicalize())),
-            Expr::Abs(e) => Expr::Abs(Box::new(e.canonicalize())),
+            Expr::Neg(e) => Expr::Neg(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Sqrt(e) => Expr::Sqrt(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Sin(e) => Expr::Sin(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Cos(e) => Expr::Cos(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Tan(e) => Expr::Tan(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Ln(e) => Expr::Ln(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Exp(e) => Expr::Exp(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Abs(e) => Expr::Abs(Box::new(e.canonicalize_with_depth(depth))),
 
             // Binary operations
-            Expr::Add(a, b) => Expr::Add(Box::new(a.canonicalize()), Box::new(b.canonicalize())),
-            Expr::Sub(a, b) => Expr::Sub(Box::new(a.canonicalize()), Box::new(b.canonicalize())),
-            Expr::Mul(a, b) => Expr::Mul(Box::new(a.canonicalize()), Box::new(b.canonicalize())),
-            Expr::Div(a, b) => Expr::Div(Box::new(a.canonicalize()), Box::new(b.canonicalize())),
-            Expr::Pow(a, b) => Expr::Pow(Box::new(a.canonicalize()), Box::new(b.canonicalize())),
+            Expr::Add(a, b) => Expr::Add(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Sub(a, b) => Expr::Sub(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Mul(a, b) => Expr::Mul(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Div(a, b) => Expr::Div(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Pow(a, b) => Expr::Pow(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
 
             // N-ary operations
             Expr::Sum(terms) => Expr::Sum(
@@ -63,7 +95,7 @@ impl Expr {
                     .iter()
                     .map(|t| Term {
                         coeff: t.coeff,
-                        expr: t.expr.canonicalize(),
+                        expr: t.expr.canonicalize_with_depth(depth),
                     })
                     .collect(),
             ),
@@ -71,26 +103,26 @@ impl Expr {
                 factors
                     .iter()
                     .map(|f| Factor {
-                        base: f.base.canonicalize(),
-                        power: f.power.canonicalize(),
+                        base: f.base.canonicalize_with_depth(depth),
+                        power: f.power.canonicalize_with_depth(depth),
                     })
                     .collect(),
             ),
 
             // Calculus
             Expr::Derivative { expr, var } => Expr::Derivative {
-                expr: Box::new(expr.canonicalize()),
+                expr: Box::new(expr.canonicalize_with_depth(depth)),
                 var: *var,
             },
             Expr::Integral { expr, var } => Expr::Integral {
-                expr: Box::new(expr.canonicalize()),
+                expr: Box::new(expr.canonicalize_with_depth(depth)),
                 var: *var,
             },
 
             // Equation
             Expr::Equation { lhs, rhs } => Expr::Equation {
-                lhs: Box::new(lhs.canonicalize()),
-                rhs: Box::new(rhs.canonicalize()),
+                lhs: Box::new(lhs.canonicalize_with_depth(depth)),
+                rhs: Box::new(rhs.canonicalize_with_depth(depth)),
             },
         }
     }

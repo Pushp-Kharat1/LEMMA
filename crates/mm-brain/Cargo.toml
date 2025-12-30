@@ -13,6 +13,7 @@ rand.workspace = true
 thiserror.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+string-interner.workspace = true
 
 # Neural network
 candle-core.workspace = true
