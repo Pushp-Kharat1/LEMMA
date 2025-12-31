@@ -392,15 +392,25 @@ impl NeuralMCTS {
 
     /// Try to constant fold an expression if all parts are constants.
     fn try_const_fold(&self, expr: &Expr) -> Expr {
-        let ctx = RuleContext::default();
-
         // Recursively try to fold sub-expressions
         match expr {
             Expr::Add(a, b) => {
                 let a_folded = self.try_const_fold(a);
                 let b_folded = self.try_const_fold(b);
+                // Constant fold
                 if let (Expr::Const(ra), Expr::Const(rb)) = (&a_folded, &b_folded) {
                     return Expr::Const(*ra + *rb);
+                }
+                // x + 0 = x
+                if let Expr::Const(r) = &b_folded {
+                    if r.is_zero() {
+                        return a_folded;
+                    }
+                }
+                if let Expr::Const(r) = &a_folded {
+                    if r.is_zero() {
+                        return b_folded;
+                    }
                 }
                 Expr::Add(Box::new(a_folded), Box::new(b_folded))
             }
@@ -410,6 +420,12 @@ impl NeuralMCTS {
                 if let (Expr::Const(ra), Expr::Const(rb)) = (&a_folded, &b_folded) {
                     return Expr::Const(*ra - *rb);
                 }
+                // x - 0 = x
+                if let Expr::Const(r) = &b_folded {
+                    if r.is_zero() {
+                        return a_folded;
+                    }
+                }
                 Expr::Sub(Box::new(a_folded), Box::new(b_folded))
             }
             Expr::Mul(a, b) => {
@@ -418,7 +434,34 @@ impl NeuralMCTS {
                 if let (Expr::Const(ra), Expr::Const(rb)) = (&a_folded, &b_folded) {
                     return Expr::Const(*ra * *rb);
                 }
+                // x * 1 = x
+                if let Expr::Const(r) = &b_folded {
+                    if r.numer() == 1 && r.denom() == 1 {
+                        return a_folded;
+                    }
+                    if r.is_zero() {
+                        return Expr::int(0);
+                    }
+                }
+                if let Expr::Const(r) = &a_folded {
+                    if r.numer() == 1 && r.denom() == 1 {
+                        return b_folded;
+                    }
+                    if r.is_zero() {
+                        return Expr::int(0);
+                    }
+                }
                 Expr::Mul(Box::new(a_folded), Box::new(b_folded))
+            }
+            Expr::Div(a, b) => {
+                let a_folded = self.try_const_fold(a);
+                let b_folded = self.try_const_fold(b);
+                if let (Expr::Const(ra), Expr::Const(rb)) = (&a_folded, &b_folded) {
+                    if !rb.is_zero() {
+                        return Expr::Const(*ra / *rb);
+                    }
+                }
+                Expr::Div(Box::new(a_folded), Box::new(b_folded))
             }
             Expr::Pow(base, exp) => {
                 let base_folded = self.try_const_fold(base);
@@ -428,8 +471,28 @@ impl NeuralMCTS {
                     if r.numer() == 1 && r.denom() == 1 {
                         return base_folded;
                     }
+                    // x^0 = 1
+                    if r.is_zero() {
+                        return Expr::int(1);
+                    }
                 }
                 Expr::Pow(Box::new(base_folded), Box::new(exp_folded))
+            }
+            Expr::Neg(inner) => {
+                let folded = self.try_const_fold(inner);
+                if let Expr::Const(r) = &folded {
+                    return Expr::Const(-*r);
+                }
+                Expr::Neg(Box::new(folded))
+            }
+            Expr::Equation { lhs, rhs } => {
+                // Fold both sides of equation
+                let lhs_folded = self.try_const_fold(lhs);
+                let rhs_folded = self.try_const_fold(rhs);
+                Expr::Equation {
+                    lhs: Box::new(lhs_folded),
+                    rhs: Box::new(rhs_folded),
+                }
             }
             _ => expr.clone(),
         }
