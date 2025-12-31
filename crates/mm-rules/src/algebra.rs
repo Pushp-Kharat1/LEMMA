@@ -22,6 +22,10 @@ pub fn algebra_rules() -> Vec<Rule> {
         difference_of_squares(),
         perfect_square_sum(),
         perfect_square_diff(),
+        power_of_one(),
+        power_of_zero(),
+        power_add(),
+        power_mul(),
     ]
 }
 
@@ -474,6 +478,133 @@ fn perfect_square_diff() -> Rule {
         },
         reversible: true,
         cost: 3,
+    }
+}
+
+// ============================================================================
+// Rule 11: Power of One (x^1 = x)
+// ============================================================================
+
+fn power_of_one() -> Rule {
+    Rule {
+        id: RuleId(11),
+        name: "power_of_one",
+        category: RuleCategory::Simplification,
+        description: "x^1 = x",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(r) if r.numer() == 1 && r.denom() == 1)),
+        apply: |expr, _ctx| {
+            if let Expr::Pow(base, _) = expr {
+                vec![RuleApplication {
+                    result: base.as_ref().clone(),
+                    justification: "x^1 = x".to_string(),
+                }]
+            } else {
+                vec![]
+            }
+        },
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// ============================================================================
+// Rule 12: Power of Zero (x^0 = 1)
+// ============================================================================
+
+fn power_of_zero() -> Rule {
+    Rule {
+        id: RuleId(12),
+        name: "power_of_zero",
+        category: RuleCategory::Simplification,
+        description: "x^0 = 1 (where x ≠ 0)",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(r) if r.is_zero())),
+        apply: |expr, _ctx| {
+            if let Expr::Pow(_, _) = expr {
+                vec![RuleApplication {
+                    result: Expr::int(1),
+                    justification: "x^0 = 1".to_string(),
+                }]
+            } else {
+                vec![]
+            }
+        },
+        reversible: false, // Not reversible - we lose base info
+        cost: 1,
+    }
+}
+
+// ============================================================================
+// Rule 13: Power Add (x^a * x^b = x^(a+b))
+// ============================================================================
+
+fn power_add() -> Rule {
+    Rule {
+        id: RuleId(13),
+        name: "power_add",
+        category: RuleCategory::Simplification,
+        description: "x^a * x^b = x^(a+b)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Mul(left, right) = expr {
+                // Check if both are powers with same base
+                if let (Expr::Pow(base1, _), Expr::Pow(base2, _)) = (left.as_ref(), right.as_ref())
+                {
+                    return base1 == base2;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Mul(left, right) = expr {
+                if let (Expr::Pow(base1, exp1), Expr::Pow(base2, exp2)) =
+                    (left.as_ref(), right.as_ref())
+                {
+                    if base1 == base2 {
+                        let new_exp = Expr::Add(
+                            Box::new(exp1.as_ref().clone()),
+                            Box::new(exp2.as_ref().clone()),
+                        );
+                        return vec![RuleApplication {
+                            result: Expr::Pow(base1.clone(), Box::new(new_exp)),
+                            justification: "x^a * x^b = x^(a+b)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// ============================================================================
+// Rule 14: Power Multiply ((x^a)^b = x^(a*b))
+// ============================================================================
+
+fn power_mul() -> Rule {
+    Rule {
+        id: RuleId(14),
+        name: "power_mul",
+        category: RuleCategory::Simplification,
+        description: "(x^a)^b = x^(a*b)",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(inner, _) if matches!(inner.as_ref(), Expr::Pow(_, _))),
+        apply: |expr, _ctx| {
+            if let Expr::Pow(inner, outer_exp) = expr {
+                if let Expr::Pow(base, inner_exp) = inner.as_ref() {
+                    let new_exp = Expr::Mul(
+                        Box::new(inner_exp.as_ref().clone()),
+                        Box::new(outer_exp.as_ref().clone()),
+                    );
+                    return vec![RuleApplication {
+                        result: Expr::Pow(base.clone(), Box::new(new_exp)),
+                        justification: "(x^a)^b = x^(a*b)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
     }
 }
 
