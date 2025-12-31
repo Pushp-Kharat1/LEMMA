@@ -15,7 +15,7 @@ use crate::{SearchConfig, Solution, Step};
 use candle_core::Device;
 use mm_brain::PolicyNetwork;
 use mm_core::Expr;
-use mm_rules::{RuleContext, RuleId, RuleSet};
+use mm_rules::{RuleCategory, RuleContext, RuleId, RuleSet};
 use mm_verifier::Verifier;
 use std::collections::HashMap;
 
@@ -453,18 +453,28 @@ impl NeuralMCTS {
         // Recursively simplify sub-expressions (for nested derivatives, etc.)
         let mut simplified = self.simplify_subexpressions(&current);
 
-        // Keep applying rules until stable (handles chained patterns like x^2 * x^3 * x^4)
+        // Keep applying SIMPLIFICATION rules until stable (handles chained patterns like x^2 * x^3 * x^4)
+        // Skip expansion rules (distribute) to avoid undoing collect_like_terms
         let ctx = RuleContext::default();
         for _ in 0..10 {
             let applicable = self.rules.applicable(&simplified, &ctx);
             if applicable.is_empty() {
                 break;
             }
-            if let Some(rule) = applicable.first() {
+            // Only apply simplification rules, skip expansion (distribute)
+            let simplification_rules: Vec<_> = applicable
+                .iter()
+                .filter(|r| r.category != RuleCategory::Expansion)
+                .collect();
+
+            if let Some(rule) = simplification_rules.first() {
                 let results = (rule.apply)(&simplified, &ctx);
                 if let Some(app) = results.first() {
-                    simplified = app.result.clone();
-                    continue;
+                    // Only apply if result is simpler or same complexity
+                    if app.result.complexity() <= simplified.complexity() {
+                        simplified = app.result.clone();
+                        continue;
+                    }
                 }
             }
             break;
