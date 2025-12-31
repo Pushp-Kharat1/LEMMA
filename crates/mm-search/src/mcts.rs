@@ -451,7 +451,24 @@ impl NeuralMCTS {
         }
 
         // Recursively simplify sub-expressions (for nested derivatives, etc.)
-        let simplified = self.simplify_subexpressions(&current);
+        let mut simplified = self.simplify_subexpressions(&current);
+
+        // Keep applying rules until stable (handles chained patterns like x^2 * x^3 * x^4)
+        let ctx = RuleContext::default();
+        for _ in 0..10 {
+            let applicable = self.rules.applicable(&simplified, &ctx);
+            if applicable.is_empty() {
+                break;
+            }
+            if let Some(rule) = applicable.first() {
+                let results = (rule.apply)(&simplified, &ctx);
+                if let Some(app) = results.first() {
+                    simplified = app.result.clone();
+                    continue;
+                }
+            }
+            break;
+        }
 
         // Apply constant folding to final result if possible
         let final_result = self.try_const_fold(&simplified);
