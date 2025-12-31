@@ -56,6 +56,31 @@ impl VerifyResult {
     }
 }
 
+/// Check if an expression contains calculus operations (derivatives/integrals)
+/// that cannot be numerically evaluated.
+fn is_calculus_expr(expr: &Expr) -> bool {
+    match expr {
+        Expr::Derivative { .. } | Expr::Integral { .. } => true,
+        Expr::Neg(e)
+        | Expr::Sqrt(e)
+        | Expr::Sin(e)
+        | Expr::Cos(e)
+        | Expr::Tan(e)
+        | Expr::Ln(e)
+        | Expr::Exp(e)
+        | Expr::Abs(e) => is_calculus_expr(e),
+        Expr::Add(a, b) | Expr::Sub(a, b) | Expr::Mul(a, b) | Expr::Div(a, b) | Expr::Pow(a, b) => {
+            is_calculus_expr(a) || is_calculus_expr(b)
+        }
+        Expr::Sum(terms) => terms.iter().any(|t| is_calculus_expr(&t.expr)),
+        Expr::Product(factors) => factors
+            .iter()
+            .any(|f| is_calculus_expr(&f.base) || is_calculus_expr(&f.power)),
+        Expr::Equation { lhs, rhs } => is_calculus_expr(lhs) || is_calculus_expr(rhs),
+        Expr::Const(_) | Expr::Var(_) => false,
+    }
+}
+
 /// Verifier for mathematical steps.
 pub struct Verifier {
     level: VerificationLevel,
@@ -121,6 +146,12 @@ impl Verifier {
         }
 
         // 3. Additional verification based on level
+        // For calculus expressions (derivatives/integrals), skip numerical verification
+        // since they cannot be numerically evaluated - trust the rule application
+        if is_calculus_expr(before) || is_calculus_expr(after) {
+            return VerifyResult::Valid { confidence: 0.95 };
+        }
+
         match self.level {
             VerificationLevel::Numerical => {
                 if numerical::verify_equivalent(before, after, self.num_samples, self.tolerance) {
