@@ -334,21 +334,105 @@ impl NeuralMCTS {
         }
     }
 
-    /// Simplify an expression using neural MCTS.
+    /// Simplify an expression using neural MCTS with multi-step chaining.
+    /// Continues applying rules until no more simplifications are possible.
     pub fn simplify(&self, expr: Expr) -> Solution {
-        let goal = |e: &Expr| {
-            // Goal: expression is simpler or no more simplifications apply
-            let ctx = RuleContext::default();
-            let applicable = self.rules.applicable(e, &ctx);
-            applicable.is_empty() || e.complexity() < expr.complexity()
-        };
+        const MAX_ITERATIONS: usize = 50;
 
-        self.search(expr.clone(), goal).unwrap_or(Solution {
-            problem: expr.clone(),
-            result: expr.canonicalize(),
-            steps: vec![],
+        let mut current = expr.clone();
+        let mut all_steps: Vec<Step> = Vec::new();
+        let ctx = RuleContext::default();
+
+        for _iteration in 0..MAX_ITERATIONS {
+            // Check if any rules apply
+            let applicable = self.rules.applicable(&current, &ctx);
+            if applicable.is_empty() {
+                break; // No more rules - we're done
+            }
+
+            // Define goal for this iteration: any simplification
+            let current_complexity = current.complexity();
+            let goal = |e: &Expr| {
+                let ctx = RuleContext::default();
+                let applicable = self.rules.applicable(e, &ctx);
+                // Stop when simpler OR no rules apply
+                applicable.is_empty() || e.complexity() < current_complexity
+            };
+
+            // Run MCTS to find best next step
+            if let Some(solution) = self.search(current.clone(), goal) {
+                if solution.steps.is_empty() {
+                    // Search found no improvement
+                    break;
+                }
+
+                // Collect steps from this iteration
+                all_steps.extend(solution.steps);
+
+                // Update current expression
+                if solution.result == current {
+                    break; // No progress made
+                }
+                current = solution.result;
+            } else {
+                break; // Search failed
+            }
+        }
+
+        // Apply constant folding to final result if possible
+        let final_result = self.try_const_fold(&current);
+
+        Solution {
+            problem: expr,
+            result: final_result,
+            steps: all_steps,
             verified: true,
-        })
+        }
+    }
+
+    /// Try to constant fold an expression if all parts are constants.
+    fn try_const_fold(&self, expr: &Expr) -> Expr {
+        let ctx = RuleContext::default();
+
+        // Recursively try to fold sub-expressions
+        match expr {
+            Expr::Add(a, b) => {
+                let a_folded = self.try_const_fold(a);
+                let b_folded = self.try_const_fold(b);
+                if let (Expr::Const(ra), Expr::Const(rb)) = (&a_folded, &b_folded) {
+                    return Expr::Const(*ra + *rb);
+                }
+                Expr::Add(Box::new(a_folded), Box::new(b_folded))
+            }
+            Expr::Sub(a, b) => {
+                let a_folded = self.try_const_fold(a);
+                let b_folded = self.try_const_fold(b);
+                if let (Expr::Const(ra), Expr::Const(rb)) = (&a_folded, &b_folded) {
+                    return Expr::Const(*ra - *rb);
+                }
+                Expr::Sub(Box::new(a_folded), Box::new(b_folded))
+            }
+            Expr::Mul(a, b) => {
+                let a_folded = self.try_const_fold(a);
+                let b_folded = self.try_const_fold(b);
+                if let (Expr::Const(ra), Expr::Const(rb)) = (&a_folded, &b_folded) {
+                    return Expr::Const(*ra * *rb);
+                }
+                Expr::Mul(Box::new(a_folded), Box::new(b_folded))
+            }
+            Expr::Pow(base, exp) => {
+                let base_folded = self.try_const_fold(base);
+                let exp_folded = self.try_const_fold(exp);
+                // x^1 = x
+                if let Expr::Const(r) = &exp_folded {
+                    if r.numer() == 1 && r.denom() == 1 {
+                        return base_folded;
+                    }
+                }
+                Expr::Pow(Box::new(base_folded), Box::new(exp_folded))
+            }
+            _ => expr.clone(),
+        }
     }
 }
 
