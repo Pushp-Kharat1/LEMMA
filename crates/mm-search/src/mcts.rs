@@ -355,15 +355,42 @@ impl NeuralMCTS {
             let goal = |e: &Expr| {
                 let ctx = RuleContext::default();
                 let applicable = self.rules.applicable(e, &ctx);
-                // Stop when simpler OR no rules apply
-                applicable.is_empty() || e.complexity() < current_complexity
+
+                // For equations: if LHS is just a variable, we're done!
+                if let Expr::Equation { lhs, .. } = e {
+                    if matches!(lhs.as_ref(), Expr::Var(_)) {
+                        return true;
+                    }
+                }
+
+                // Stop when simpler OR no rules apply OR different structure (progress)
+                applicable.is_empty() || e.complexity() < current_complexity || e != &current
             };
 
             // Run MCTS to find best next step
             if let Some(solution) = self.search(current.clone(), goal) {
                 if solution.steps.is_empty() {
-                    // Search found no improvement
-                    break;
+                    // MCTS didn't find path - try direct rule application as fallback
+                    let mut found_rule = false;
+                    for rule in &applicable {
+                        let applications = rule.apply(&current, &ctx);
+                        if let Some(app) = applications.first() {
+                            all_steps.push(Step {
+                                before: current.clone(),
+                                after: app.result.clone(),
+                                rule_id: rule.id,
+                                rule_name: rule.name,
+                                justification: app.justification.clone(),
+                            });
+                            current = app.result.clone();
+                            found_rule = true;
+                            break;
+                        }
+                    }
+                    if !found_rule {
+                        break;
+                    }
+                    continue; // Try another iteration with new expression
                 }
 
                 // Collect steps from this iteration
@@ -375,7 +402,26 @@ impl NeuralMCTS {
                 }
                 current = solution.result;
             } else {
-                break; // Search failed
+                // search() returned None - try direct fallback
+                let mut found_rule = false;
+                for rule in &applicable {
+                    let applications = rule.apply(&current, &ctx);
+                    if let Some(app) = applications.first() {
+                        all_steps.push(Step {
+                            before: current.clone(),
+                            after: app.result.clone(),
+                            rule_id: rule.id,
+                            rule_name: rule.name,
+                            justification: app.justification.clone(),
+                        });
+                        current = app.result.clone();
+                        found_rule = true;
+                        break;
+                    }
+                }
+                if !found_rule {
+                    break;
+                }
             }
         }
 
