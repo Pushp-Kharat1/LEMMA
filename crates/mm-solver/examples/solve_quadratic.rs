@@ -1,23 +1,23 @@
 //! Example: Solving quadratic equations.
 //!
-//! This demonstrates the Math Monster's ability to solve equations
+//! This demonstrates LEMMA's ability to solve equations
 //! with verified step-by-step reasoning.
 
-use mm_solver::MathMonster;
+use mm_solver::LemmaSolver;
 
 fn main() {
-    println!("=== Math Monster: Quadratic Equation Solver ===\n");
+    println!("=== LEMMA: Quadratic Equation Solver ===\n");
 
-    let mut monster = MathMonster::new();
-    println!("Loaded {} mathematical rules\n", monster.num_rules());
+    let mut solver = LemmaSolver::new();
+    println!("Loaded {} mathematical rules\n", solver.num_rules());
 
     // Example 1: Simplify an expression
     println!("Example 1: Simplify 2 + 3 * 4");
     println!("{}", "-".repeat(40));
 
-    match monster.simplify("2 + 3") {
+    match solver.simplify("2 + 3") {
         Ok(result) => {
-            println!("{}", result.format(monster.symbols()));
+            println!("{}", result.format(solver.symbols()));
         }
         Err(e) => {
             println!("Error: {}", e);
@@ -30,9 +30,9 @@ fn main() {
     println!("Example 2: Simplify x + 0");
     println!("{}", "-".repeat(40));
 
-    match monster.simplify("x + 0") {
+    match solver.simplify("x + 0") {
         Ok(result) => {
-            println!("{}", result.format(monster.symbols()));
+            println!("{}", result.format(solver.symbols()));
         }
         Err(e) => {
             println!("Error: {}", e);
@@ -45,9 +45,9 @@ fn main() {
     println!("Example 3: Simplify x * 1");
     println!("{}", "-".repeat(40));
 
-    match monster.simplify("x * 1") {
+    match solver.simplify("x * 1") {
         Ok(result) => {
-            println!("{}", result.format(monster.symbols()));
+            println!("{}", result.format(solver.symbols()));
         }
         Err(e) => {
             println!("Error: {}", e);
@@ -60,7 +60,7 @@ fn main() {
     println!("Example 4: Verify that x = 2 solves x + 1 = 3");
     println!("{}", "-".repeat(40));
 
-    match monster.verify_solution("x + 1 = 3", "x", "2") {
+    match solver.verify_solution("x + 1 = 3", "x", "2") {
         Ok(result) => {
             println!("Verification result: {:?}", result);
         }

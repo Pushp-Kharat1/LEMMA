@@ -6,7 +6,7 @@
 
 //! # mm-solver
 //!
-//! The unified API for the Math Monster system.
+//! The unified API for the LEMMA system.
 //!
 //! This crate combines all components into a single, easy-to-use interface
 //! for solving mathematical problems with step-by-step reasoning.
@@ -14,16 +14,16 @@
 //! ## Example
 //!
 //! ```rust
-//! use mm_solver::MathMonster;
+//! use mm_solver::LemmaSolver;
 //!
-//! let mut monster = MathMonster::new();
+//! let mut solver = LemmaSolver::new();
 //!
 //! // Simplify an expression
-//! let result = monster.simplify("2 + 3").unwrap();
+//! let result = solver.simplify("2 + 3").unwrap();
 //! println!("Result: {:?}", result.result);  // Const(5)
 //!
 //! // Compute a derivative
-//! let result = monster.differentiate("x^2", "x").unwrap();
+//! let result = solver.differentiate("x^2", "x").unwrap();
 //! println!("Derivative: {:?}", result.result);
 //! ```
 
@@ -32,24 +32,24 @@ use mm_rules::{rule::standard_rules, RuleContext, RuleSet};
 use mm_search::{BeamSearch, SearchConfig, Solution, Step};
 use mm_verifier::{Verifier, VerifyResult};
 
-/// The Math Monster solver.
+/// The LEMMA solver.
 ///
 /// This is the main entry point for mathematical reasoning.
-pub struct MathMonster {
+pub struct LemmaSolver {
     rules: RuleSet,
     verifier: Verifier,
     search: BeamSearch,
     symbols: SymbolTable,
 }
 
-impl Default for MathMonster {
+impl Default for LemmaSolver {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl MathMonster {
-    /// Create a new Math Monster with default settings.
+impl LemmaSolver {
+    /// Create a new LEMMA solver with default settings.
     pub fn new() -> Self {
         let rules = standard_rules();
         let verifier = Verifier::new();
@@ -255,24 +255,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_monster_creation() {
-        let monster = MathMonster::new();
-        assert!(monster.num_rules() > 0);
+    fn test_solver_creation() {
+        let solver = LemmaSolver::new();
+        assert!(solver.num_rules() > 0);
     }
 
     #[test]
     fn test_simplify() {
-        let mut monster = MathMonster::new();
+        let mut solver = LemmaSolver::new();
 
-        let result = monster.simplify("2 + 3").unwrap();
+        let result = solver.simplify("2 + 3").unwrap();
         assert_eq!(result.result.canonicalize(), Expr::int(5));
     }
 
     #[test]
     fn test_parse() {
-        let mut monster = MathMonster::new();
+        let mut solver = LemmaSolver::new();
 
-        let expr = monster.parse("x + 1").unwrap();
+        let expr = solver.parse("x + 1").unwrap();
         assert!(matches!(expr, Expr::Add(_, _)));
     }
 }

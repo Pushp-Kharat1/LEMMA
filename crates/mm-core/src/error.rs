@@ -4,7 +4,7 @@
 //
 // Author: Pushp Kharat
 
-//! Error types for the math-monster system.
+//! Error types for the LEMMA system.
 
 use thiserror::Error;
 

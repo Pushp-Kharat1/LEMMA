@@ -1,273 +1,324 @@
+<div align="center">
+
 # LEMMA
 
-**Logical Engine for Multi-domain Mathematical Analysis.**
+**Logical Engine for Multi-domain Mathematical Analysis**
 
-LEMMA is a neuro-symbolic system for mathematical reasoning that combines verified transformation rules with neural network guidance. Unlike language models that predict text statistically, LEMMA applies rigorous mathematical rules and verifies each step of its reasoning process.
+A research prototype exploring neural-guided symbolic mathematics in Rust. Inspired by AlphaProof and AlphaZero.
+
+[![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg?style=for-the-badge)](https://opensource.org/licenses/MPL-2.0)
+[![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg?style=for-the-badge)](https://www.rust-lang.org/)
+
+</div>
 
 ---
 
-## Overview
+## What This Project IS and IS NOT
 
-Mathematical reasoning requires precision. A single incorrect step invalidates an entire derivation. LEMMA addresses this by separating the concerns of *what transformations are valid* (handled by explicit rules) from *which transformation to apply* (learned by a neural network).
+### What LEMMA IS:
+- A **research prototype** exploring hybrid neural-symbolic reasoning
+- A **proof of concept** for AlphaProof-style mathematical search
+- **33 verified transformation rules** with multi-step chaining
+- An **MCTS engine** guided by a neural policy network
+- A **learning project** for anyone interested in symbolic AI
 
-The system consists six modular components:
+### What LEMMA is NOT:
+- **Not a Wolfram Alpha replacement** - we handle basic calculus, not arbitrary math
+- **Not production-ready** - this is research code
+- **Not a complete CAS** - missing integration, limits, ODEs, and advanced features
+- **Not magic** - it applies explicit rules, nothing more
 
-| Component | Purpose |
-|-----------|---------|
-| `mm-core` | Expression representation, parsing, canonicalization |
-| `mm-rules` | Mathematical transformation rules (29 implementations) |
-| `mm-verifier` | Numerical and symbolic verification of rule applications |
-| `mm-search` | Tree search algorithms (Beam search, Neural MCTS) |
-| `mm-brain` | Transformer neural network for strategy selection |
-| `mm-solver` | Unified API combining all components |
+---
+
+## Current Capabilities
+
+### Working Features (Tested)
+
+| Category | Examples | Status |
+|----------|----------|--------|
+| **Arithmetic** | `(2+3)*(4+5) -> 45` | Working |
+| **Identities** | `((x+0)*1)+0 -> x` | Working |
+| **Power Rules** | `x^2 * x^3 * x^4 -> x^9` | Working |
+| **Basic Derivatives** | `d/dx(x^3) -> 3x^2` | Working |
+| **Sum Rule** | `d/dx(x^2 + x^3) -> 2x + 3x^2` | Working |
+| **Trig Derivatives** | `d/dx(sin x) -> cos x` | Working |
+| **Linear Equations** | `3x + 5 = 17 -> x = 4` | Working |
+| **Pythagorean** | `sin^2(x) + cos^2(x) -> 1` | Working |
+| **Like Terms** | `2(x+y) + 3(x+y) -> 5(x+y)` | Working |
+
+### NOT Yet Implemented
+
+| Feature | Why It Matters | Difficulty |
+|---------|----------------|------------|
+| Chain Rule | `d/dx(sin(x^2))` | Medium |
+| Integration | `integral of x^2 dx` | Hard |
+| Polynomial Factoring | `x^2+5x+6 -> (x+2)(x+3)` | Medium |
+| Quadratic Formula | Full implementation | Easy |
+| Limits | `lim(x->0) sin(x)/x` | Hard |
+| Multi-variable Calculus | Partial derivatives | Hard |
 
 ---
 
 ## Architecture
 
 ```
-                    ┌─────────────────────────────┐
-                    │       Neural Network        │
-                    │   (Policy + Value heads)    │
-                    └──────────────┬──────────────┘
-                                   │ suggests rule
-                                   ▼
-┌───────────┐     ┌─────────────────────────────────────┐     ┌───────────┐
-│  Problem  │────▶│           MCTS Search               │────▶│ Solution  │
-└───────────┘     │  (AlphaZero-style tree search)      │     │ + Proof   │
-                  └──────────────┬──────────────────────┘     └───────────┘
-                                 │ applies rule
-                                 ▼
-                    ┌─────────────────────────────┐
-                    │         Verifier            │
-                    │  (Numerical + Symbolic)     │
-                    └─────────────────────────────┘
++------------------------------------------------------------------+
+|                      Neural Policy Network                        |
+|              (Transformer, suggests which rule to try)            |
++------------------------------+-----------------------------------+
+                               |
+                               v
++-----------+     +-----------------------------+     +-----------+
+|  Problem  |---->|      MCTS Search Engine     |---->| Solution  |
+|   Expr    |     |   (AlphaZero-style UCB)     |     | + Proof   |
++-----------+     +--------------+--------------+     +-----------+
+                                 |
+                                 v
+                  +-----------------------------+
+                  |       Rule Library          |
+                  |  (33 verified transforms)   |
+                  +--------------+--------------+
+                                 |
+                                 v
+                  +-----------------------------+
+                  |         Verifier            |
+                  |  (Numerical + Symbolic)     |
+                  +-----------------------------+
 ```
 
-The neural network learns which rules tend to lead toward solutions. The rule library ensures only valid mathematical operations are performed. The verifier confirms each step is correct.
+### Key Innovation
+
+Unlike LLMs that predict text statistically, LEMMA:
+1. **Only applies verified mathematical rules** - no hallucination
+2. **Provides complete proof traces** - every step is justified
+3. **Uses neural guidance for search** - learns which rules to try first
 
 ---
 
-## Mathematical Rules
+## Crate Structure
 
-LEMMA implements 29 transformation rules across four categories:
-
-### Algebraic Rules
-- Constant folding: `2 + 3 → 5`
-- Identity elimination: `x + 0 → x`, `x * 1 → x`
-- Zero multiplication: `x * 0 → 0`
-- Distribution: `a(b + c) → ab + ac`
-- Factoring: `ab + ac → a(b + c)`
-- Difference of squares: `a² - b² → (a + b)(a - b)`
-- Like term collection: `ax + bx → (a + b)x`
-
-### Calculus Rules
-- Power rule: `d/dx(x^n) → n·x^(n-1)`
-- Constant rule: `d/dx(c) → 0`
-- Sum rule: `d/dx(f + g) → f' + g'`
-- Product rule: `d/dx(fg) → f'g + fg'`
-- Quotient rule: `d/dx(f/g) → (f'g - fg') / g²`
-- Trigonometric derivatives: `d/dx(sin x) → cos x`, `d/dx(cos x) → -sin x`
-- Exponential and logarithmic: `d/dx(e^x) → e^x`, `d/dx(ln x) → 1/x`
-
-### Equation Solving Rules
-- Addition/subtraction cancellation: `x + a = b → x = b - a`
-- Multiplication/division cancellation: `ax = b → x = b/a`
-- Linear equation solving: `ax + b = c → x = (c - b)/a`
-- Quadratic formula application
-
-### Trigonometric Identities
-- Pythagorean identity: `sin²x + cos²x → 1`
+| Crate | Purpose | Lines of Code |
+|-------|---------|---------------|
+| `mm-core` | Expression AST, parsing, evaluation | ~1,200 |
+| `mm-rules` | 33 transformation rules | ~1,500 |
+| `mm-verifier` | Numerical and symbolic verification | ~400 |
+| `mm-search` | Beam search, Neural MCTS | ~800 |
+| `mm-brain` | Transformer network (Candle) | ~1,000 |
+| `mm-solver` | Unified API | ~300 |
 
 ---
 
-## Neural Network
+## Quick Start
 
-The neural network is a Transformer architecture implemented using the Candle framework:
+### Requirements
+- Rust 1.75+
+- ~500MB disk space for dependencies
 
-**Architecture:**
-- Token embedding (vocabulary size: 64)
-- Positional encoding
-- 3 Transformer blocks with multi-head self-attention
-- Policy head (outputs rule probabilities)
-- Value head (estimates solution likelihood)
-
-**Training:**
-- 16,968 synthetic training examples
-- AdamW optimizer with weight decay
-- Cross-entropy loss for policy, MSE for value
-- Trained on CPU (GPU support available via Candle features)
-
----
-
-## Installation
-
-Requirements:
-- Rust 1.75 or later
-- Cargo package manager
+### Build and Test
 
 ```bash
 git clone https://github.com/Pushp-Kharat1/LEMMA.git
-cd LEMMA/math-monster
+cd LEMMA
 
-# Build all crates
-cargo build --release --workspace
+# Build everything
+cargo build --release
 
-# Run tests
-cargo test --workspace
+# Run the benchmark suite
+cargo run --release --example benchmark_advanced
+
+# Run stress tests
+cargo run --release --example stress_test
 ```
 
----
-
-## Usage
-
-### Training the Neural Network
+### Train the Neural Network
 
 ```bash
+# Generates ~17k synthetic examples, trains for 50 epochs
 cargo run --release --example train_network
 ```
 
-This generates 16,968 synthetic examples and trains for 50 epochs. The trained model is saved to `lemma_model.safetensors`.
-
-### Testing Rules
-
-```bash
-cargo run --release --example test_new_rules
-```
-
-Demonstrates rule application for algebraic simplification, derivatives, and equation solving.
-
-### Neural MCTS Simplification
-
-```bash
-cargo run --release --example neural_mcts
-```
-
-Shows the neural-guided search simplifying expressions like `2 + 3`, `x + 0`, and `(3*4) + 0`.
-
 ---
 
-## API Example
+## Usage Example
 
 ```rust
 use mm_core::{Expr, SymbolTable};
 use mm_rules::rule::standard_rules;
-use mm_search::NeuralMCTS;
+use mm_search::{MCTSConfig, NeuralMCTS};
 use mm_verifier::Verifier;
 
 fn main() {
     let mut symbols = SymbolTable::new();
     let x = symbols.intern("x");
     
+    // Setup the solver
     let rules = standard_rules();
     let verifier = Verifier::new();
     let mcts = NeuralMCTS::new(rules, verifier);
     
-    // Simplify: x + 0
-    let expr = Expr::Add(
-        Box::new(Expr::Var(x)),
-        Box::new(Expr::int(0))
-    );
+    // Solve: 3x + 5 = 17
+    let equation = Expr::Equation {
+        lhs: Box::new(Expr::Add(
+            Box::new(Expr::Mul(Box::new(Expr::int(3)), Box::new(Expr::Var(x)))),
+            Box::new(Expr::int(5)),
+        )),
+        rhs: Box::new(Expr::int(17)),
+    };
     
-    let result = mcts.simplify(expr);
-    // Result: Var(x)
-    // Steps: [identity_add_zero]
+    let solution = mcts.simplify(equation);
+    // Result: x = 4
+    // Steps: ["isolate_variable", "cancel_multiplication"]
     // Verified: true
 }
 ```
 
 ---
 
-## Project Structure
+## The 33 Rules
 
+### Algebra (14 rules)
+| Rule | Transformation |
+|------|---------------|
+| `constant_fold` | `2 + 3 -> 5` |
+| `identity_add_zero` | `x + 0 -> x` |
+| `identity_mul_one` | `x * 1 -> x` |
+| `zero_mul` | `x * 0 -> 0` |
+| `collect_like_terms` | `2x + 3x -> 5x` |
+| `distribute` | `a(b + c) -> ab + ac` |
+| `factor_common` | `ab + ac -> a(b + c)` |
+| `difference_of_squares` | `a^2 - b^2 -> (a+b)(a-b)` |
+| `perfect_square_sum` | `a^2 + 2ab + b^2 -> (a+b)^2` |
+| `perfect_square_diff` | `a^2 - 2ab + b^2 -> (a-b)^2` |
+| `power_of_one` | `x^1 -> x` |
+| `power_of_zero` | `x^0 -> 1` |
+| `power_add` | `x^a * x^b -> x^(a+b)` |
+| `power_mul` | `(x^a)^b -> x^(ab)` |
+
+### Calculus (9 rules)
+| Rule | Transformation |
+|------|---------------|
+| `power_rule` | `d/dx(x^n) -> n*x^(n-1)` |
+| `constant_rule` | `d/dx(c) -> 0` |
+| `sum_rule` | `d/dx(f+g) -> f' + g'` |
+| `product_rule` | `d/dx(fg) -> f'g + fg'` |
+| `quotient_rule` | `d/dx(f/g) -> (f'g - fg')/g^2` |
+| `sin_derivative` | `d/dx(sin x) -> cos x` |
+| `cos_derivative` | `d/dx(cos x) -> -sin x` |
+| `exp_rule` | `d/dx(e^x) -> e^x` |
+| `ln_rule` | `d/dx(ln x) -> 1/x` |
+
+### Trigonometry (6 rules)
+| Rule | Transformation |
+|------|---------------|
+| `pythagorean_identity` | `sin^2(x) + cos^2(x) -> 1` |
+| `sin_double_angle` | `2*sin(x)*cos(x) -> sin(2x)` |
+| `cos_double_angle` | `cos^2(x) - sin^2(x) -> cos(2x)` |
+| `sin_zero` | `sin(0) -> 0` |
+| `cos_zero` | `cos(0) -> 1` |
+| `tan_zero` | `tan(0) -> 0` |
+
+### Equation Solving (4 rules)
+| Rule | Transformation |
+|------|---------------|
+| `cancel_addition` | `x + a = b -> x = b - a` |
+| `cancel_multiplication` | `ax = b -> x = b/a` |
+| `linear_solve` | `ax + b = 0 -> x = -b/a` |
+| `quadratic_formula` | `ax^2 + bx + c = 0 -> ...` |
+
+---
+
+## Benchmark Results
+
+### Basic Benchmark (21 tests)
 ```
-math-monster/
-├── Cargo.toml                 # Workspace configuration
-├── crates/
-│   ├── mm-core/               # Core expression types
-│   │   ├── expr.rs            # AST definition
-│   │   ├── parse.rs           # Expression parser
-│   │   ├── canon.rs           # Canonicalization
-│   │   ├── eval.rs            # Numerical evaluation
-│   │   ├── rational.rs        # Exact rational arithmetic
-│   │   └── symbol.rs          # Symbol table (interned strings)
-│   │
-│   ├── mm-rules/              # Transformation rules
-│   │   ├── algebra.rs         # Algebraic rules (10)
-│   │   ├── calculus.rs        # Derivative rules (9)
-│   │   ├── equations.rs       # Equation solving (7)
-│   │   ├── trig.rs            # Trigonometric identities (2)
-│   │   └── rule.rs            # Rule infrastructure
-│   │
-│   ├── mm-verifier/           # Step verification
-│   │   ├── numerical.rs       # Point sampling verification
-│   │   └── symbolic.rs        # Symbolic equality checking
-│   │
-│   ├── mm-search/             # Search algorithms
-│   │   ├── beam.rs            # Beam search
-│   │   └── mcts.rs            # Neural MCTS (AlphaZero-style)
-│   │
-│   ├── mm-brain/              # Neural network
-│   │   ├── encoder.rs         # Expression tokenization
-│   │   ├── network.rs         # Transformer architecture
-│   │   ├── policy.rs          # Policy network API
-│   │   ├── training.rs        # Training loop
-│   │   └── data.rs            # Synthetic data generation
-│   │
-│   └── mm-solver/             # Unified API
-│       ├── lib.rs             # MathMonster interface
-│       └── examples/          # Usage examples
+Algebraic Identities: 5/6
+Constant Folding: 5/5
+Trigonometry: 3/3
+Derivatives: 5/5
+Multi-Variable: 2/2
+--------------------------
+TOTAL: 20/21 (95.2%)
+```
+
+### Advanced Benchmark (10 tests)
+```
+Multi-Step Algebra: 3/3
+Calculus Multi-Step: 3/3
+Equation Solving: 2/2
+Trig Multi-Step: 2/2
+--------------------------
+TOTAL: 10/10 (100%)
+```
+
+### Stress Test (10 complex problems)
+```
+All 10 passing
 ```
 
 ---
 
-## Design Decisions
+## Design Philosophy
 
-**Why not just use an LLM?**
+### Why Not Just Use an LLM?
 
-Language models excel at many tasks, but mathematical reasoning exposes their limitations. They can produce plausible-looking derivations that contain subtle errors. LEMMA instead:
-- Applies only verified transformation rules
-- Checks every step numerically and symbolically
-- Provides a complete proof trace
+LLMs are amazing at many tasks, but they can:
+- Produce plausible-looking but incorrect derivations
+- Skip steps or make sign errors
+- Not explain why a transformation is valid
 
-**Why a hybrid approach?**
+LEMMA trades generality for **reliability**:
+- Every step is a provable transformation
+- The verifier catches errors
+- Complete proof traces for debugging
 
-Pure rule-based systems require hand-crafted heuristics to choose between applicable rules. Pure neural approaches lack guarantees. The hybrid approach uses neural learning for intuition and explicit rules for correctness.
+### Why Rust?
 
-**Why Rust?**
-
-Performance matters for tree search algorithms that evaluate many candidates. Rust provides zero-cost abstractions and memory safety without garbage collection pauses.
-
----
-
-## Limitations
-
-- Currently supports single-variable expressions
-- Training runs on CPU (slower than GPU)
-- Perfect square factoring patterns not yet implemented
-- Integration rules not yet implemented
+1. **Performance** - MCTS explores thousands of nodes; speed matters
+2. **Memory Safety** - No GC pauses during search
+3. **Type System** - Expression trees are naturally typed
+4. **Ecosystem** - Candle for neural networks, excellent tooling
 
 ---
 
-## Future Work
+## Contributing
 
-- Multi-variable calculus support
-- Integration rule library
-- GPU-accelerated training
-- Series and limit evaluation
-- Ordinary differential equations
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+**Quick version:**
+1. Fork the repo
+2. Add a rule to `mm-rules/src/algebra.rs`
+3. Add a test case
+4. Submit a PR
+
+We especially welcome:
+- New mathematical rules
+- Bug reports with reproducible examples
+- Documentation improvements
+- Benchmark problems that fail
 
 ---
 
 ## License
 
-This project is licensed under the Mozilla Public License 2.0. See [LICENSE](LICENSE) for details.
+Mozilla Public License 2.0 - see [LICENSE](LICENSE)
 
 ---
 
 ## Acknowledgments
 
-This project draws inspiration from:
-- AlphaZero's approach to combining neural networks with tree search
-- The Lean theorem prover's emphasis on verified reasoning
-- Symbolic mathematics systems like Mathematica and SymPy
+- [AlphaZero](https://www.nature.com/articles/nature24270) - MCTS + Neural guidance
+- [AlphaProof](https://deepmind.google/discover/blog/ai-solves-imo-problems-at-silver-medal-level/) - Inspiration for math reasoning
+- [Candle](https://github.com/huggingface/candle) - Rust ML framework
+- [SimSIMD](https://github.com/ashvardanian/SimSIMD) / [USearch](https://github.com/unum-cloud/usearch) - Ash Vardanian's ecosystem
+
+---
+
+## Contact
+
+- **Author**: Pushp Kharat
+- **Email**: kharatpushp16@outlook.com
+- **GitHub**: [@Pushp-Kharat1](https://github.com/Pushp-Kharat1)
+
+---
+
+LEMMA is a research project. Use it to learn, experiment, and contribute - not as your only source of mathematical truth.

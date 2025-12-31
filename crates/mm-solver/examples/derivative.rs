@@ -1,23 +1,23 @@
 //! Example: Computing derivatives.
 //!
-//! This demonstrates the Math Monster's ability to compute symbolic
+//! This demonstrates LEMMA's ability to compute symbolic
 //! derivatives with step-by-step reasoning.
 
-use mm_solver::MathMonster;
+use mm_solver::LemmaSolver;
 
 fn main() {
-    println!("=== Math Monster: Derivative Calculator ===\n");
+    println!("=== LEMMA: Derivative Calculator ===\n");
 
-    let mut monster = MathMonster::new();
-    println!("Loaded {} mathematical rules\n", monster.num_rules());
+    let mut solver = LemmaSolver::new();
+    println!("Loaded {} mathematical rules\n", solver.num_rules());
 
     // Example 1: d/dx(x^2)
     println!("Example 1: d/dx(x^2)");
     println!("{}", "-".repeat(40));
 
-    match monster.differentiate("x^2", "x") {
+    match solver.differentiate("x^2", "x") {
         Ok(result) => {
-            println!("{}", result.format(monster.symbols()));
+            println!("{}", result.format(solver.symbols()));
         }
         Err(e) => {
             println!("Error: {}", e);
@@ -30,9 +30,9 @@ fn main() {
     println!("Example 2: d/dx(x^3)");
     println!("{}", "-".repeat(40));
 
-    match monster.differentiate("x^3", "x") {
+    match solver.differentiate("x^3", "x") {
         Ok(result) => {
-            println!("{}", result.format(monster.symbols()));
+            println!("{}", result.format(solver.symbols()));
         }
         Err(e) => {
             println!("Error: {}", e);
@@ -45,9 +45,9 @@ fn main() {
     println!("Example 3: d/dx(sin(x))");
     println!("{}", "-".repeat(40));
 
-    match monster.differentiate("sin(x)", "x") {
+    match solver.differentiate("sin(x)", "x") {
         Ok(result) => {
-            println!("{}", result.format(monster.symbols()));
+            println!("{}", result.format(solver.symbols()));
         }
         Err(e) => {
             println!("Error: {}", e);
@@ -60,9 +60,9 @@ fn main() {
     println!("Example 4: d/dx(5)");
     println!("{}", "-".repeat(40));
 
-    match monster.differentiate("5", "x") {
+    match solver.differentiate("5", "x") {
         Ok(result) => {
-            println!("{}", result.format(monster.symbols()));
+            println!("{}", result.format(solver.symbols()));
         }
         Err(e) => {
             println!("Error: {}", e);
