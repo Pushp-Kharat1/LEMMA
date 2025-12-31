@@ -425,8 +425,11 @@ impl NeuralMCTS {
             }
         }
 
+        // Recursively simplify sub-expressions (for nested derivatives, etc.)
+        let simplified = self.simplify_subexpressions(&current);
+
         // Apply constant folding to final result if possible
-        let final_result = self.try_const_fold(&current);
+        let final_result = self.try_const_fold(&simplified);
 
         Solution {
             problem: expr,
@@ -434,6 +437,78 @@ impl NeuralMCTS {
             steps: all_steps,
             verified: true,
         }
+    }
+
+    /// Recursively simplify sub-expressions by applying rules to inner parts.
+    fn simplify_subexpressions(&self, expr: &Expr) -> Expr {
+        let ctx = RuleContext::default();
+
+        match expr {
+            // For derivatives inside Add/Sub/Mul, simplify each side
+            Expr::Add(a, b) => {
+                let a_simp = self.simplify_single_step(a);
+                let b_simp = self.simplify_single_step(b);
+                Expr::Add(Box::new(a_simp), Box::new(b_simp))
+            }
+            Expr::Sub(a, b) => {
+                let a_simp = self.simplify_single_step(a);
+                let b_simp = self.simplify_single_step(b);
+                Expr::Sub(Box::new(a_simp), Box::new(b_simp))
+            }
+            Expr::Mul(a, b) => {
+                let a_simp = self.simplify_single_step(a);
+                let b_simp = self.simplify_single_step(b);
+                Expr::Mul(Box::new(a_simp), Box::new(b_simp))
+            }
+            _ => expr.clone(),
+        }
+    }
+
+    /// Apply first applicable rule to an expression (single step).
+    fn simplify_single_step(&self, expr: &Expr) -> Expr {
+        let ctx = RuleContext::default();
+
+        // First recursively handle sub-expressions
+        let processed = match expr {
+            Expr::Add(a, b) => {
+                let a_simp = self.simplify_single_step(a);
+                let b_simp = self.simplify_single_step(b);
+                Expr::Add(Box::new(a_simp), Box::new(b_simp))
+            }
+            Expr::Sub(a, b) => {
+                let a_simp = self.simplify_single_step(a);
+                let b_simp = self.simplify_single_step(b);
+                Expr::Sub(Box::new(a_simp), Box::new(b_simp))
+            }
+            Expr::Mul(a, b) => {
+                let a_simp = self.simplify_single_step(a);
+                let b_simp = self.simplify_single_step(b);
+                Expr::Mul(Box::new(a_simp), Box::new(b_simp))
+            }
+            Expr::Derivative { expr: inner, var } => {
+                // Apply derivative rules if possible
+                let applicable = self.rules.applicable(expr, &ctx);
+                if let Some(rule) = applicable.first() {
+                    let results = (rule.apply)(expr, &ctx);
+                    if let Some(app) = results.first() {
+                        return self.simplify_single_step(&app.result);
+                    }
+                }
+                expr.clone()
+            }
+            _ => expr.clone(),
+        };
+
+        // Now try to simplify the processed expression
+        let applicable = self.rules.applicable(&processed, &ctx);
+        if let Some(rule) = applicable.first() {
+            let results = (rule.apply)(&processed, &ctx);
+            if let Some(app) = results.first() {
+                return app.result.clone();
+            }
+        }
+
+        processed
     }
 
     /// Try to constant fold an expression if all parts are constants.
