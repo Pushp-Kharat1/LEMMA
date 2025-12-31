@@ -343,6 +343,10 @@ impl NeuralMCTS {
         let mut all_steps: Vec<Step> = Vec::new();
         let ctx = RuleContext::default();
 
+        // Track seen expressions to prevent infinite loops (e.g., distribute <-> factor_common)
+        let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+        seen.insert(format!("{:?}", current));
+
         for _iteration in 0..MAX_ITERATIONS {
             // Check if any rules apply
             let applicable = self.rules.applicable(&current, &ctx);
@@ -375,6 +379,13 @@ impl NeuralMCTS {
                     for rule in &applicable {
                         let applications = rule.apply(&current, &ctx);
                         if let Some(app) = applications.first() {
+                            // Skip if this leads to a seen state (prevents infinite loops)
+                            let result_key = format!("{:?}", app.result);
+                            if seen.contains(&result_key) {
+                                continue;
+                            }
+                            seen.insert(result_key);
+
                             all_steps.push(Step {
                                 before: current.clone(),
                                 after: app.result.clone(),
@@ -396,6 +407,13 @@ impl NeuralMCTS {
                 // Collect steps from this iteration
                 all_steps.extend(solution.steps);
 
+                // Check if result is in seen set (loop detection)
+                let result_key = format!("{:?}", solution.result);
+                if seen.contains(&result_key) {
+                    break; // Would loop - stop here
+                }
+                seen.insert(result_key);
+
                 // Update current expression
                 if solution.result == current {
                     break; // No progress made
@@ -407,6 +425,13 @@ impl NeuralMCTS {
                 for rule in &applicable {
                     let applications = rule.apply(&current, &ctx);
                     if let Some(app) = applications.first() {
+                        // Skip if this leads to a seen state
+                        let result_key = format!("{:?}", app.result);
+                        if seen.contains(&result_key) {
+                            continue;
+                        }
+                        seen.insert(result_key);
+
                         all_steps.push(Step {
                             before: current.clone(),
                             after: app.result.clone(),
