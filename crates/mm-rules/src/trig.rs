@@ -15,6 +15,9 @@ pub fn trig_rules() -> Vec<Rule> {
         pythagorean_identity(),
         sin_double_angle(),
         cos_double_angle(),
+        sin_zero(),
+        cos_zero(),
+        tan_zero(),
     ]
 }
 
@@ -153,6 +156,102 @@ fn cos_double_angle() -> Rule {
         },
         reversible: true,
         cost: 2,
+    }
+}
+
+// ============================================================================
+// Rule 22: sin(0) = 0
+// ============================================================================
+
+fn sin_zero() -> Rule {
+    Rule {
+        id: RuleId(22),
+        name: "sin_zero",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(0) = 0",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Sin(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Const(r) if r.is_zero());
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Sin(inner) = expr {
+                if matches!(inner.as_ref(), Expr::Const(r) if r.is_zero()) {
+                    return vec![RuleApplication {
+                        result: Expr::int(0),
+                        justification: "sin(0) = 0".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// ============================================================================
+// Rule 23: cos(0) = 1
+// ============================================================================
+
+fn cos_zero() -> Rule {
+    Rule {
+        id: RuleId(23),
+        name: "cos_zero",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(0) = 1",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Cos(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Const(r) if r.is_zero());
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Cos(inner) = expr {
+                if matches!(inner.as_ref(), Expr::Const(r) if r.is_zero()) {
+                    return vec![RuleApplication {
+                        result: Expr::int(1),
+                        justification: "cos(0) = 1".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// ============================================================================
+// Rule 24: tan(0) = 0
+// ============================================================================
+
+fn tan_zero() -> Rule {
+    Rule {
+        id: RuleId(24),
+        name: "tan_zero",
+        category: RuleCategory::TrigIdentity,
+        description: "tan(0) = 0",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Tan(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Const(r) if r.is_zero());
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Tan(inner) = expr {
+                if matches!(inner.as_ref(), Expr::Const(r) if r.is_zero()) {
+                    return vec![RuleApplication {
+                        result: Expr::int(0),
+                        justification: "tan(0) = 0".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 1,
     }
 }
 

@@ -228,7 +228,7 @@ fn main() {
         |e| matches!(e, Expr::Const(r) if *r == mm_core::Rational::from_integer(1)),
     ));
 
-    // d/dx(x²) = 2x
+    // d/dx(x²) = 2x (or 2*x^1 which is equivalent)
     results.push(run_benchmark(
         &mcts,
         "d/dx(x²) → 2x",
@@ -238,8 +238,13 @@ fn main() {
         },
         |e| match e {
             Expr::Mul(a, b) => {
-                matches!(a.as_ref(), Expr::Const(r) if r.numer() == 2)
-                    && matches!(b.as_ref(), Expr::Var(_))
+                let coeff_is_2 = matches!(a.as_ref(), Expr::Const(r) if r.numer() == 2);
+                // Accept either x or x^1
+                let base_is_x = matches!(b.as_ref(), Expr::Var(_))
+                    || matches!(b.as_ref(), Expr::Pow(inner, exp) 
+                        if matches!(inner.as_ref(), Expr::Var(_)) 
+                        && matches!(exp.as_ref(), Expr::Const(r) if r.numer() == 1));
+                coeff_is_2 && base_is_x
             }
             _ => false,
         },
