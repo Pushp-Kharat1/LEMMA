@@ -30,6 +30,12 @@ pub enum Expr {
     /// A variable (e.g., x, y, z)
     Var(Symbol),
 
+    /// Mathematical constant π (pi)
+    Pi,
+
+    /// Mathematical constant e (Euler's number)
+    E,
+
     // ========== Unary Operations ==========
     /// Negation: -a
     Neg(Box<Expr>),
@@ -130,6 +136,8 @@ impl PartialEq for Expr {
         match (self, other) {
             (Expr::Const(a), Expr::Const(b)) => a == b,
             (Expr::Var(a), Expr::Var(b)) => a == b,
+            (Expr::Pi, Expr::Pi) => true,
+            (Expr::E, Expr::E) => true,
             (Expr::Neg(a), Expr::Neg(b)) => a == b,
             (Expr::Sqrt(a), Expr::Sqrt(b)) => a == b,
             (Expr::Sin(a), Expr::Sin(b)) => a == b,
@@ -167,6 +175,7 @@ impl Hash for Expr {
         match self {
             Expr::Const(r) => r.hash(state),
             Expr::Var(s) => s.hash(state),
+            Expr::Pi | Expr::E => {} // discriminant already hashed
             Expr::Neg(e)
             | Expr::Sqrt(e)
             | Expr::Sin(e)
@@ -339,7 +348,7 @@ impl Expr {
     /// Get the complexity (number of nodes) of this expression.
     pub fn complexity(&self) -> usize {
         match self {
-            Expr::Const(_) | Expr::Var(_) => 1,
+            Expr::Const(_) | Expr::Var(_) | Expr::Pi | Expr::E => 1,
             Expr::Neg(e)
             | Expr::Sqrt(e)
             | Expr::Sin(e)

@@ -449,7 +449,7 @@ fn ln_rule() -> Rule {
 fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
     match expr {
         Expr::Var(v) => *v == var,
-        Expr::Const(_) => false,
+        Expr::Const(_) | Expr::Pi | Expr::E => false,
         Expr::Neg(e)
         | Expr::Sqrt(e)
         | Expr::Sin(e)

@@ -55,7 +55,7 @@ impl Expr {
 
         match self {
             // Atoms don't need simplification
-            Expr::Const(_) | Expr::Var(_) => self.clone(),
+            Expr::Const(_) | Expr::Var(_) | Expr::Pi | Expr::E => self.clone(),
 
             // Unary operations
             Expr::Neg(e) => Expr::Neg(Box::new(e.canonicalize_with_depth(depth))),

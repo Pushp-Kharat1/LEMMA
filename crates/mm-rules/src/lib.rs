@@ -6,16 +6,17 @@
 
 //! # mm-rules
 //!
-//! Mathematical transformation rules for the Math Monster system.
+//! Mathematical transformation rules for the LEMMA system.
 //!
 //! This crate provides:
 //! - [`Rule`] - The core rule structure
 //! - [`RuleSet`] - A collection of rules
-//! - Pre-defined rules for algebra, calculus, and trigonometry
+//! - Pre-defined rules for algebra, calculus, trigonometry, and integration
 
 pub mod algebra;
 pub mod calculus;
 pub mod equations;
+pub mod integration;
 pub mod rule;
 pub mod trig;
 

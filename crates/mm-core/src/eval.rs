@@ -51,6 +51,8 @@ impl Expr {
         match self {
             Expr::Const(r) => Some(r.to_f64()),
             Expr::Var(s) => env.get(s).copied(),
+            Expr::Pi => Some(std::f64::consts::PI),
+            Expr::E => Some(std::f64::consts::E),
 
             Expr::Neg(e) => e.evaluate(env).map(|x| -x),
             Expr::Sqrt(e) => {
@@ -196,7 +198,7 @@ impl Expr {
                     vars.push(*s);
                 }
             }
-            Expr::Const(_) => {}
+            Expr::Const(_) | Expr::Pi | Expr::E => {}
             Expr::Neg(e)
             | Expr::Sqrt(e)
             | Expr::Sin(e)

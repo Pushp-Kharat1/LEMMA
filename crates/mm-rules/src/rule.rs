@@ -193,6 +193,11 @@ pub fn standard_rules() -> RuleSet {
         rules.add(rule);
     }
 
+    // Add integration rules
+    for rule in crate::integration::integration_rules() {
+        rules.add(rule);
+    }
+
     rules
 }
 

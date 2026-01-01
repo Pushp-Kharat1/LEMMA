@@ -137,6 +137,12 @@ impl ExpressionEncoder {
                 let idx = sym.to_usize() % var_tokens.len();
                 tokens.push(var_tokens[idx].to_string());
             }
+            Expr::Pi => {
+                tokens.push("pi".to_string());
+            }
+            Expr::E => {
+                tokens.push("e".to_string());
+            }
             Expr::Neg(e) => {
                 tokens.push("neg".to_string());
                 tokens.push("(".to_string());

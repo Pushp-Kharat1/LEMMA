@@ -77,7 +77,7 @@ fn is_calculus_expr(expr: &Expr) -> bool {
             .iter()
             .any(|f| is_calculus_expr(&f.base) || is_calculus_expr(&f.power)),
         Expr::Equation { lhs, rhs } => is_calculus_expr(lhs) || is_calculus_expr(rhs),
-        Expr::Const(_) | Expr::Var(_) => false,
+        Expr::Const(_) | Expr::Var(_) | Expr::Pi | Expr::E => false,
     }
 }
 
@@ -242,7 +242,7 @@ impl Verifier {
 fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
     match expr {
         Expr::Var(v) if *v == var => value.clone(),
-        Expr::Var(_) | Expr::Const(_) => expr.clone(),
+        Expr::Var(_) | Expr::Const(_) | Expr::Pi | Expr::E => expr.clone(),
         Expr::Neg(e) => Expr::Neg(Box::new(substitute(e, var, value))),
         Expr::Sqrt(e) => Expr::Sqrt(Box::new(substitute(e, var, value))),
         Expr::Sin(e) => Expr::Sin(Box::new(substitute(e, var, value))),
