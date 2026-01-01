@@ -260,37 +260,49 @@ fn quotient_rule() -> Rule {
 }
 
 // ============================================================================
-// Rule 15: d/dx(sin(x)) = cos(x)
+// Rule 15: d/dx(sin(g(x))) = cos(g(x)) * g'(x) (Chain Rule)
 // ============================================================================
 
 fn chain_rule_sin() -> Rule {
     Rule {
         id: RuleId(15),
-        name: "sin_derivative",
+        name: "sin_chain_rule",
         category: RuleCategory::Derivative,
-        description: "Sine derivative: d/dx(sin(x)) = cos(x)",
+        description: "Sine chain rule: d/dx(sin(g)) = cos(g) * g'",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
                 if let Expr::Sin(arg) = inner.as_ref() {
-                    // Simple case: sin(x)
-                    if let Expr::Var(v) = arg.as_ref() {
-                        return v == var;
-                    }
+                    // Apply if argument contains the variable
+                    return contains_var(arg, *var);
                 }
             }
             false
         },
         apply: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
-                if let Expr::Sin(arg) = inner.as_ref() {
-                    if let Expr::Var(v) = arg.as_ref() {
+                if let Expr::Sin(g) = inner.as_ref() {
+                    // d/dx(sin(g)) = cos(g) * g'
+                    let cos_g = Expr::Cos(g.clone());
+
+                    // If g is just x, g' = 1, so result is just cos(g)
+                    if let Expr::Var(v) = g.as_ref() {
                         if v == var {
                             return vec![RuleApplication {
-                                result: Expr::Cos(arg.clone()),
+                                result: cos_g,
                                 justification: "d/dx(sin(x)) = cos(x)".to_string(),
                             }];
                         }
                     }
+
+                    // General case: cos(g) * g'
+                    let g_prime = Expr::Derivative {
+                        expr: g.clone(),
+                        var: *var,
+                    };
+                    return vec![RuleApplication {
+                        result: Expr::Mul(Box::new(cos_g), Box::new(g_prime)),
+                        justification: "d/dx(sin(g)) = cos(g) * g'".to_string(),
+                    }];
                 }
             }
             vec![]
@@ -301,36 +313,49 @@ fn chain_rule_sin() -> Rule {
 }
 
 // ============================================================================
-// Rule 16: d/dx(cos(x)) = -sin(x)
+// Rule 16: d/dx(cos(g(x))) = -sin(g(x)) * g'(x) (Chain Rule)
 // ============================================================================
 
 fn chain_rule_cos() -> Rule {
     Rule {
         id: RuleId(16),
-        name: "cos_derivative",
+        name: "cos_chain_rule",
         category: RuleCategory::Derivative,
-        description: "Cosine derivative: d/dx(cos(x)) = -sin(x)",
+        description: "Cosine chain rule: d/dx(cos(g)) = -sin(g) * g'",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
                 if let Expr::Cos(arg) = inner.as_ref() {
-                    if let Expr::Var(v) = arg.as_ref() {
-                        return v == var;
-                    }
+                    // Apply if argument contains the variable
+                    return contains_var(arg, *var);
                 }
             }
             false
         },
         apply: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
-                if let Expr::Cos(arg) = inner.as_ref() {
-                    if let Expr::Var(v) = arg.as_ref() {
+                if let Expr::Cos(g) = inner.as_ref() {
+                    // d/dx(cos(g)) = -sin(g) * g'
+                    let neg_sin_g = Expr::Neg(Box::new(Expr::Sin(g.clone())));
+
+                    // If g is just x, g' = 1, so result is just -sin(g)
+                    if let Expr::Var(v) = g.as_ref() {
                         if v == var {
                             return vec![RuleApplication {
-                                result: Expr::Neg(Box::new(Expr::Sin(arg.clone()))),
+                                result: neg_sin_g,
                                 justification: "d/dx(cos(x)) = -sin(x)".to_string(),
                             }];
                         }
                     }
+
+                    // General case: -sin(g) * g'
+                    let g_prime = Expr::Derivative {
+                        expr: g.clone(),
+                        var: *var,
+                    };
+                    return vec![RuleApplication {
+                        result: Expr::Mul(Box::new(neg_sin_g), Box::new(g_prime)),
+                        justification: "d/dx(cos(g)) = -sin(g) * g'".to_string(),
+                    }];
                 }
             }
             vec![]

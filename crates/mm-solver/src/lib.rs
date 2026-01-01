@@ -27,9 +27,9 @@
 //! println!("Derivative: {:?}", result.result);
 //! ```
 
-use mm_core::{Expr, MathError, Symbol, SymbolTable};
-use mm_rules::{rule::standard_rules, RuleContext, RuleSet};
-use mm_search::{BeamSearch, SearchConfig, Solution, Step};
+use mm_core::{Expr, MathError, SymbolTable};
+use mm_rules::{rule::standard_rules, RuleSet};
+use mm_search::{BeamSearch, SearchConfig, Step};
 use mm_verifier::{Verifier, VerifyResult};
 
 /// The LEMMA solver.
