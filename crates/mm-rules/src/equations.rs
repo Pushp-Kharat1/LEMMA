@@ -156,25 +156,43 @@ fn cancel_multiplication() -> Rule {
         id: RuleId(24),
         name: "cancel_multiplication",
         category: RuleCategory::EquationSolving,
-        description: "Cancel multiplication: ax = b → x = b/a",
+        description: "Cancel multiplication: ax = b -> x = b/a (or xa = b -> x = b/a)",
         is_applicable: |expr, _ctx| {
             if let Expr::Equation { lhs, .. } = expr {
-                if let Expr::Mul(a, _) = lhs.as_ref() {
-                    // Must have a constant coefficient
-                    return matches!(a.as_ref(), Expr::Const(c) if !c.is_zero());
+                if let Expr::Mul(a, b) = lhs.as_ref() {
+                    // Check if either operand is a non-zero constant
+                    if matches!(a.as_ref(), Expr::Const(c) if !c.is_zero()) {
+                        return true;
+                    }
+                    if matches!(b.as_ref(), Expr::Const(c) if !c.is_zero()) {
+                        return true;
+                    }
                 }
             }
             false
         },
         apply: |expr, _ctx| {
             if let Expr::Equation { lhs, rhs } = expr {
-                if let Expr::Mul(a, x) = lhs.as_ref() {
+                if let Expr::Mul(a, b) = lhs.as_ref() {
+                    // Case 1: c * x = rhs -> x = rhs / c
                     if let Expr::Const(c) = a.as_ref() {
                         if !c.is_zero() {
                             return vec![RuleApplication {
                                 result: Expr::Equation {
-                                    lhs: x.clone(),
+                                    lhs: b.clone(),
                                     rhs: Box::new(Expr::Div(rhs.clone(), a.clone())),
+                                },
+                                justification: format!("Divide both sides by {}", c),
+                            }];
+                        }
+                    }
+                    // Case 2: x * c = rhs -> x = rhs / c
+                    if let Expr::Const(c) = b.as_ref() {
+                        if !c.is_zero() {
+                            return vec![RuleApplication {
+                                result: Expr::Equation {
+                                    lhs: a.clone(),
+                                    rhs: Box::new(Expr::Div(rhs.clone(), b.clone())),
                                 },
                                 justification: format!("Divide both sides by {}", c),
                             }];
