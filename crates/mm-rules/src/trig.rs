@@ -947,6 +947,7 @@ fn cos_sum_formula() -> Rule {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::RuleContext;
     use mm_core::SymbolTable;
 
     #[test]

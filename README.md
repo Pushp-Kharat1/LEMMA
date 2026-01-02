@@ -18,7 +18,7 @@ A research prototype exploring neural-guided symbolic mathematics in Rust. Inspi
 ### What LEMMA IS:
 - A **research prototype** exploring hybrid neural-symbolic reasoning
 - A **proof of concept** for AlphaProof-style mathematical search
-- **33 verified transformation rules** with multi-step chaining
+- **220+ verified transformation rules** with multi-step chaining
 - An **MCTS engine** guided by a neural policy network
 - A **learning project** for anyone interested in symbolic AI
 
@@ -46,16 +46,15 @@ A research prototype exploring neural-guided symbolic mathematics in Rust. Inspi
 | **Pythagorean** | `sin^2(x) + cos^2(x) -> 1` | Working |
 | **Like Terms** | `2(x+y) + 3(x+y) -> 5(x+y)` | Working |
 
-### NOT Yet Implemented
+### New Features (Added Jan 2026)
 
-| Feature | Why It Matters | Difficulty |
-|---------|----------------|------------|
-| Chain Rule | `d/dx(sin(x^2))` | Medium |
-| Integration | `integral of x^2 dx` | Hard |
-| Polynomial Factoring | `x^2+5x+6 -> (x+2)(x+3)` | Medium |
-| Quadratic Formula | Full implementation | Easy |
-| Limits | `lim(x->0) sin(x)/x` | Hard |
-| Multi-variable Calculus | Partial derivatives | Hard |
+| Category | Count | Examples |
+|----------|-------|----------|
+| **Integration** | 9 | `∫x^n dx → x^(n+1)/(n+1)` |
+| **Number Theory** | 50+ | Divisibility, GCD, parity |
+| **Inequalities** | 30+ | AM-GM, Cauchy-Schwarz |
+| **Combinatorics** | 30+ | Binomial, Pascal, Catalan |
+| **Polynomials** | 30+ | Vieta's, symmetric polys |
 
 ---
 
@@ -63,8 +62,8 @@ A research prototype exploring neural-guided symbolic mathematics in Rust. Inspi
 
 ```
 +------------------------------------------------------------------+
-|                      Neural Policy Network                        |
-|              (Transformer, suggests which rule to try)            |
+|                      Neural Policy Network                       |
+|              (Transformer, suggests which rule to try)           |
 +------------------------------+-----------------------------------+
                                |
                                v
@@ -76,7 +75,7 @@ A research prototype exploring neural-guided symbolic mathematics in Rust. Inspi
                                  v
                   +-----------------------------+
                   |       Rule Library          |
-                  |  (33 verified transforms)   |
+                  |  (220+ verified transforms) |
                   +--------------+--------------+
                                  |
                                  v
@@ -100,7 +99,7 @@ Unlike LLMs that predict text statistically, LEMMA:
 | Crate | Purpose | Lines of Code |
 |-------|---------|---------------|
 | `mm-core` | Expression AST, parsing, evaluation | ~1,200 |
-| `mm-rules` | 33 transformation rules | ~1,500 |
+| `mm-rules` | 220+ transformation rules | ~5,000 |
 | `mm-verifier` | Numerical and symbolic verification | ~400 |
 | `mm-search` | Beam search, Neural MCTS | ~800 |
 | `mm-brain` | Transformer network (Candle) | ~1,000 |
@@ -174,7 +173,7 @@ fn main() {
 
 ---
 
-## The 33 Rules
+## Rule Categories (220+)
 
 ### Algebra (14 rules)
 | Rule | Transformation |

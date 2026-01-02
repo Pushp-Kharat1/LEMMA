@@ -610,6 +610,8 @@ fn power_mul() -> Rule {
 
 #[cfg(test)]
 mod tests {
+    use crate::RuleContext;
+
     use super::*;
     use mm_core::SymbolTable;
 

@@ -473,6 +473,7 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::RuleContext;
     use mm_core::SymbolTable;
 
     #[test]

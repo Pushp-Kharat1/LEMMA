@@ -450,6 +450,7 @@ fn extract_linear_and_const(expr: &Expr, _var: Symbol) -> (Rational, Rational) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::RuleContext;
     use mm_core::SymbolTable;
 
     #[test]
