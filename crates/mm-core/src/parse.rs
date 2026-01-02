@@ -13,10 +13,15 @@
 //!
 //! - Numbers: `42`, `3.14`, `1/2`
 //! - Variables: `x`, `y`, `theta`
-//! - Operators: `+`, `-`, `*`, `/`, `^`
+//! - Operators: `+`, `-`, `*`, `/`, `^`, `%` (mod), `!` (factorial), `=` (equation)
 //! - Parentheses: `(`, `)`
-//! - Functions: `sin`, `cos`, `tan`, `ln`, `exp`, `sqrt`, `abs`
-//! - Derivative: `d/dx(expr)` or `diff(expr, x)`
+//! - Functions:
+//!   - Trig: `sin`, `cos`, `tan`
+//!   - Exp/Log: `ln`, `exp`
+//!   - Misc: `sqrt`, `abs`, `floor`, `ceil`
+//!   - Number Theory: `gcd(a,b)`, `lcm(a,b)`, `binomial(n,k)`
+//!   - Calculus: `diff(expr, var)`, `int(expr, var)`
+//!   - Big Ops: `sum(var, from, to, body)`, `prod(var, from, to, body)`
 //!
 //! # Example
 //!
@@ -46,11 +51,11 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self, input: &str) -> Result<Expr, MathError> {
         let tokens = tokenize(input)?;
         let mut pos = 0;
-        let expr = self.parse_expr(&tokens, &mut pos)?;
+        let expr = self.parse_equation(&tokens, &mut pos)?;
 
         if pos < tokens.len() {
             return Err(MathError::ParseError(format!(
-                "Unexpected token: {:?}",
+                "Unexpected token at end of input: {:?}",
                 tokens[pos]
             )));
         }
@@ -58,10 +63,25 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn parse_expr(&mut self, tokens: &[Token], pos: &mut usize) -> Result<Expr, MathError> {
-        self.parse_additive(tokens, pos)
+    // Level 1: Equations (=)
+    fn parse_equation(&mut self, tokens: &[Token], pos: &mut usize) -> Result<Expr, MathError> {
+        let lhs = self.parse_additive(tokens, pos)?;
+
+        if *pos < tokens.len() {
+            if let Token::Eq = tokens[*pos] {
+                *pos += 1;
+                let rhs = self.parse_additive(tokens, pos)?;
+                return Ok(Expr::Equation {
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                });
+            }
+        }
+
+        Ok(lhs)
     }
 
+    // Level 2: Additive (+, -)
     fn parse_additive(&mut self, tokens: &[Token], pos: &mut usize) -> Result<Expr, MathError> {
         let mut left = self.parse_multiplicative(tokens, pos)?;
 
@@ -84,6 +104,7 @@ impl<'a> Parser<'a> {
         Ok(left)
     }
 
+    // Level 3: Multiplicative (*, /, %)
     fn parse_multiplicative(
         &mut self,
         tokens: &[Token],
@@ -103,6 +124,11 @@ impl<'a> Parser<'a> {
                     let right = self.parse_power(tokens, pos)?;
                     left = Expr::Div(Box::new(left), Box::new(right));
                 }
+                Token::Percent => {
+                    *pos += 1;
+                    let right = self.parse_power(tokens, pos)?;
+                    left = Expr::Mod(Box::new(left), Box::new(right));
+                }
                 _ => break,
             }
         }
@@ -110,18 +136,20 @@ impl<'a> Parser<'a> {
         Ok(left)
     }
 
+    // Level 4: Power (^) - Right associative
     fn parse_power(&mut self, tokens: &[Token], pos: &mut usize) -> Result<Expr, MathError> {
         let base = self.parse_unary(tokens, pos)?;
 
         if *pos < tokens.len() && matches!(tokens[*pos], Token::Caret) {
             *pos += 1;
-            let exp = self.parse_power(tokens, pos)?; // Right associative
+            let exp = self.parse_power(tokens, pos)?; // Recursion for right associativity
             return Ok(Expr::Pow(Box::new(base), Box::new(exp)));
         }
 
         Ok(base)
     }
 
+    // Level 5: Unary (-)
     fn parse_unary(&mut self, tokens: &[Token], pos: &mut usize) -> Result<Expr, MathError> {
         if *pos < tokens.len() && matches!(tokens[*pos], Token::Minus) {
             *pos += 1;
@@ -129,9 +157,22 @@ impl<'a> Parser<'a> {
             return Ok(Expr::Neg(Box::new(expr)));
         }
 
-        self.parse_primary(tokens, pos)
+        self.parse_postfix(tokens, pos)
     }
 
+    // Level 6: Postfix (!)
+    fn parse_postfix(&mut self, tokens: &[Token], pos: &mut usize) -> Result<Expr, MathError> {
+        let mut expr = self.parse_primary(tokens, pos)?;
+
+        while *pos < tokens.len() && matches!(tokens[*pos], Token::Bang) {
+            *pos += 1;
+            expr = Expr::Factorial(Box::new(expr));
+        }
+
+        Ok(expr)
+    }
+
+    // Level 7: Primary (Number, Var, Paren, Function)
     fn parse_primary(&mut self, tokens: &[Token], pos: &mut usize) -> Result<Expr, MathError> {
         if *pos >= tokens.len() {
             return Err(MathError::ParseError("Unexpected end of input".to_string()));
@@ -148,32 +189,29 @@ impl<'a> Parser<'a> {
                 // Check if it's a function call
                 if *pos < tokens.len() && matches!(tokens[*pos], Token::LParen) {
                     *pos += 1; // consume '('
-                    let arg = self.parse_expr(tokens, pos)?;
+                    let args = self.parse_args(tokens, pos)?;
 
                     if *pos >= tokens.len() || !matches!(tokens[*pos], Token::RParen) {
                         return Err(MathError::ParseError("Expected ')'".to_string()));
                     }
                     *pos += 1; // consume ')'
 
-                    return match name.as_str() {
-                        "sin" => Ok(Expr::Sin(Box::new(arg))),
-                        "cos" => Ok(Expr::Cos(Box::new(arg))),
-                        "tan" => Ok(Expr::Tan(Box::new(arg))),
-                        "ln" => Ok(Expr::Ln(Box::new(arg))),
-                        "exp" => Ok(Expr::Exp(Box::new(arg))),
-                        "sqrt" => Ok(Expr::Sqrt(Box::new(arg))),
-                        "abs" => Ok(Expr::Abs(Box::new(arg))),
-                        _ => Err(MathError::ParseError(format!("Unknown function: {}", name))),
-                    };
+                    return self.construct_function_call(name, args);
                 }
 
-                // It's a variable
-                let symbol = self.symbols.intern(name);
-                Ok(Expr::Var(symbol))
+                // It's a variable or constant
+                match name.as_str() {
+                    "pi" | "Pi" | "PI" | "π" | "Π" => Ok(Expr::Pi),
+                    "e" | "E" => Ok(Expr::E),
+                    _ => {
+                        let symbol = self.symbols.intern(name);
+                        Ok(Expr::Var(symbol))
+                    }
+                }
             }
             Token::LParen => {
                 *pos += 1;
-                let expr = self.parse_expr(tokens, pos)?;
+                let expr = self.parse_equation(tokens, pos)?; // Reset precedence for inside parens
 
                 if *pos >= tokens.len() || !matches!(tokens[*pos], Token::RParen) {
                     return Err(MathError::ParseError("Expected ')'".to_string()));
@@ -185,6 +223,115 @@ impl<'a> Parser<'a> {
             _ => Err(MathError::ParseError(format!(
                 "Unexpected token: {:?}",
                 tokens[*pos]
+            ))),
+        }
+    }
+
+    fn parse_args(&mut self, tokens: &[Token], pos: &mut usize) -> Result<Vec<Expr>, MathError> {
+        let mut args = Vec::new();
+        if *pos < tokens.len() && !matches!(tokens[*pos], Token::RParen) {
+            args.push(self.parse_equation(tokens, pos)?);
+            while *pos < tokens.len() && matches!(tokens[*pos], Token::Comma) {
+                *pos += 1;
+                args.push(self.parse_equation(tokens, pos)?);
+            }
+        }
+        Ok(args)
+    }
+
+    fn construct_function_call(&mut self, name: &str, args: Vec<Expr>) -> Result<Expr, MathError> {
+        match (name, args.len()) {
+            // Unary functions
+            ("sin", 1) => Ok(Expr::Sin(Box::new(args[0].clone()))),
+            ("cos", 1) => Ok(Expr::Cos(Box::new(args[0].clone()))),
+            ("tan", 1) => Ok(Expr::Tan(Box::new(args[0].clone()))),
+            ("ln", 1) => Ok(Expr::Ln(Box::new(args[0].clone()))),
+            ("exp", 1) => Ok(Expr::Exp(Box::new(args[0].clone()))),
+            ("sqrt", 1) => Ok(Expr::Sqrt(Box::new(args[0].clone()))),
+            ("abs", 1) => Ok(Expr::Abs(Box::new(args[0].clone()))),
+            ("floor", 1) => Ok(Expr::Floor(Box::new(args[0].clone()))),
+            ("ceil", 1) => Ok(Expr::Ceiling(Box::new(args[0].clone()))),
+            ("factorial", 1) => Ok(Expr::Factorial(Box::new(args[0].clone()))),
+
+            // Binary functions
+            ("gcd", 2) => Ok(Expr::GCD(
+                Box::new(args[0].clone()),
+                Box::new(args[1].clone()),
+            )),
+            ("lcm", 2) => Ok(Expr::LCM(
+                Box::new(args[0].clone()),
+                Box::new(args[1].clone()),
+            )),
+            ("mod", 2) => Ok(Expr::Mod(
+                Box::new(args[0].clone()),
+                Box::new(args[1].clone()),
+            )),
+            ("binomial", 2) => Ok(Expr::Binomial(
+                Box::new(args[0].clone()),
+                Box::new(args[1].clone()),
+            )),
+
+            // Calculus
+            ("diff", 2) | ("derivative", 2) => {
+                if let Expr::Var(v) = args[1] {
+                    Ok(Expr::Derivative {
+                        expr: Box::new(args[0].clone()),
+                        var: v,
+                    })
+                } else {
+                    Err(MathError::ParseError(
+                        "Second argument to diff must be a variable".to_string(),
+                    ))
+                }
+            }
+            ("int", 2) | ("integral", 2) => {
+                if let Expr::Var(v) = args[1] {
+                    Ok(Expr::Integral {
+                        expr: Box::new(args[0].clone()),
+                        var: v,
+                    })
+                } else {
+                    Err(MathError::ParseError(
+                        "Second argument to int must be a variable".to_string(),
+                    ))
+                }
+            }
+
+            // Big Operators (Sum/Prod)
+            // sum(var, from, to, body)
+            ("sum", 4) => {
+                if let Expr::Var(v) = args[0] {
+                    Ok(Expr::Summation {
+                        var: v,
+                        from: Box::new(args[1].clone()),
+                        to: Box::new(args[2].clone()),
+                        body: Box::new(args[3].clone()),
+                    })
+                } else {
+                    Err(MathError::ParseError(
+                        "First argument to sum must be a variable".to_string(),
+                    ))
+                }
+            }
+            ("prod", 4) => {
+                if let Expr::Var(v) = args[0] {
+                    Ok(Expr::BigProduct {
+                        var: v,
+                        from: Box::new(args[1].clone()),
+                        to: Box::new(args[2].clone()),
+                        body: Box::new(args[3].clone()),
+                    })
+                } else {
+                    Err(MathError::ParseError(
+                        "First argument to prod must be a variable".to_string(),
+                    ))
+                }
+            }
+
+            _ => Err(MathError::ParseError(format!(
+                "Unknown function or wrong number of arguments: {}({} args)",
+                name,
+                args.len()
             ))),
         }
     }
@@ -203,8 +350,12 @@ enum Token {
     Star,
     Slash,
     Caret,
+    Percent,
+    Bang,
+    Eq,
     LParen,
     RParen,
+    Comma,
 }
 
 fn tokenize(input: &str) -> Result<Vec<Token>, MathError> {
@@ -248,6 +399,21 @@ fn tokenize(input: &str) -> Result<Vec<Token>, MathError> {
                 i += 1;
                 continue;
             }
+            '%' => {
+                tokens.push(Token::Percent);
+                i += 1;
+                continue;
+            }
+            '!' => {
+                tokens.push(Token::Bang);
+                i += 1;
+                continue;
+            }
+            '=' => {
+                tokens.push(Token::Eq);
+                i += 1;
+                continue;
+            }
             '(' => {
                 tokens.push(Token::LParen);
                 i += 1;
@@ -255,6 +421,11 @@ fn tokenize(input: &str) -> Result<Vec<Token>, MathError> {
             }
             ')' => {
                 tokens.push(Token::RParen);
+                i += 1;
+                continue;
+            }
+            ',' => {
+                tokens.push(Token::Comma);
                 i += 1;
                 continue;
             }
@@ -349,8 +520,6 @@ mod tests {
         let mut parser = Parser::new(&mut symbols);
 
         let expr = parser.parse("x^2 + 2*x + 1").unwrap();
-        let x = symbols.get("x").unwrap();
-
         // Just check it parsed without error
         assert!(matches!(expr, Expr::Add(_, _)));
     }
@@ -361,8 +530,30 @@ mod tests {
         let mut parser = Parser::new(&mut symbols);
 
         let expr = parser.parse("sin(x)").unwrap();
-        let x = symbols.get("x").unwrap();
-
         assert!(matches!(expr, Expr::Sin(_)));
+    }
+
+    #[test]
+    fn test_parse_equation() {
+        let mut symbols = SymbolTable::new();
+        let mut parser = Parser::new(&mut symbols);
+        let expr = parser.parse("x + 1 = 2").unwrap();
+        assert!(matches!(expr, Expr::Equation { .. }));
+    }
+
+    #[test]
+    fn test_parse_factorial() {
+        let mut symbols = SymbolTable::new();
+        let mut parser = Parser::new(&mut symbols);
+        let expr = parser.parse("x!").unwrap();
+        assert!(matches!(expr, Expr::Factorial(_)));
+    }
+
+    #[test]
+    fn test_parse_calculus() {
+        let mut symbols = SymbolTable::new();
+        let mut parser = Parser::new(&mut symbols);
+        let expr = parser.parse("diff(x^2, x)").unwrap();
+        assert!(matches!(expr, Expr::Derivative { .. }));
     }
 }
