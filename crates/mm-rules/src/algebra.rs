@@ -6,7 +6,7 @@
 
 //! Algebraic transformation rules.
 
-use crate::{Rule, RuleApplication, RuleCategory, RuleContext, RuleId};
+use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
 /// Get all algebra rules.

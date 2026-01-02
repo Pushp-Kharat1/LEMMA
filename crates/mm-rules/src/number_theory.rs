@@ -418,7 +418,7 @@ fn modular_rules() -> Vec<Rule> {
             name: "mod_self",
             category: RuleCategory::Simplification,
             description: "a mod a = 0",
-            is_applicable: |expr, _ctx| {
+            is_applicable: |_expr, _ctx| {
                 // We don't have a Mod operator, but we can recognize floor(a/a)*a - a pattern
                 false // placeholder - would need Mod in Expr
             },

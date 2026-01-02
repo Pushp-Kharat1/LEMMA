@@ -6,7 +6,7 @@
 
 //! Equation solving rules and transformations.
 
-use crate::{Rule, RuleApplication, RuleCategory, RuleContext, RuleId};
+use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational, Symbol};
 
 /// Get all equation solving rules.
@@ -33,7 +33,7 @@ fn isolate_variable() -> Rule {
         category: RuleCategory::EquationSolving,
         description: "Move terms to isolate variable: ax + b = c → ax = c - b",
         is_applicable: |expr, _ctx| {
-            if let Expr::Equation { lhs, rhs } = expr {
+            if let Expr::Equation { lhs, rhs: _ } = expr {
                 // Check if LHS has addition/subtraction with constant
                 if let Expr::Add(_, b) = lhs.as_ref() {
                     return matches!(b.as_ref(), Expr::Const(_));

@@ -6,7 +6,7 @@
 
 //! Trigonometric identity rules.
 
-use crate::{Rule, RuleApplication, RuleCategory, RuleContext, RuleId};
+use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::Expr;
 
 /// Get all trigonometric rules.

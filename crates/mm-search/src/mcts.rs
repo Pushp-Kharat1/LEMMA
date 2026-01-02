@@ -12,7 +12,6 @@
 //! - UCB formula balances exploration/exploitation
 
 use crate::{SearchConfig, Solution, Step};
-use candle_core::Device;
 use mm_brain::PolicyNetwork;
 use mm_core::Expr;
 use mm_rules::{RuleCategory, RuleContext, RuleId, RuleSet};
@@ -537,7 +536,10 @@ impl NeuralMCTS {
                 let b_simp = self.simplify_single_step(b);
                 Expr::Mul(Box::new(a_simp), Box::new(b_simp))
             }
-            Expr::Derivative { expr: inner, var } => {
+            Expr::Derivative {
+                expr: inner,
+                var: _,
+            } => {
                 // Apply derivative rules if possible
                 let applicable = self.rules.applicable(expr, &ctx);
                 if let Some(rule) = applicable.first() {

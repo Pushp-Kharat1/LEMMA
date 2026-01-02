@@ -13,7 +13,7 @@
 //! - Equations: linear, quadratic solving
 
 use candle_core::Device;
-use mm_core::{Expr, Rational, SymbolTable};
+use mm_core::{Expr, SymbolTable};
 use rand::prelude::*;
 
 use crate::encoder::ExpressionEncoder;

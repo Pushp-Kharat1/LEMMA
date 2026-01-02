@@ -6,7 +6,7 @@
 
 //! Policy network for rule selection.
 
-use candle_core::{Device, Result, Tensor};
+use candle_core::{Device, Result};
 use mm_core::Expr;
 use mm_rules::RuleId;
 

@@ -7,7 +7,7 @@
 //! Combinatorics rules for IMO-level problem solving.
 //! Includes counting principles, binomial coefficients, and generating functions.
 
-use crate::{Rule, RuleApplication, RuleCategory, RuleId};
+use crate::{Rule, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
 /// Get all combinatorics rules (50+).

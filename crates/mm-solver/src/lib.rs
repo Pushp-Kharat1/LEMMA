@@ -223,7 +223,7 @@ impl SolveResult {
     }
 
     /// Format the solution as a human-readable string.
-    pub fn format(&self, symbols: &SymbolTable) -> String {
+    pub fn format(&self, _symbols: &SymbolTable) -> String {
         let mut output = String::new();
 
         if self.steps.is_empty() {

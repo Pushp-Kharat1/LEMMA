@@ -159,7 +159,7 @@ impl TransformerBlock {
 
         let normed = self.ln2.forward(&x)?;
         let ff_out = self.ff.forward(&normed)?;
-        (x + ff_out)
+        x + ff_out
     }
 }
 
