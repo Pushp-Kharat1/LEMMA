@@ -1,0 +1,17 @@
+[package]
+name = "mm-macro"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+mm-core = { path = "../mm-core" }
+syn = "2.0.112"

@@ -9,6 +9,7 @@
 //! Measures LEMMA's performance across different mathematical domains.
 
 use mm_core::{Expr, SymbolTable};
+use mm_macro::expr;
 use mm_rules::rule::standard_rules;
 use mm_search::{MCTSConfig, NeuralMCTS};
 use mm_verifier::Verifier;
@@ -53,7 +54,6 @@ fn main() {
 
     let mut symbols = SymbolTable::new();
     let x = symbols.intern("x");
-    let y = symbols.intern("y");
 
     let rules = standard_rules();
     let verifier = Verifier::new();
@@ -76,7 +76,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "x + 0 → x",
-        Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::int(0))),
+        expr!(x + 0, symbols),
         |e| matches!(e, Expr::Var(_)),
     ));
 
@@ -84,7 +84,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "x * 1 → x",
-        Expr::Mul(Box::new(Expr::Var(x)), Box::new(Expr::int(1))),
+        expr!(x * 1, symbols),
         |e| matches!(e, Expr::Var(_)),
     ));
 
@@ -92,7 +92,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "x * 0 → 0",
-        Expr::Mul(Box::new(Expr::Var(x)), Box::new(Expr::int(0))),
+        expr!(x * 0, symbols),
         |e| matches!(e, Expr::Const(r) if r.is_zero()),
     ));
 
@@ -100,7 +100,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "x^1 → x",
-        Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(1))),
+        expr!(x ^ 1, symbols),
         |e| matches!(e, Expr::Var(_)),
     ));
 
@@ -108,7 +108,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "x^0 → 1",
-        Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(0))),
+        expr!(x ^ 0, symbols),
         |e| matches!(e, Expr::Const(r) if *r == mm_core::Rational::from_integer(1)),
     ));
 
@@ -116,10 +116,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "(x + 0) * 1 → x",
-        Expr::Mul(
-            Box::new(Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::int(0)))),
-            Box::new(Expr::int(1)),
-        ),
+        expr!((x + 0) * 1, symbols),
         |e| matches!(e, Expr::Var(_)),
     ));
 
@@ -131,35 +128,35 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "2 + 3 → 5",
-        Expr::Add(Box::new(Expr::int(2)), Box::new(Expr::int(3))),
+        expr!(2 + 3, symbols),
         |e| matches!(e, Expr::Const(r) if r.numer() == 5),
     ));
 
     results.push(run_benchmark(
         &mcts,
         "7 * 8 → 56",
-        Expr::Mul(Box::new(Expr::int(7)), Box::new(Expr::int(8))),
+        expr!(7 * 8, symbols),
         |e| matches!(e, Expr::Const(r) if r.numer() == 56),
     ));
 
     results.push(run_benchmark(
         &mcts,
         "10 - 4 → 6",
-        Expr::Sub(Box::new(Expr::int(10)), Box::new(Expr::int(4))),
+        expr!(10 - 4, symbols),
         |e| matches!(e, Expr::Const(r) if r.numer() == 6),
     ));
 
     results.push(run_benchmark(
         &mcts,
         "12 / 4 → 3",
-        Expr::Div(Box::new(Expr::int(12)), Box::new(Expr::int(4))),
+        expr!(12 / 4, symbols),
         |e| matches!(e, Expr::Const(r) if r.numer() == 3),
     ));
 
     results.push(run_benchmark(
         &mcts,
         "2^3 → 8",
-        Expr::Pow(Box::new(Expr::int(2)), Box::new(Expr::int(3))),
+        expr!(2 ^ 3, symbols),
         |e| matches!(e, Expr::Const(r) if r.numer() == 8),
     ));
 
@@ -172,16 +169,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "sin²(x) + cos²(x) → 1",
-        Expr::Add(
-            Box::new(Expr::Pow(
-                Box::new(Expr::Sin(Box::new(Expr::Var(x)))),
-                Box::new(Expr::int(2)),
-            )),
-            Box::new(Expr::Pow(
-                Box::new(Expr::Cos(Box::new(Expr::Var(x)))),
-                Box::new(Expr::int(2)),
-            )),
-        ),
+        expr!(sin(x) ^ 2 + cos(x) ^ 2, symbols),
         |e| matches!(e, Expr::Const(r) if *r == mm_core::Rational::from_integer(1)),
     ));
 
@@ -189,7 +177,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "sin(0) → 0",
-        Expr::Sin(Box::new(Expr::int(0))),
+        expr!(sin(0), symbols),
         |e| matches!(e, Expr::Const(r) if r.is_zero()),
     ));
 
@@ -197,7 +185,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "cos(0) → 1",
-        Expr::Cos(Box::new(Expr::int(0))),
+        expr!(cos(0), symbols),
         |e| matches!(e, Expr::Const(r) if *r == mm_core::Rational::from_integer(1)),
     ));
 
@@ -210,10 +198,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "d/dx(5) → 0",
-        Expr::Derivative {
-            expr: Box::new(Expr::int(5)),
-            var: x,
-        },
+        expr!(diff(5, x), symbols),
         |e| matches!(e, Expr::Const(r) if r.is_zero()),
     ));
 
@@ -221,10 +206,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "d/dx(x) → 1",
-        Expr::Derivative {
-            expr: Box::new(Expr::Var(x)),
-            var: x,
-        },
+        expr!(diff(x, x), symbols),
         |e| matches!(e, Expr::Const(r) if *r == mm_core::Rational::from_integer(1)),
     ));
 
@@ -232,17 +214,14 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "d/dx(x²) → 2x",
-        Expr::Derivative {
-            expr: Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)))),
-            var: x,
-        },
+        expr!(diff(x ^ 2, x), symbols),
         |e| match e {
             Expr::Mul(a, b) => {
                 let coeff_is_2 = matches!(a.as_ref(), Expr::Const(r) if r.numer() == 2);
                 // Accept either x or x^1
                 let base_is_x = matches!(b.as_ref(), Expr::Var(_))
-                    || matches!(b.as_ref(), Expr::Pow(inner, exp) 
-                        if matches!(inner.as_ref(), Expr::Var(_)) 
+                    || matches!(b.as_ref(), Expr::Pow(inner, exp)
+                        if matches!(inner.as_ref(), Expr::Var(_))
                         && matches!(exp.as_ref(), Expr::Const(r) if r.numer() == 1));
                 coeff_is_2 && base_is_x
             }
@@ -254,10 +233,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "d/dx(sin(x)) → cos(x)",
-        Expr::Derivative {
-            expr: Box::new(Expr::Sin(Box::new(Expr::Var(x)))),
-            var: x,
-        },
+        expr!(diff(sin(x), x), symbols),
         |e| matches!(e, Expr::Cos(_)),
     ));
 
@@ -265,10 +241,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "d/dx(cos(x)) → -sin(x)",
-        Expr::Derivative {
-            expr: Box::new(Expr::Cos(Box::new(Expr::Var(x)))),
-            var: x,
-        },
+        expr!(diff(cos(x), x), symbols),
         |e| matches!(e, Expr::Neg(inner) if matches!(inner.as_ref(), Expr::Sin(_))),
     ));
 
@@ -281,10 +254,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "x + y + 0 → x + y",
-        Expr::Add(
-            Box::new(Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::Var(y)))),
-            Box::new(Expr::int(0)),
-        ),
+        expr!(x + y + 0, symbols),
         |e| matches!(e, Expr::Add(_, _)),
     ));
 
@@ -292,10 +262,7 @@ fn main() {
     results.push(run_benchmark(
         &mcts,
         "x * y * 1 → x * y",
-        Expr::Mul(
-            Box::new(Expr::Mul(Box::new(Expr::Var(x)), Box::new(Expr::Var(y)))),
-            Box::new(Expr::int(1)),
-        ),
+        expr!(x * y * 1, symbols),
         |e| matches!(e, Expr::Mul(_, _)),
     ));
 

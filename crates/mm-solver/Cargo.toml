@@ -12,6 +12,7 @@ mm-rules = { path = "../mm-rules" }
 mm-verifier = { path = "../mm-verifier" }
 mm-search = { path = "../mm-search" }
 mm-brain = { path = "../mm-brain" }
+mm-macro = { path = "../mm-macro" }
 thiserror.workspace = true
 candle-core.workspace = true
 candle-nn.workspace = true
