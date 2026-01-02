@@ -418,11 +418,23 @@ fn modular_rules() -> Vec<Rule> {
             name: "mod_self",
             category: RuleCategory::Simplification,
             description: "a mod a = 0",
-            is_applicable: |_expr, _ctx| {
-                // We don't have a Mod operator, but we can recognize floor(a/a)*a - a pattern
-                false // placeholder - would need Mod in Expr
+            is_applicable: |expr, _ctx| {
+                if let Expr::Mod(a, b) = expr {
+                    return a == b;
+                }
+                false
             },
-            apply: |_expr, _ctx| vec![],
+            apply: |expr, _ctx| {
+                if let Expr::Mod(a, b) = expr {
+                    if a == b {
+                        return vec![RuleApplication {
+                            result: Expr::int(0),
+                            justification: "a mod a = 0".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 1,
         },
@@ -432,8 +444,49 @@ fn modular_rules() -> Vec<Rule> {
             name: "zero_mod",
             category: RuleCategory::Simplification,
             description: "0 mod n = 0",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                if let Expr::Mod(a, _) = expr {
+                    return matches!(a.as_ref(), Expr::Const(c) if c.is_zero());
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Mod(a, _) = expr {
+                    if matches!(a.as_ref(), Expr::Const(c) if c.is_zero()) {
+                        return vec![RuleApplication {
+                            result: Expr::int(0),
+                            justification: "0 mod n = 0".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
+            reversible: false,
+            cost: 1,
+        },
+        // a mod 1 = 0 (for integers)
+        Rule {
+            id: RuleId(122),
+            name: "mod_one",
+            category: RuleCategory::Simplification,
+            description: "a mod 1 = 0",
+            is_applicable: |expr, _ctx| {
+                if let Expr::Mod(_, b) = expr {
+                    return matches!(b.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1));
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Mod(_, b) = expr {
+                    if matches!(b.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1)) {
+                        return vec![RuleApplication {
+                            result: Expr::int(0),
+                            justification: "a mod 1 = 0 (for integers)".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 1,
         },
@@ -452,19 +505,49 @@ fn gcd_lcm_rules() -> Vec<Rule> {
             name: "gcd_self",
             category: RuleCategory::Simplification,
             description: "gcd(a, a) = a",
-            is_applicable: |_expr, _ctx| false, // Need GCD in Expr
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                if let Expr::GCD(a, b) = expr {
+                    return a == b;
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::GCD(a, b) = expr {
+                    if a == b {
+                        return vec![RuleApplication {
+                            result: Expr::Abs(a.clone()),
+                            justification: "gcd(a, a) = |a|".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 1,
         },
-        // gcd(a, 0) = a
+        // gcd(a, 0) = |a|
         Rule {
             id: RuleId(141),
             name: "gcd_zero",
             category: RuleCategory::Simplification,
             description: "gcd(a, 0) = |a|",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                if let Expr::GCD(_, b) = expr {
+                    return matches!(b.as_ref(), Expr::Const(c) if c.is_zero());
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::GCD(a, b) = expr {
+                    if matches!(b.as_ref(), Expr::Const(c) if c.is_zero()) {
+                        return vec![RuleApplication {
+                            result: Expr::Abs(a.clone()),
+                            justification: "gcd(a, 0) = |a|".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 1,
         },
@@ -474,30 +557,75 @@ fn gcd_lcm_rules() -> Vec<Rule> {
             name: "gcd_one",
             category: RuleCategory::Simplification,
             description: "gcd(a, 1) = 1",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                if let Expr::GCD(_, b) = expr {
+                    return matches!(b.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1));
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::GCD(_, b) = expr {
+                    if matches!(b.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1)) {
+                        return vec![RuleApplication {
+                            result: Expr::int(1),
+                            justification: "gcd(a, 1) = 1".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 1,
         },
-        // lcm(a, a) = a
+        // lcm(a, a) = |a|
         Rule {
             id: RuleId(143),
             name: "lcm_self",
             category: RuleCategory::Simplification,
-            description: "lcm(a, a) = a",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            description: "lcm(a, a) = |a|",
+            is_applicable: |expr, _ctx| {
+                if let Expr::LCM(a, b) = expr {
+                    return a == b;
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::LCM(a, b) = expr {
+                    if a == b {
+                        return vec![RuleApplication {
+                            result: Expr::Abs(a.clone()),
+                            justification: "lcm(a, a) = |a|".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 1,
         },
-        // lcm(a, 1) = a
+        // lcm(a, 1) = |a|
         Rule {
             id: RuleId(144),
             name: "lcm_one",
             category: RuleCategory::Simplification,
             description: "lcm(a, 1) = |a|",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                if let Expr::LCM(_, b) = expr {
+                    return matches!(b.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1));
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::LCM(a, b) = expr {
+                    if matches!(b.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1)) {
+                        return vec![RuleApplication {
+                            result: Expr::Abs(a.clone()),
+                            justification: "lcm(a, 1) = |a|".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 1,
         },
@@ -507,8 +635,37 @@ fn gcd_lcm_rules() -> Vec<Rule> {
             name: "gcd_lcm_product",
             category: RuleCategory::AlgebraicSolving,
             description: "gcd(a,b) * lcm(a,b) = |a*b|",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                // Match GCD(a,b) * LCM(a,b)
+                if let Expr::Mul(left, right) = expr {
+                    if let (Expr::GCD(a1, b1), Expr::LCM(a2, b2)) = (left.as_ref(), right.as_ref())
+                    {
+                        return a1 == a2 && b1 == b2;
+                    }
+                    if let (Expr::LCM(a1, b1), Expr::GCD(a2, b2)) = (left.as_ref(), right.as_ref())
+                    {
+                        return a1 == a2 && b1 == b2;
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Mul(left, right) = expr {
+                    if let (Expr::GCD(a1, b1), Expr::LCM(_, _)) = (left.as_ref(), right.as_ref()) {
+                        return vec![RuleApplication {
+                            result: Expr::Abs(Box::new(Expr::Mul(a1.clone(), b1.clone()))),
+                            justification: "gcd(a,b) * lcm(a,b) = |a*b|".to_string(),
+                        }];
+                    }
+                    if let (Expr::LCM(a1, b1), Expr::GCD(_, _)) = (left.as_ref(), right.as_ref()) {
+                        return vec![RuleApplication {
+                            result: Expr::Abs(Box::new(Expr::Mul(a1.clone(), b1.clone()))),
+                            justification: "gcd(a,b) * lcm(a,b) = |a*b|".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: true,
             cost: 2,
         },

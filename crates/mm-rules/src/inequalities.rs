@@ -38,7 +38,39 @@ fn am_gm_rules() -> Vec<Rule> {
             description: "AM-GM: (a+b)/2 ≥ √(ab), so a+b ≥ 2√(ab)",
             is_applicable: |expr, _ctx| {
                 // Match a + b pattern where we might apply AM-GM
-                matches!(expr, Expr::Add(_, _))
+                // BUT NOT for pure arithmetic (no variables)
+                if let Expr::Add(a, b) = expr {
+                    // Only apply if expression contains variables
+                    fn has_var(e: &Expr) -> bool {
+                        match e {
+                            Expr::Var(_) => true,
+                            Expr::Const(_) | Expr::Pi | Expr::E => false,
+                            Expr::Neg(x)
+                            | Expr::Sqrt(x)
+                            | Expr::Sin(x)
+                            | Expr::Cos(x)
+                            | Expr::Tan(x)
+                            | Expr::Ln(x)
+                            | Expr::Exp(x)
+                            | Expr::Abs(x)
+                            | Expr::Floor(x)
+                            | Expr::Ceiling(x)
+                            | Expr::Factorial(x) => has_var(x),
+                            Expr::Add(x, y)
+                            | Expr::Sub(x, y)
+                            | Expr::Mul(x, y)
+                            | Expr::Div(x, y)
+                            | Expr::Pow(x, y)
+                            | Expr::GCD(x, y)
+                            | Expr::LCM(x, y)
+                            | Expr::Mod(x, y)
+                            | Expr::Binomial(x, y) => has_var(x) || has_var(y),
+                            _ => false,
+                        }
+                    }
+                    return has_var(a) || has_var(b);
+                }
+                false
             },
             apply: |expr, _ctx| {
                 // This is informational - in a full system we'd track inequalities
