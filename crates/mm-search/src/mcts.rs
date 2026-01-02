@@ -13,10 +13,27 @@
 
 use crate::{SearchConfig, Solution, Step};
 use mm_brain::PolicyNetwork;
-use mm_core::Expr;
+use mm_core::{Expr, Rational};
 use mm_rules::{RuleCategory, RuleContext, RuleId, RuleSet};
 use mm_verifier::Verifier;
 use std::collections::HashMap;
+
+/// Compute GCD using Euclidean algorithm.
+fn gcd(mut a: i64, mut b: i64) -> i64 {
+    a = a.abs();
+    b = b.abs();
+    while b != 0 {
+        let t = b;
+        b = a % b;
+        a = t;
+    }
+    a
+}
+
+/// Compute factorial.
+fn factorial(n: u64) -> u64 {
+    (1..=n).product()
+}
 
 /// A node in the MCTS tree.
 pub struct MCTSNode {
@@ -651,6 +668,18 @@ impl NeuralMCTS {
                         return Expr::int(1);
                     }
                 }
+                // Constant folding: a^n when both are constants and n is small integer
+                if let (Expr::Const(base_r), Expr::Const(exp_r)) = (&base_folded, &exp_folded) {
+                    if exp_r.denom() == 1 && exp_r.numer() >= 0 && exp_r.numer() <= 30 {
+                        let n = exp_r.numer() as u32;
+                        // Compute base^n using repeated multiplication
+                        let mut result = Rational::from_integer(1);
+                        for _ in 0..n {
+                            result = result * *base_r;
+                        }
+                        return Expr::Const(result);
+                    }
+                }
                 Expr::Pow(Box::new(base_folded), Box::new(exp_folded))
             }
             Expr::Neg(inner) => {
@@ -669,6 +698,117 @@ impl NeuralMCTS {
                     rhs: Box::new(rhs_folded),
                 }
             }
+
+            // Phase 1: Add constant folding for number theory operations
+            Expr::GCD(a, b) => {
+                let a_folded = self.try_const_fold(a);
+                let b_folded = self.try_const_fold(b);
+                if let (Expr::Const(ra), Expr::Const(rb)) = (&a_folded, &b_folded) {
+                    let a_val = ra.numer().abs();
+                    let b_val = rb.numer().abs();
+                    if ra.denom() == 1 && rb.denom() == 1 {
+                        return Expr::Const(Rational::from_integer(gcd(a_val, b_val)));
+                    }
+                }
+                Expr::GCD(Box::new(a_folded), Box::new(b_folded))
+            }
+            Expr::LCM(a, b) => {
+                let a_folded = self.try_const_fold(a);
+                let b_folded = self.try_const_fold(b);
+                if let (Expr::Const(ra), Expr::Const(rb)) = (&a_folded, &b_folded) {
+                    let a_val = ra.numer().abs();
+                    let b_val = rb.numer().abs();
+                    if ra.denom() == 1 && rb.denom() == 1 && a_val > 0 && b_val > 0 {
+                        let g = gcd(a_val, b_val);
+                        return Expr::Const(Rational::from_integer(a_val / g * b_val));
+                    }
+                }
+                Expr::LCM(Box::new(a_folded), Box::new(b_folded))
+            }
+            Expr::Mod(a, b) => {
+                let a_folded = self.try_const_fold(a);
+                let b_folded = self.try_const_fold(b);
+                if let (Expr::Const(ra), Expr::Const(rb)) = (&a_folded, &b_folded) {
+                    if ra.denom() == 1 && rb.denom() == 1 && rb.numer() != 0 {
+                        let a_val = ra.numer();
+                        let b_val = rb.numer();
+                        let result = ((a_val % b_val) + b_val) % b_val; // Ensure positive
+                        return Expr::Const(Rational::from_integer(result));
+                    }
+                }
+                Expr::Mod(Box::new(a_folded), Box::new(b_folded))
+            }
+            Expr::Factorial(n) => {
+                let n_folded = self.try_const_fold(n);
+                if let Expr::Const(r) = &n_folded {
+                    if r.denom() == 1 && r.numer() >= 0 && r.numer() <= 20 {
+                        let n_val = r.numer() as u64;
+                        let result = factorial(n_val);
+                        return Expr::Const(Rational::from_integer(result as i64));
+                    }
+                }
+                Expr::Factorial(Box::new(n_folded))
+            }
+            Expr::Binomial(n, k) => {
+                let n_folded = self.try_const_fold(n);
+                let k_folded = self.try_const_fold(k);
+                if let (Expr::Const(rn), Expr::Const(rk)) = (&n_folded, &k_folded) {
+                    if rn.denom() == 1 && rk.denom() == 1 {
+                        let n_val = rn.numer();
+                        let k_val = rk.numer();
+                        if n_val >= 0 && k_val >= 0 && k_val <= n_val && n_val <= 20 {
+                            let n_u = n_val as u64;
+                            let k_u = k_val as u64;
+                            let result = factorial(n_u) / (factorial(k_u) * factorial(n_u - k_u));
+                            return Expr::Const(Rational::from_integer(result as i64));
+                        }
+                    }
+                }
+                Expr::Binomial(Box::new(n_folded), Box::new(k_folded))
+            }
+            Expr::Floor(e) => {
+                let folded = self.try_const_fold(e);
+                if let Expr::Const(r) = &folded {
+                    // Floor of a rational: numer / denom (integer division towards -∞)
+                    let n = r.numer();
+                    let d = r.denom();
+                    let result = if n >= 0 { n / d } else { (n - d + 1) / d };
+                    return Expr::Const(Rational::from_integer(result));
+                }
+                Expr::Floor(Box::new(folded))
+            }
+            Expr::Ceiling(e) => {
+                let folded = self.try_const_fold(e);
+                if let Expr::Const(r) = &folded {
+                    let n = r.numer();
+                    let d = r.denom();
+                    let result = if n >= 0 { (n + d - 1) / d } else { n / d };
+                    return Expr::Const(Rational::from_integer(result));
+                }
+                Expr::Ceiling(Box::new(folded))
+            }
+            Expr::Sqrt(e) => {
+                let folded = self.try_const_fold(e);
+                // Check for perfect squares
+                if let Expr::Const(r) = &folded {
+                    if r.denom() == 1 && r.numer() >= 0 {
+                        let n = r.numer() as u64;
+                        let sqrt_n = (n as f64).sqrt() as u64;
+                        if sqrt_n * sqrt_n == n {
+                            return Expr::Const(Rational::from_integer(sqrt_n as i64));
+                        }
+                    }
+                }
+                Expr::Sqrt(Box::new(folded))
+            }
+            Expr::Abs(e) => {
+                let folded = self.try_const_fold(e);
+                if let Expr::Const(r) = &folded {
+                    return Expr::Const(r.abs());
+                }
+                Expr::Abs(Box::new(folded))
+            }
+
             _ => expr.clone(),
         }
     }
