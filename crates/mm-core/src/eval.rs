@@ -14,6 +14,21 @@ use std::collections::HashMap;
 /// Environment mapping variables to their values.
 pub type Env = HashMap<Symbol, f64>;
 
+/// Compute GCD using Euclidean algorithm.
+fn gcd(mut a: i64, mut b: i64) -> i64 {
+    while b != 0 {
+        let t = b;
+        b = a % b;
+        a = t;
+    }
+    a
+}
+
+/// Compute factorial.
+fn factorial(n: u64) -> u64 {
+    (1..=n).product()
+}
+
 impl Expr {
     /// Evaluate this expression numerically.
     ///
@@ -135,6 +150,50 @@ impl Expr {
                 let vr = rhs.evaluate(env)?;
                 Some(vl - vr)
             }
+
+            // Number theory operations
+            Expr::GCD(a, b) => {
+                let va = a.evaluate(env)? as i64;
+                let vb = b.evaluate(env)? as i64;
+                Some(gcd(va.abs(), vb.abs()) as f64)
+            }
+            Expr::LCM(a, b) => {
+                let va = a.evaluate(env)? as i64;
+                let vb = b.evaluate(env)? as i64;
+                if va == 0 || vb == 0 {
+                    Some(0.0)
+                } else {
+                    Some((va.abs() * vb.abs() / gcd(va.abs(), vb.abs())) as f64)
+                }
+            }
+            Expr::Mod(a, b) => {
+                let va = a.evaluate(env)?;
+                let vb = b.evaluate(env)?;
+                if vb.abs() < 1e-15 {
+                    None // Mod by zero
+                } else {
+                    Some(va % vb)
+                }
+            }
+            Expr::Floor(e) => e.evaluate(env).map(|x| x.floor()),
+            Expr::Ceiling(e) => e.evaluate(env).map(|x| x.ceil()),
+            Expr::Factorial(e) => {
+                let n = e.evaluate(env)? as u64;
+                if n > 20 {
+                    None // Overflow risk
+                } else {
+                    Some(factorial(n) as f64)
+                }
+            }
+            Expr::Binomial(n_expr, k_expr) => {
+                let n = n_expr.evaluate(env)? as u64;
+                let k = k_expr.evaluate(env)? as u64;
+                if k > n || n > 20 {
+                    None
+                } else {
+                    Some((factorial(n) / (factorial(k) * factorial(n - k))) as f64)
+                }
+            }
         }
     }
 
@@ -234,9 +293,16 @@ impl Expr {
                     vars.push(*var);
                 }
             }
-            Expr::Equation { lhs, rhs } => {
+            Expr::Equation { lhs, rhs }
+            | Expr::GCD(lhs, rhs)
+            | Expr::LCM(lhs, rhs)
+            | Expr::Mod(lhs, rhs)
+            | Expr::Binomial(lhs, rhs) => {
                 lhs.collect_vars(vars);
                 rhs.collect_vars(vars);
+            }
+            Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => {
+                e.collect_vars(vars);
             }
         }
     }

@@ -466,7 +466,12 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
             .iter()
             .any(|f| contains_var(&f.base, var) || contains_var(&f.power, var)),
         Expr::Derivative { expr, .. } | Expr::Integral { expr, .. } => contains_var(expr, var),
-        Expr::Equation { lhs, rhs } => contains_var(lhs, var) || contains_var(rhs, var),
+        Expr::Equation { lhs, rhs }
+        | Expr::GCD(lhs, rhs)
+        | Expr::LCM(lhs, rhs)
+        | Expr::Mod(lhs, rhs)
+        | Expr::Binomial(lhs, rhs) => contains_var(lhs, var) || contains_var(rhs, var),
+        Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => contains_var(e, var),
     }
 }
 

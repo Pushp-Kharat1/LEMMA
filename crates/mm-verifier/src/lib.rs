@@ -76,7 +76,12 @@ fn is_calculus_expr(expr: &Expr) -> bool {
         Expr::Product(factors) => factors
             .iter()
             .any(|f| is_calculus_expr(&f.base) || is_calculus_expr(&f.power)),
-        Expr::Equation { lhs, rhs } => is_calculus_expr(lhs) || is_calculus_expr(rhs),
+        Expr::Equation { lhs, rhs }
+        | Expr::GCD(lhs, rhs)
+        | Expr::LCM(lhs, rhs)
+        | Expr::Mod(lhs, rhs)
+        | Expr::Binomial(lhs, rhs) => is_calculus_expr(lhs) || is_calculus_expr(rhs),
+        Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => is_calculus_expr(e),
         Expr::Const(_) | Expr::Var(_) | Expr::Pi | Expr::E => false,
     }
 }
@@ -301,6 +306,26 @@ fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
             lhs: Box::new(substitute(lhs, var, value)),
             rhs: Box::new(substitute(rhs, var, value)),
         },
+        // Number theory
+        Expr::GCD(a, b) => Expr::GCD(
+            Box::new(substitute(a, var, value)),
+            Box::new(substitute(b, var, value)),
+        ),
+        Expr::LCM(a, b) => Expr::LCM(
+            Box::new(substitute(a, var, value)),
+            Box::new(substitute(b, var, value)),
+        ),
+        Expr::Mod(a, b) => Expr::Mod(
+            Box::new(substitute(a, var, value)),
+            Box::new(substitute(b, var, value)),
+        ),
+        Expr::Binomial(n, k) => Expr::Binomial(
+            Box::new(substitute(n, var, value)),
+            Box::new(substitute(k, var, value)),
+        ),
+        Expr::Floor(e) => Expr::Floor(Box::new(substitute(e, var, value))),
+        Expr::Ceiling(e) => Expr::Ceiling(Box::new(substitute(e, var, value))),
+        Expr::Factorial(e) => Expr::Factorial(Box::new(substitute(e, var, value))),
     }
 }
 

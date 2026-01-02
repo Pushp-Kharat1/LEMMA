@@ -124,6 +124,27 @@ impl Expr {
                 lhs: Box::new(lhs.canonicalize_with_depth(depth)),
                 rhs: Box::new(rhs.canonicalize_with_depth(depth)),
             },
+
+            // Number theory
+            Expr::GCD(a, b) => Expr::GCD(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::LCM(a, b) => Expr::LCM(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Mod(a, b) => Expr::Mod(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Binomial(n, k) => Expr::Binomial(
+                Box::new(n.canonicalize_with_depth(depth)),
+                Box::new(k.canonicalize_with_depth(depth)),
+            ),
+            Expr::Floor(e) => Expr::Floor(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Ceiling(e) => Expr::Ceiling(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Factorial(e) => Expr::Factorial(Box::new(e.canonicalize_with_depth(depth))),
         }
     }
 

@@ -265,6 +265,55 @@ impl ExpressionEncoder {
                 tokens.push("=".to_string());
                 self.tokenize_recursive(rhs, tokens);
             }
+            // Number theory
+            Expr::GCD(a, b) => {
+                tokens.push("gcd".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(a, tokens);
+                tokens.push(",".to_string());
+                self.tokenize_recursive(b, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::LCM(a, b) => {
+                tokens.push("lcm".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(a, tokens);
+                tokens.push(",".to_string());
+                self.tokenize_recursive(b, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Mod(a, b) => {
+                tokens.push("mod".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(a, tokens);
+                tokens.push(",".to_string());
+                self.tokenize_recursive(b, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Binomial(n, k) => {
+                tokens.push("C".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(n, tokens);
+                tokens.push(",".to_string());
+                self.tokenize_recursive(k, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Floor(e) => {
+                tokens.push("floor".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(e, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Ceiling(e) => {
+                tokens.push("ceil".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(e, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Factorial(e) => {
+                self.tokenize_recursive(e, tokens);
+                tokens.push("!".to_string());
+            }
         }
     }
 

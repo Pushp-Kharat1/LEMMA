@@ -98,6 +98,28 @@ pub enum Expr {
     // ========== Relations ==========
     /// Equation: lhs = rhs
     Equation { lhs: Box<Expr>, rhs: Box<Expr> },
+
+    // ========== Number Theory ==========
+    /// Greatest common divisor: gcd(a, b)
+    GCD(Box<Expr>, Box<Expr>),
+
+    /// Least common multiple: lcm(a, b)
+    LCM(Box<Expr>, Box<Expr>),
+
+    /// Modulo: a mod b
+    Mod(Box<Expr>, Box<Expr>),
+
+    /// Floor function: ⌊x⌋
+    Floor(Box<Expr>),
+
+    /// Ceiling function: ⌈x⌉
+    Ceiling(Box<Expr>),
+
+    /// Factorial: n!
+    Factorial(Box<Expr>),
+
+    /// Binomial coefficient: C(n, k) = n! / (k!(n-k)!)
+    Binomial(Box<Expr>, Box<Expr>),
 }
 
 /// A term in a sum: coefficient × expression
@@ -198,10 +220,15 @@ impl Hash for Expr {
                 expr.hash(state);
                 var.hash(state);
             }
-            Expr::Equation { lhs, rhs } => {
+            Expr::Equation { lhs, rhs }
+            | Expr::GCD(lhs, rhs)
+            | Expr::LCM(lhs, rhs)
+            | Expr::Mod(lhs, rhs)
+            | Expr::Binomial(lhs, rhs) => {
                 lhs.hash(state);
                 rhs.hash(state);
             }
+            Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => e.hash(state),
         }
     }
 }
@@ -370,7 +397,12 @@ impl Expr {
                     .sum::<usize>()
             }
             Expr::Derivative { expr, .. } | Expr::Integral { expr, .. } => 1 + expr.complexity(),
-            Expr::Equation { lhs, rhs } => 1 + lhs.complexity() + rhs.complexity(),
+            Expr::Equation { lhs, rhs }
+            | Expr::GCD(lhs, rhs)
+            | Expr::LCM(lhs, rhs)
+            | Expr::Mod(lhs, rhs)
+            | Expr::Binomial(lhs, rhs) => 1 + lhs.complexity() + rhs.complexity(),
+            Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => 1 + e.complexity(),
         }
     }
 }
