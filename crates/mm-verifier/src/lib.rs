@@ -82,6 +82,9 @@ fn is_calculus_expr(expr: &Expr) -> bool {
         | Expr::Mod(lhs, rhs)
         | Expr::Binomial(lhs, rhs) => is_calculus_expr(lhs) || is_calculus_expr(rhs),
         Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => is_calculus_expr(e),
+        Expr::Summation { from, to, body, .. } | Expr::BigProduct { from, to, body, .. } => {
+            is_calculus_expr(from) || is_calculus_expr(to) || is_calculus_expr(body)
+        }
         Expr::Const(_) | Expr::Var(_) | Expr::Pi | Expr::E => false,
     }
 }
@@ -326,6 +329,51 @@ fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
         Expr::Floor(e) => Expr::Floor(Box::new(substitute(e, var, value))),
         Expr::Ceiling(e) => Expr::Ceiling(Box::new(substitute(e, var, value))),
         Expr::Factorial(e) => Expr::Factorial(Box::new(substitute(e, var, value))),
+        Expr::Summation {
+            var: v,
+            from,
+            to,
+            body,
+        } => {
+            // Don't substitute bound variable in body if it shadows
+            if *v == var {
+                Expr::Summation {
+                    var: *v,
+                    from: Box::new(substitute(from, var, value)),
+                    to: Box::new(substitute(to, var, value)),
+                    body: body.clone(),
+                }
+            } else {
+                Expr::Summation {
+                    var: *v,
+                    from: Box::new(substitute(from, var, value)),
+                    to: Box::new(substitute(to, var, value)),
+                    body: Box::new(substitute(body, var, value)),
+                }
+            }
+        }
+        Expr::BigProduct {
+            var: v,
+            from,
+            to,
+            body,
+        } => {
+            if *v == var {
+                Expr::BigProduct {
+                    var: *v,
+                    from: Box::new(substitute(from, var, value)),
+                    to: Box::new(substitute(to, var, value)),
+                    body: body.clone(),
+                }
+            } else {
+                Expr::BigProduct {
+                    var: *v,
+                    from: Box::new(substitute(from, var, value)),
+                    to: Box::new(substitute(to, var, value)),
+                    body: Box::new(substitute(body, var, value)),
+                }
+            }
+        }
     }
 }
 

@@ -120,6 +120,25 @@ pub enum Expr {
 
     /// Binomial coefficient: C(n, k) = n! / (k!(n-k)!)
     Binomial(Box<Expr>, Box<Expr>),
+
+    // ========== Summation and Product Notation ==========
+    /// Summation: Σ_{var=from}^{to} body
+    /// Example: Σ_{i=1}^{n} i = 1 + 2 + ... + n
+    Summation {
+        var: Symbol,
+        from: Box<Expr>,
+        to: Box<Expr>,
+        body: Box<Expr>,
+    },
+
+    /// Product notation: Π_{var=from}^{to} body
+    /// Example: Π_{i=1}^{n} i = n!
+    BigProduct {
+        var: Symbol,
+        from: Box<Expr>,
+        to: Box<Expr>,
+        body: Box<Expr>,
+    },
 }
 
 /// A term in a sum: coefficient × expression
@@ -229,6 +248,23 @@ impl Hash for Expr {
                 rhs.hash(state);
             }
             Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => e.hash(state),
+            Expr::Summation {
+                var,
+                from,
+                to,
+                body,
+            }
+            | Expr::BigProduct {
+                var,
+                from,
+                to,
+                body,
+            } => {
+                var.hash(state);
+                from.hash(state);
+                to.hash(state);
+                body.hash(state);
+            }
         }
     }
 }
@@ -403,6 +439,9 @@ impl Expr {
             | Expr::Mod(lhs, rhs)
             | Expr::Binomial(lhs, rhs) => 1 + lhs.complexity() + rhs.complexity(),
             Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => 1 + e.complexity(),
+            Expr::Summation { from, to, body, .. } | Expr::BigProduct { from, to, body, .. } => {
+                1 + from.complexity() + to.complexity() + body.complexity()
+            }
         }
     }
 }

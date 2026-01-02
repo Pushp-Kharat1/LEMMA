@@ -314,6 +314,44 @@ impl ExpressionEncoder {
                 self.tokenize_recursive(e, tokens);
                 tokens.push("!".to_string());
             }
+            Expr::Summation {
+                var,
+                from,
+                to,
+                body,
+            } => {
+                tokens.push("sum".to_string());
+                tokens.push("(".to_string());
+                let var_tokens = ["i", "j", "k", "m", "n"];
+                let idx = var.to_usize() % var_tokens.len();
+                tokens.push(format!("_{}", var_tokens[idx]));
+                tokens.push("=".to_string());
+                self.tokenize_recursive(from, tokens);
+                tokens.push("^".to_string());
+                self.tokenize_recursive(to, tokens);
+                tokens.push(",".to_string());
+                self.tokenize_recursive(body, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::BigProduct {
+                var,
+                from,
+                to,
+                body,
+            } => {
+                tokens.push("prod".to_string());
+                tokens.push("(".to_string());
+                let var_tokens = ["i", "j", "k", "m", "n"];
+                let idx = var.to_usize() % var_tokens.len();
+                tokens.push(format!("_{}", var_tokens[idx]));
+                tokens.push("=".to_string());
+                self.tokenize_recursive(from, tokens);
+                tokens.push("^".to_string());
+                self.tokenize_recursive(to, tokens);
+                tokens.push(",".to_string());
+                self.tokenize_recursive(body, tokens);
+                tokens.push(")".to_string());
+            }
         }
     }
 

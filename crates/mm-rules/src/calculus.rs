@@ -472,6 +472,25 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
         | Expr::Mod(lhs, rhs)
         | Expr::Binomial(lhs, rhs) => contains_var(lhs, var) || contains_var(rhs, var),
         Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => contains_var(e, var),
+        Expr::Summation {
+            var: v,
+            from,
+            to,
+            body,
+        }
+        | Expr::BigProduct {
+            var: v,
+            from,
+            to,
+            body,
+        } => {
+            // Don't count bound var if it shadows
+            if *v == var {
+                contains_var(from, var) || contains_var(to, var)
+            } else {
+                contains_var(from, var) || contains_var(to, var) || contains_var(body, var)
+            }
+        }
     }
 }
 

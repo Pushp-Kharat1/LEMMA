@@ -194,6 +194,45 @@ impl Expr {
                     Some((factorial(n) / (factorial(k) * factorial(n - k))) as f64)
                 }
             }
+            // Summation and Product - evaluate when bounds are constant integers
+            Expr::Summation {
+                var,
+                from,
+                to,
+                body,
+            } => {
+                let from_val = from.evaluate(env)? as i64;
+                let to_val = to.evaluate(env)? as i64;
+                if (to_val - from_val).abs() > 1000 {
+                    return None; // Prevent runaway
+                }
+                let mut sum = 0.0;
+                let mut local_env = env.clone();
+                for i in from_val..=to_val {
+                    local_env.insert(*var, i as f64);
+                    sum += body.evaluate(&local_env)?;
+                }
+                Some(sum)
+            }
+            Expr::BigProduct {
+                var,
+                from,
+                to,
+                body,
+            } => {
+                let from_val = from.evaluate(env)? as i64;
+                let to_val = to.evaluate(env)? as i64;
+                if (to_val - from_val).abs() > 100 {
+                    return None; // Prevent overflow
+                }
+                let mut prod = 1.0;
+                let mut local_env = env.clone();
+                for i in from_val..=to_val {
+                    local_env.insert(*var, i as f64);
+                    prod *= body.evaluate(&local_env)?;
+                }
+                Some(prod)
+            }
         }
     }
 
@@ -303,6 +342,24 @@ impl Expr {
             }
             Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => {
                 e.collect_vars(vars);
+            }
+            Expr::Summation {
+                var,
+                from,
+                to,
+                body,
+            }
+            | Expr::BigProduct {
+                var,
+                from,
+                to,
+                body,
+            } => {
+                from.collect_vars(vars);
+                to.collect_vars(vars);
+                body.collect_vars(vars);
+                // The bound variable is not free
+                vars.retain(|v| v != var);
             }
         }
     }

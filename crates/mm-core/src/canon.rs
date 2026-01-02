@@ -145,6 +145,28 @@ impl Expr {
             Expr::Floor(e) => Expr::Floor(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Ceiling(e) => Expr::Ceiling(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Factorial(e) => Expr::Factorial(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Summation {
+                var,
+                from,
+                to,
+                body,
+            } => Expr::Summation {
+                var: *var,
+                from: Box::new(from.canonicalize_with_depth(depth)),
+                to: Box::new(to.canonicalize_with_depth(depth)),
+                body: Box::new(body.canonicalize_with_depth(depth)),
+            },
+            Expr::BigProduct {
+                var,
+                from,
+                to,
+                body,
+            } => Expr::BigProduct {
+                var: *var,
+                from: Box::new(from.canonicalize_with_depth(depth)),
+                to: Box::new(to.canonicalize_with_depth(depth)),
+                body: Box::new(body.canonicalize_with_depth(depth)),
+            },
         }
     }
 
