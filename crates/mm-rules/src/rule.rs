@@ -198,6 +198,26 @@ pub fn standard_rules() -> RuleSet {
         rules.add(rule);
     }
 
+    // Add number theory rules
+    for rule in crate::number_theory::number_theory_rules() {
+        rules.add(rule);
+    }
+
+    // Add inequality rules
+    for rule in crate::inequalities::inequality_rules() {
+        rules.add(rule);
+    }
+
+    // Add combinatorics rules
+    for rule in crate::combinatorics::combinatorics_rules() {
+        rules.add(rule);
+    }
+
+    // Add polynomial rules
+    for rule in crate::polynomials::polynomial_rules() {
+        rules.add(rule);
+    }
+
     rules
 }
 

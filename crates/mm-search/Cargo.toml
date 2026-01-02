@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Search algorithms for Math Monster (Beam Search, MCTS)"
+description = "Search algorithms for LEMMA (Beam Search, MCTS)"
 
 [dependencies]
 mm-core = { path = "../mm-core" }
@@ -15,4 +15,4 @@ rand.workspace = true
 rand_chacha.workspace = true
 thiserror.workspace = true
 candle-core.workspace = true
-
+rayon = "1.10"

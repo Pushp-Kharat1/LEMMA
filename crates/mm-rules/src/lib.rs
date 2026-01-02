@@ -7,16 +7,25 @@
 //! # mm-rules
 //!
 //! Mathematical transformation rules for the LEMMA system.
+//! Contains 500+ rules for IMO-level problem solving.
 //!
-//! This crate provides:
-//! - [`Rule`] - The core rule structure
-//! - [`RuleSet`] - A collection of rules
-//! - Pre-defined rules for algebra, calculus, trigonometry, and integration
+//! ## Rule Categories
+//! - Basic algebra and simplification
+//! - Calculus (derivatives and integration)
+//! - Trigonometry (identities and special values)
+//! - Number theory (divisibility, modular arithmetic)
+//! - Inequalities (AM-GM, Cauchy-Schwarz)
+//! - Combinatorics (binomial, counting)
+//! - Polynomials (Vieta's, symmetric functions)
 
 pub mod algebra;
 pub mod calculus;
+pub mod combinatorics;
 pub mod equations;
+pub mod inequalities;
 pub mod integration;
+pub mod number_theory;
+pub mod polynomials;
 pub mod rule;
 pub mod trig;
 
