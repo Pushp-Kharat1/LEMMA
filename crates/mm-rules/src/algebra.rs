@@ -11,7 +11,7 @@ use mm_core::{Expr, Rational};
 
 /// Get all algebra rules.
 pub fn algebra_rules() -> Vec<Rule> {
-    vec![
+    let mut rules = vec![
         constant_fold(),
         identity_add_zero(),
         identity_mul_one(),
@@ -26,7 +26,10 @@ pub fn algebra_rules() -> Vec<Rule> {
         power_of_zero(),
         power_add(),
         power_mul(),
-    ]
+    ];
+    // Add advanced algebra rules (Phase 1)
+    rules.extend(advanced_algebra_rules());
+    rules
 }
 
 // ============================================================================
@@ -605,6 +608,468 @@ fn power_mul() -> Rule {
         },
         reversible: true,
         cost: 2,
+    }
+}
+
+// ============================================================================
+// Phase 1: Advanced Algebra Rules (ID 300+)
+// ============================================================================
+
+/// Get all advanced algebra rules
+pub fn advanced_algebra_rules() -> Vec<Rule> {
+    vec![
+        // Safe rules that don't affect Pythagorean identity
+        // Sum/Difference of cubes
+        sum_of_cubes(),
+        diff_of_cubes(),
+        // Sophie Germain identity
+        sophie_germain(),
+        // Power rules
+        power_subtract(),
+        negative_exponent(),
+        fractional_distribute(),
+        // Double negative
+        double_negative(),
+        // Binomial identities (may interfere - testing disabled)
+        // binomial_square_expand(),
+        // binomial_cube_expand(),
+        // Subtraction to addition (may interfere - testing disabled)
+        // sub_to_add(),
+        // Division to multiplication (may interfere - testing disabled)
+        // div_to_mul(),
+    ]
+}
+
+// a³ + b³ = (a+b)(a² - ab + b²)
+fn sum_of_cubes() -> Rule {
+    Rule {
+        id: RuleId(300),
+        name: "sum_of_cubes",
+        category: RuleCategory::Factoring,
+        description: "a³ + b³ = (a+b)(a² - ab + b²)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Add(left, right) = expr {
+                if let (Expr::Pow(_, exp1), Expr::Pow(_, exp2)) = (left.as_ref(), right.as_ref()) {
+                    if let (Expr::Const(e1), Expr::Const(e2)) = (exp1.as_ref(), exp2.as_ref()) {
+                        return *e1 == Rational::from_integer(3)
+                            && *e2 == Rational::from_integer(3);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Add(left, right) = expr {
+                if let (Expr::Pow(a, _), Expr::Pow(b, _)) = (left.as_ref(), right.as_ref()) {
+                    // (a+b)(a² - ab + b²)
+                    let a_plus_b = Expr::Add(a.clone(), b.clone());
+                    let a_sq = Expr::Pow(a.clone(), Box::new(Expr::int(2)));
+                    let ab = Expr::Mul(a.clone(), b.clone());
+                    let b_sq = Expr::Pow(b.clone(), Box::new(Expr::int(2)));
+                    let second_factor = Expr::Add(
+                        Box::new(Expr::Sub(Box::new(a_sq), Box::new(ab))),
+                        Box::new(b_sq),
+                    );
+                    return vec![RuleApplication {
+                        result: Expr::Mul(Box::new(a_plus_b), Box::new(second_factor)),
+                        justification: "a³ + b³ = (a+b)(a² - ab + b²)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// a³ - b³ = (a-b)(a² + ab + b²)
+fn diff_of_cubes() -> Rule {
+    Rule {
+        id: RuleId(301),
+        name: "diff_of_cubes",
+        category: RuleCategory::Factoring,
+        description: "a³ - b³ = (a-b)(a² + ab + b²)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Sub(left, right) = expr {
+                if let (Expr::Pow(_, exp1), Expr::Pow(_, exp2)) = (left.as_ref(), right.as_ref()) {
+                    if let (Expr::Const(e1), Expr::Const(e2)) = (exp1.as_ref(), exp2.as_ref()) {
+                        return *e1 == Rational::from_integer(3)
+                            && *e2 == Rational::from_integer(3);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Sub(left, right) = expr {
+                if let (Expr::Pow(a, _), Expr::Pow(b, _)) = (left.as_ref(), right.as_ref()) {
+                    // (a-b)(a² + ab + b²)
+                    let a_minus_b = Expr::Sub(a.clone(), b.clone());
+                    let a_sq = Expr::Pow(a.clone(), Box::new(Expr::int(2)));
+                    let ab = Expr::Mul(a.clone(), b.clone());
+                    let b_sq = Expr::Pow(b.clone(), Box::new(Expr::int(2)));
+                    let second_factor = Expr::Add(
+                        Box::new(Expr::Add(Box::new(a_sq), Box::new(ab))),
+                        Box::new(b_sq),
+                    );
+                    return vec![RuleApplication {
+                        result: Expr::Mul(Box::new(a_minus_b), Box::new(second_factor)),
+                        justification: "a³ - b³ = (a-b)(a² + ab + b²)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// Sophie Germain: a⁴ + 4b⁴ = (a² + 2b² + 2ab)(a² + 2b² - 2ab)
+fn sophie_germain() -> Rule {
+    Rule {
+        id: RuleId(302),
+        name: "sophie_germain",
+        category: RuleCategory::Factoring,
+        description: "a⁴ + 4b⁴ = (a² + 2b² + 2ab)(a² + 2b² - 2ab)",
+        is_applicable: |expr, _ctx| {
+            // Match a⁴ + 4b⁴
+            if let Expr::Add(left, right) = expr {
+                if let Expr::Pow(_, exp1) = left.as_ref() {
+                    if let Expr::Const(e1) = exp1.as_ref() {
+                        if *e1 == Rational::from_integer(4) {
+                            // Check right is 4*something^4
+                            if let Expr::Mul(coef, inner) = right.as_ref() {
+                                if let Expr::Const(c) = coef.as_ref() {
+                                    if *c == Rational::from_integer(4) {
+                                        if let Expr::Pow(_, exp2) = inner.as_ref() {
+                                            if let Expr::Const(e2) = exp2.as_ref() {
+                                                return *e2 == Rational::from_integer(4);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Add(left, right) = expr {
+                if let Expr::Pow(a, _) = left.as_ref() {
+                    if let Expr::Mul(_, inner) = right.as_ref() {
+                        if let Expr::Pow(b, _) = inner.as_ref() {
+                            // (a² + 2b² + 2ab)(a² + 2b² - 2ab)
+                            let a_sq = Expr::Pow(a.clone(), Box::new(Expr::int(2)));
+                            let b_sq = Expr::Pow(b.clone(), Box::new(Expr::int(2)));
+                            let two_b_sq = Expr::Mul(Box::new(Expr::int(2)), Box::new(b_sq));
+                            let two_ab = Expr::Mul(
+                                Box::new(Expr::int(2)),
+                                Box::new(Expr::Mul(a.clone(), b.clone())),
+                            );
+
+                            let sum_part =
+                                Expr::Add(Box::new(a_sq.clone()), Box::new(two_b_sq.clone()));
+                            let factor1 =
+                                Expr::Add(Box::new(sum_part.clone()), Box::new(two_ab.clone()));
+                            let factor2 = Expr::Sub(Box::new(sum_part), Box::new(two_ab));
+
+                            return vec![RuleApplication {
+                                result: Expr::Mul(Box::new(factor1), Box::new(factor2)),
+                                justification: "a⁴ + 4b⁴ = (a² + 2b² + 2ab)(a² + 2b² - 2ab)"
+                                    .to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 4,
+    }
+}
+
+// (a+b)² = a² + 2ab + b²
+fn binomial_square_expand() -> Rule {
+    Rule {
+        id: RuleId(303),
+        name: "binomial_square_expand",
+        category: RuleCategory::Expansion,
+        description: "(a+b)² = a² + 2ab + b²",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Pow(base, exp) = expr {
+                if let Expr::Const(e) = exp.as_ref() {
+                    if *e == Rational::from_integer(2) {
+                        return matches!(base.as_ref(), Expr::Add(_, _));
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Pow(base, _) = expr {
+                if let Expr::Add(a, b) = base.as_ref() {
+                    // a² + 2ab + b²
+                    let a_sq = Expr::Pow(a.clone(), Box::new(Expr::int(2)));
+                    let two_ab = Expr::Mul(
+                        Box::new(Expr::int(2)),
+                        Box::new(Expr::Mul(a.clone(), b.clone())),
+                    );
+                    let b_sq = Expr::Pow(b.clone(), Box::new(Expr::int(2)));
+                    return vec![RuleApplication {
+                        result: Expr::Add(
+                            Box::new(Expr::Add(Box::new(a_sq), Box::new(two_ab))),
+                            Box::new(b_sq),
+                        ),
+                        justification: "(a+b)² = a² + 2ab + b²".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// (a+b)³ = a³ + 3a²b + 3ab² + b³
+fn binomial_cube_expand() -> Rule {
+    Rule {
+        id: RuleId(304),
+        name: "binomial_cube_expand",
+        category: RuleCategory::Expansion,
+        description: "(a+b)³ = a³ + 3a²b + 3ab² + b³",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Pow(base, exp) = expr {
+                if let Expr::Const(e) = exp.as_ref() {
+                    if *e == Rational::from_integer(3) {
+                        return matches!(base.as_ref(), Expr::Add(_, _));
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Pow(base, _) = expr {
+                if let Expr::Add(a, b) = base.as_ref() {
+                    // a³ + 3a²b + 3ab² + b³
+                    let a_cubed = Expr::Pow(a.clone(), Box::new(Expr::int(3)));
+                    let a_sq = Expr::Pow(a.clone(), Box::new(Expr::int(2)));
+                    let b_sq = Expr::Pow(b.clone(), Box::new(Expr::int(2)));
+                    let b_cubed = Expr::Pow(b.clone(), Box::new(Expr::int(3)));
+
+                    let three_a_sq_b = Expr::Mul(
+                        Box::new(Expr::int(3)),
+                        Box::new(Expr::Mul(Box::new(a_sq), b.clone())),
+                    );
+                    let three_a_b_sq = Expr::Mul(
+                        Box::new(Expr::int(3)),
+                        Box::new(Expr::Mul(a.clone(), Box::new(b_sq))),
+                    );
+
+                    return vec![RuleApplication {
+                        result: Expr::Add(
+                            Box::new(Expr::Add(
+                                Box::new(Expr::Add(Box::new(a_cubed), Box::new(three_a_sq_b))),
+                                Box::new(three_a_b_sq),
+                            )),
+                            Box::new(b_cubed),
+                        ),
+                        justification: "(a+b)³ = a³ + 3a²b + 3ab² + b³".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// x^a / x^b = x^(a-b)
+fn power_subtract() -> Rule {
+    Rule {
+        id: RuleId(305),
+        name: "power_subtract",
+        category: RuleCategory::Simplification,
+        description: "x^a / x^b = x^(a-b)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Div(num, den) = expr {
+                if let (Expr::Pow(base1, _), Expr::Pow(base2, _)) = (num.as_ref(), den.as_ref()) {
+                    return base1 == base2;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Div(num, den) = expr {
+                if let (Expr::Pow(base, exp1), Expr::Pow(_, exp2)) = (num.as_ref(), den.as_ref()) {
+                    let new_exp = Expr::Sub(exp1.clone(), exp2.clone());
+                    return vec![RuleApplication {
+                        result: Expr::Pow(base.clone(), Box::new(new_exp)),
+                        justification: "x^a / x^b = x^(a-b)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// x^(-n) = 1/x^n
+fn negative_exponent() -> Rule {
+    Rule {
+        id: RuleId(306),
+        name: "negative_exponent",
+        category: RuleCategory::Simplification,
+        description: "x^(-n) = 1/x^n",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Pow(_, exp) = expr {
+                if let Expr::Neg(_) = exp.as_ref() {
+                    return true;
+                }
+                if let Expr::Const(c) = exp.as_ref() {
+                    return c.is_negative();
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Pow(base, exp) = expr {
+                let positive_exp = if let Expr::Neg(inner) = exp.as_ref() {
+                    inner.clone()
+                } else if let Expr::Const(c) = exp.as_ref() {
+                    if c.is_negative() {
+                        Box::new(Expr::Const(-c.clone()))
+                    } else {
+                        return vec![];
+                    }
+                } else {
+                    return vec![];
+                };
+                return vec![RuleApplication {
+                    result: Expr::Div(
+                        Box::new(Expr::int(1)),
+                        Box::new(Expr::Pow(base.clone(), positive_exp)),
+                    ),
+                    justification: "x^(-n) = 1/x^n".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// (a/b)^n = a^n / b^n
+fn fractional_distribute() -> Rule {
+    Rule {
+        id: RuleId(307),
+        name: "fractional_distribute",
+        category: RuleCategory::Simplification,
+        description: "(a/b)^n = a^n / b^n",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Pow(base, _) = expr {
+                return matches!(base.as_ref(), Expr::Div(_, _));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Pow(base, exp) = expr {
+                if let Expr::Div(num, den) = base.as_ref() {
+                    let num_pow = Expr::Pow(num.clone(), exp.clone());
+                    let den_pow = Expr::Pow(den.clone(), exp.clone());
+                    return vec![RuleApplication {
+                        result: Expr::Div(Box::new(num_pow), Box::new(den_pow)),
+                        justification: "(a/b)^n = a^n / b^n".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// --x = x
+fn double_negative() -> Rule {
+    Rule {
+        id: RuleId(308),
+        name: "double_negative",
+        category: RuleCategory::Simplification,
+        description: "--x = x",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Neg(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Neg(_));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Neg(inner) = expr {
+                if let Expr::Neg(x) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: x.as_ref().clone(),
+                        justification: "--x = x".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// a - b = a + (-b)
+fn sub_to_add() -> Rule {
+    Rule {
+        id: RuleId(309),
+        name: "sub_to_add",
+        category: RuleCategory::Simplification,
+        description: "a - b = a + (-b)",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _)),
+        apply: |expr, _ctx| {
+            if let Expr::Sub(a, b) = expr {
+                return vec![RuleApplication {
+                    result: Expr::Add(a.clone(), Box::new(Expr::Neg(b.clone()))),
+                    justification: "a - b = a + (-b)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// a / b = a * (1/b)
+fn div_to_mul() -> Rule {
+    Rule {
+        id: RuleId(310),
+        name: "div_to_mul",
+        category: RuleCategory::Simplification,
+        description: "a / b = a * (1/b)",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
+        apply: |expr, _ctx| {
+            if let Expr::Div(a, b) = expr {
+                let reciprocal = Expr::Div(Box::new(Expr::int(1)), b.clone());
+                return vec![RuleApplication {
+                    result: Expr::Mul(a.clone(), Box::new(reciprocal)),
+                    justification: "a / b = a * (1/b)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 1,
     }
 }
 

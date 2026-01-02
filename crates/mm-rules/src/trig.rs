@@ -11,7 +11,7 @@ use mm_core::Expr;
 
 /// Get all trigonometric rules.
 pub fn trig_rules() -> Vec<Rule> {
-    vec![
+    let mut rules = vec![
         // Core identities
         pythagorean_identity(),
         sin_double_angle(),
@@ -41,7 +41,10 @@ pub fn trig_rules() -> Vec<Rule> {
         // Sum and difference formulas (simplified versions)
         sin_sum_formula(),
         cos_sum_formula(),
-    ]
+    ];
+    // Add advanced trig rules (Phase 1)
+    rules.extend(advanced_trig_rules());
+    rules
 }
 
 // ============================================================================
@@ -935,6 +938,680 @@ fn cos_sum_formula() -> Rule {
                             }];
                         }
                     }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// ============================================================================
+// Phase 1 New Rules: Advanced Trig Identities (ID 200+)
+// ============================================================================
+
+/// Get all new advanced trig rules
+pub fn advanced_trig_rules() -> Vec<Rule> {
+    vec![
+        // Double angle variants
+        cos_double_angle_2cos(),
+        cos_double_angle_2sin(),
+        tan_double_angle(),
+        // Triple angle
+        sin_triple_angle(),
+        cos_triple_angle(),
+        // Pythagorean extensions
+        tan_sec_identity(),
+        cot_csc_identity(),
+        // Product-to-sum (disabled - too greedy, matches sin*sin where we don't want it)
+        // sin_sin_product(),
+        // cos_cos_product(),
+        // sin_cos_product(),
+        // Half-angle (disabled - expands sin²/cos² which breaks other simplifications)
+        // sin_half_angle(),
+        // cos_half_angle(),
+        // Cofunction identities
+        sin_cos_cofunction(),
+        cos_sin_cofunction(),
+        tan_cot_cofunction(),
+    ]
+}
+
+// cos(2x) = 2cos²(x) - 1
+fn cos_double_angle_2cos() -> Rule {
+    Rule {
+        id: RuleId(200),
+        name: "cos_double_angle_2cos",
+        category: RuleCategory::TrigIdentity,
+        description: "2cos²(x) - 1 = cos(2x)",
+        is_applicable: |expr, _ctx| {
+            // Match: 2*cos²(x) - 1
+            if let Expr::Sub(left, right) = expr {
+                if let Expr::Const(c) = right.as_ref() {
+                    if *c == mm_core::Rational::from_integer(1) {
+                        if let Expr::Mul(coef, inner) = left.as_ref() {
+                            if let Expr::Const(c2) = coef.as_ref() {
+                                if *c2 == mm_core::Rational::from_integer(2) {
+                                    return is_squared_trig(inner, false);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Sub(left, _) = expr {
+                if let Expr::Mul(_, inner) = left.as_ref() {
+                    if let Some(arg) = get_trig_arg(inner) {
+                        return vec![RuleApplication {
+                            result: Expr::Cos(Box::new(Expr::Mul(
+                                Box::new(Expr::int(2)),
+                                Box::new(arg),
+                            ))),
+                            justification: "2cos²(x) - 1 = cos(2x)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// cos(2x) = 1 - 2sin²(x)
+fn cos_double_angle_2sin() -> Rule {
+    Rule {
+        id: RuleId(201),
+        name: "cos_double_angle_2sin",
+        category: RuleCategory::TrigIdentity,
+        description: "1 - 2sin²(x) = cos(2x)",
+        is_applicable: |expr, _ctx| {
+            // Match: 1 - 2*sin²(x)
+            if let Expr::Sub(left, right) = expr {
+                if let Expr::Const(c) = left.as_ref() {
+                    if *c == mm_core::Rational::from_integer(1) {
+                        if let Expr::Mul(coef, inner) = right.as_ref() {
+                            if let Expr::Const(c2) = coef.as_ref() {
+                                if *c2 == mm_core::Rational::from_integer(2) {
+                                    return is_squared_trig(inner, true);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Sub(_, right) = expr {
+                if let Expr::Mul(_, inner) = right.as_ref() {
+                    if let Some(arg) = get_trig_arg(inner) {
+                        return vec![RuleApplication {
+                            result: Expr::Cos(Box::new(Expr::Mul(
+                                Box::new(Expr::int(2)),
+                                Box::new(arg),
+                            ))),
+                            justification: "1 - 2sin²(x) = cos(2x)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// tan(2x) = 2tan(x)/(1-tan²(x))
+fn tan_double_angle() -> Rule {
+    Rule {
+        id: RuleId(202),
+        name: "tan_double_angle",
+        category: RuleCategory::TrigIdentity,
+        description: "tan(2x) ↔ 2tan(x)/(1-tan²(x))",
+        is_applicable: |expr, _ctx| {
+            // Match tan(2x) where arg is 2*something
+            if let Expr::Tan(inner) = expr {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    if let Expr::Const(c) = a.as_ref() {
+                        return *c == mm_core::Rational::from_integer(2);
+                    }
+                    if let Expr::Const(c) = b.as_ref() {
+                        return *c == mm_core::Rational::from_integer(2);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Tan(inner) = expr {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    let x = if let Expr::Const(c) = a.as_ref() {
+                        if *c == mm_core::Rational::from_integer(2) {
+                            b.clone()
+                        } else {
+                            a.clone()
+                        }
+                    } else {
+                        a.clone()
+                    };
+                    // 2tan(x) / (1 - tan²(x))
+                    let tan_x = Expr::Tan(x.clone());
+                    let numerator = Expr::Mul(Box::new(Expr::int(2)), Box::new(tan_x.clone()));
+                    let tan_sq = Expr::Pow(Box::new(tan_x), Box::new(Expr::int(2)));
+                    let denominator = Expr::Sub(Box::new(Expr::int(1)), Box::new(tan_sq));
+                    return vec![RuleApplication {
+                        result: Expr::Div(Box::new(numerator), Box::new(denominator)),
+                        justification: "tan(2x) = 2tan(x)/(1-tan²(x))".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// sin(3x) = 3sin(x) - 4sin³(x)
+fn sin_triple_angle() -> Rule {
+    Rule {
+        id: RuleId(203),
+        name: "sin_triple_angle",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(3x) = 3sin(x) - 4sin³(x)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Sin(inner) = expr {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    if let Expr::Const(c) = a.as_ref() {
+                        return *c == mm_core::Rational::from_integer(3);
+                    }
+                    if let Expr::Const(c) = b.as_ref() {
+                        return *c == mm_core::Rational::from_integer(3);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Sin(inner) = expr {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    let x = if let Expr::Const(c) = a.as_ref() {
+                        if *c == mm_core::Rational::from_integer(3) {
+                            b.clone()
+                        } else {
+                            a.clone()
+                        }
+                    } else {
+                        a.clone()
+                    };
+                    let sin_x = Expr::Sin(x.clone());
+                    let sin_cubed = Expr::Pow(Box::new(sin_x.clone()), Box::new(Expr::int(3)));
+                    // 3sin(x) - 4sin³(x)
+                    let term1 = Expr::Mul(Box::new(Expr::int(3)), Box::new(sin_x));
+                    let term2 = Expr::Mul(Box::new(Expr::int(4)), Box::new(sin_cubed));
+                    return vec![RuleApplication {
+                        result: Expr::Sub(Box::new(term1), Box::new(term2)),
+                        justification: "sin(3x) = 3sin(x) - 4sin³(x)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// cos(3x) = 4cos³(x) - 3cos(x)
+fn cos_triple_angle() -> Rule {
+    Rule {
+        id: RuleId(204),
+        name: "cos_triple_angle",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(3x) = 4cos³(x) - 3cos(x)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Cos(inner) = expr {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    if let Expr::Const(c) = a.as_ref() {
+                        return *c == mm_core::Rational::from_integer(3);
+                    }
+                    if let Expr::Const(c) = b.as_ref() {
+                        return *c == mm_core::Rational::from_integer(3);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Cos(inner) = expr {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    let x = if let Expr::Const(c) = a.as_ref() {
+                        if *c == mm_core::Rational::from_integer(3) {
+                            b.clone()
+                        } else {
+                            a.clone()
+                        }
+                    } else {
+                        a.clone()
+                    };
+                    let cos_x = Expr::Cos(x.clone());
+                    let cos_cubed = Expr::Pow(Box::new(cos_x.clone()), Box::new(Expr::int(3)));
+                    // 4cos³(x) - 3cos(x)
+                    let term1 = Expr::Mul(Box::new(Expr::int(4)), Box::new(cos_cubed));
+                    let term2 = Expr::Mul(Box::new(Expr::int(3)), Box::new(cos_x));
+                    return vec![RuleApplication {
+                        result: Expr::Sub(Box::new(term1), Box::new(term2)),
+                        justification: "cos(3x) = 4cos³(x) - 3cos(x)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// 1 + tan²(x) = sec²(x)
+fn tan_sec_identity() -> Rule {
+    Rule {
+        id: RuleId(205),
+        name: "tan_sec_identity",
+        category: RuleCategory::TrigIdentity,
+        description: "1 + tan²(x) = sec²(x) = 1/cos²(x)",
+        is_applicable: |expr, _ctx| {
+            // Match: 1 + tan²(x)
+            if let Expr::Add(left, right) = expr {
+                if let Expr::Const(c) = left.as_ref() {
+                    if *c == mm_core::Rational::from_integer(1) {
+                        if let Expr::Pow(base, exp) = right.as_ref() {
+                            if let (Expr::Tan(_), Expr::Const(e)) = (base.as_ref(), exp.as_ref()) {
+                                return *e == mm_core::Rational::from_integer(2);
+                            }
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Add(_, right) = expr {
+                if let Expr::Pow(base, _) = right.as_ref() {
+                    if let Expr::Tan(inner) = base.as_ref() {
+                        // sec²(x) = 1/cos²(x)
+                        let cos_sq =
+                            Expr::Pow(Box::new(Expr::Cos(inner.clone())), Box::new(Expr::int(2)));
+                        return vec![RuleApplication {
+                            result: Expr::Div(Box::new(Expr::int(1)), Box::new(cos_sq)),
+                            justification: "1 + tan²(x) = sec²(x) = 1/cos²(x)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// 1 + cot²(x) = csc²(x)
+fn cot_csc_identity() -> Rule {
+    Rule {
+        id: RuleId(206),
+        name: "cot_csc_identity",
+        category: RuleCategory::TrigIdentity,
+        description: "1 + cot²(x) = csc²(x) = 1/sin²(x)",
+        is_applicable: |expr, _ctx| {
+            // Match: 1 + (cos/sin)² - simplified check
+            // For now just return false as we don't have a Cot type
+            if let Expr::Add(left, right) = expr {
+                if let Expr::Const(c) = left.as_ref() {
+                    if *c == mm_core::Rational::from_integer(1) {
+                        // Check for (cos(x)/sin(x))²
+                        if let Expr::Pow(base, exp) = right.as_ref() {
+                            if let Expr::Const(e) = exp.as_ref() {
+                                if *e == mm_core::Rational::from_integer(2) {
+                                    if let Expr::Div(num, den) = base.as_ref() {
+                                        return matches!(num.as_ref(), Expr::Cos(_))
+                                            && matches!(den.as_ref(), Expr::Sin(_));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Add(_, right) = expr {
+                if let Expr::Pow(base, _) = right.as_ref() {
+                    if let Expr::Div(_, den) = base.as_ref() {
+                        if let Expr::Sin(inner) = den.as_ref() {
+                            // csc²(x) = 1/sin²(x)
+                            let sin_sq = Expr::Pow(
+                                Box::new(Expr::Sin(inner.clone())),
+                                Box::new(Expr::int(2)),
+                            );
+                            return vec![RuleApplication {
+                                result: Expr::Div(Box::new(Expr::int(1)), Box::new(sin_sq)),
+                                justification: "1 + cot²(x) = csc²(x) = 1/sin²(x)".to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// sin(a)sin(b) = (cos(a-b) - cos(a+b))/2
+fn sin_sin_product() -> Rule {
+    Rule {
+        id: RuleId(207),
+        name: "sin_sin_product",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(a)sin(b) = (cos(a-b) - cos(a+b))/2",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Mul(left, right) = expr {
+                return matches!(left.as_ref(), Expr::Sin(_))
+                    && matches!(right.as_ref(), Expr::Sin(_));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Mul(left, right) = expr {
+                if let (Expr::Sin(a), Expr::Sin(b)) = (left.as_ref(), right.as_ref()) {
+                    // (cos(a-b) - cos(a+b))/2
+                    let cos_diff = Expr::Cos(Box::new(Expr::Sub(a.clone(), b.clone())));
+                    let cos_sum = Expr::Cos(Box::new(Expr::Add(a.clone(), b.clone())));
+                    let numerator = Expr::Sub(Box::new(cos_diff), Box::new(cos_sum));
+                    return vec![RuleApplication {
+                        result: Expr::Div(Box::new(numerator), Box::new(Expr::int(2))),
+                        justification: "sin(a)sin(b) = (cos(a-b) - cos(a+b))/2".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// cos(a)cos(b) = (cos(a-b) + cos(a+b))/2
+fn cos_cos_product() -> Rule {
+    Rule {
+        id: RuleId(208),
+        name: "cos_cos_product",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(a)cos(b) = (cos(a-b) + cos(a+b))/2",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Mul(left, right) = expr {
+                return matches!(left.as_ref(), Expr::Cos(_))
+                    && matches!(right.as_ref(), Expr::Cos(_));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Mul(left, right) = expr {
+                if let (Expr::Cos(a), Expr::Cos(b)) = (left.as_ref(), right.as_ref()) {
+                    // (cos(a-b) + cos(a+b))/2
+                    let cos_diff = Expr::Cos(Box::new(Expr::Sub(a.clone(), b.clone())));
+                    let cos_sum = Expr::Cos(Box::new(Expr::Add(a.clone(), b.clone())));
+                    let numerator = Expr::Add(Box::new(cos_diff), Box::new(cos_sum));
+                    return vec![RuleApplication {
+                        result: Expr::Div(Box::new(numerator), Box::new(Expr::int(2))),
+                        justification: "cos(a)cos(b) = (cos(a-b) + cos(a+b))/2".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// sin(a)cos(b) = (sin(a+b) + sin(a-b))/2
+fn sin_cos_product() -> Rule {
+    Rule {
+        id: RuleId(209),
+        name: "sin_cos_product",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(a)cos(b) = (sin(a+b) + sin(a-b))/2",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Mul(left, right) = expr {
+                return (matches!(left.as_ref(), Expr::Sin(_))
+                    && matches!(right.as_ref(), Expr::Cos(_)))
+                    || (matches!(left.as_ref(), Expr::Cos(_))
+                        && matches!(right.as_ref(), Expr::Sin(_)));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Mul(left, right) = expr {
+                let (a, b) = if let (Expr::Sin(a), Expr::Cos(b)) = (left.as_ref(), right.as_ref()) {
+                    (a.clone(), b.clone())
+                } else if let (Expr::Cos(b), Expr::Sin(a)) = (left.as_ref(), right.as_ref()) {
+                    (a.clone(), b.clone())
+                } else {
+                    return vec![];
+                };
+                // (sin(a+b) + sin(a-b))/2
+                let sin_sum = Expr::Sin(Box::new(Expr::Add(a.clone(), b.clone())));
+                let sin_diff = Expr::Sin(Box::new(Expr::Sub(a.clone(), b.clone())));
+                let numerator = Expr::Add(Box::new(sin_sum), Box::new(sin_diff));
+                return vec![RuleApplication {
+                    result: Expr::Div(Box::new(numerator), Box::new(Expr::int(2))),
+                    justification: "sin(a)cos(b) = (sin(a+b) + sin(a-b))/2".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// sin(x/2) = ±√((1-cos(x))/2) - we'll use positive version
+fn sin_half_angle() -> Rule {
+    Rule {
+        id: RuleId(210),
+        name: "sin_half_angle",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(x/2) = √((1-cos(x))/2)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Sin(inner) = expr {
+                if let Expr::Div(num, den) = inner.as_ref() {
+                    if let Expr::Const(c) = den.as_ref() {
+                        return *c == mm_core::Rational::from_integer(2);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Sin(inner) = expr {
+                if let Expr::Div(num, den) = inner.as_ref() {
+                    if let Expr::Const(c) = den.as_ref() {
+                        if *c == mm_core::Rational::from_integer(2) {
+                            let x = num.clone();
+                            // √((1-cos(x))/2)
+                            let one_minus_cos =
+                                Expr::Sub(Box::new(Expr::int(1)), Box::new(Expr::Cos(x)));
+                            let fraction =
+                                Expr::Div(Box::new(one_minus_cos), Box::new(Expr::int(2)));
+                            return vec![RuleApplication {
+                                result: Expr::Sqrt(Box::new(fraction)),
+                                justification: "sin(x/2) = √((1-cos(x))/2)".to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// cos(x/2) = ±√((1+cos(x))/2) - we'll use positive version
+fn cos_half_angle() -> Rule {
+    Rule {
+        id: RuleId(211),
+        name: "cos_half_angle",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(x/2) = √((1+cos(x))/2)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Cos(inner) = expr {
+                if let Expr::Div(num, den) = inner.as_ref() {
+                    if let Expr::Const(c) = den.as_ref() {
+                        return *c == mm_core::Rational::from_integer(2);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Cos(inner) = expr {
+                if let Expr::Div(num, den) = inner.as_ref() {
+                    if let Expr::Const(c) = den.as_ref() {
+                        if *c == mm_core::Rational::from_integer(2) {
+                            let x = num.clone();
+                            // √((1+cos(x))/2)
+                            let one_plus_cos =
+                                Expr::Add(Box::new(Expr::int(1)), Box::new(Expr::Cos(x)));
+                            let fraction =
+                                Expr::Div(Box::new(one_plus_cos), Box::new(Expr::int(2)));
+                            return vec![RuleApplication {
+                                result: Expr::Sqrt(Box::new(fraction)),
+                                justification: "cos(x/2) = √((1+cos(x))/2)".to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// sin(π/2 - x) = cos(x)
+fn sin_cos_cofunction() -> Rule {
+    Rule {
+        id: RuleId(212),
+        name: "sin_cos_cofunction",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(π/2 - x) = cos(x)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Sin(inner) = expr {
+                if let Expr::Sub(left, _) = inner.as_ref() {
+                    // Check if left is π/2
+                    if let Expr::Div(num, den) = left.as_ref() {
+                        if let (Expr::Pi, Expr::Const(c)) = (num.as_ref(), den.as_ref()) {
+                            return *c == mm_core::Rational::from_integer(2);
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Sin(inner) = expr {
+                if let Expr::Sub(_, right) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Cos(right.clone()),
+                        justification: "sin(π/2 - x) = cos(x)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// cos(π/2 - x) = sin(x)
+fn cos_sin_cofunction() -> Rule {
+    Rule {
+        id: RuleId(213),
+        name: "cos_sin_cofunction",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(π/2 - x) = sin(x)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Cos(inner) = expr {
+                if let Expr::Sub(left, _) = inner.as_ref() {
+                    if let Expr::Div(num, den) = left.as_ref() {
+                        if let (Expr::Pi, Expr::Const(c)) = (num.as_ref(), den.as_ref()) {
+                            return *c == mm_core::Rational::from_integer(2);
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Cos(inner) = expr {
+                if let Expr::Sub(_, right) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Sin(right.clone()),
+                        justification: "cos(π/2 - x) = sin(x)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// tan(π/2 - x) = cot(x) = cos(x)/sin(x)
+fn tan_cot_cofunction() -> Rule {
+    Rule {
+        id: RuleId(214),
+        name: "tan_cot_cofunction",
+        category: RuleCategory::TrigIdentity,
+        description: "tan(π/2 - x) = cot(x) = cos(x)/sin(x)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Tan(inner) = expr {
+                if let Expr::Sub(left, _) = inner.as_ref() {
+                    if let Expr::Div(num, den) = left.as_ref() {
+                        if let (Expr::Pi, Expr::Const(c)) = (num.as_ref(), den.as_ref()) {
+                            return *c == mm_core::Rational::from_integer(2);
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Tan(inner) = expr {
+                if let Expr::Sub(_, right) = inner.as_ref() {
+                    // cot(x) = cos(x)/sin(x)
+                    return vec![RuleApplication {
+                        result: Expr::Div(
+                            Box::new(Expr::Cos(right.clone())),
+                            Box::new(Expr::Sin(right.clone())),
+                        ),
+                        justification: "tan(π/2 - x) = cot(x) = cos(x)/sin(x)".to_string(),
+                    }];
                 }
             }
             vec![]

@@ -11,7 +11,7 @@ use mm_core::Expr;
 
 /// Get all calculus rules.
 pub fn calculus_rules() -> Vec<Rule> {
-    vec![
+    let mut rules = vec![
         power_rule(),
         constant_rule(),
         sum_rule(),
@@ -21,7 +21,10 @@ pub fn calculus_rules() -> Vec<Rule> {
         chain_rule_cos(),
         exp_rule(),
         ln_rule(),
-    ]
+    ];
+    // Add advanced calculus rules (Phase 2)
+    rules.extend(advanced_calculus_rules());
+    rules
 }
 
 // ============================================================================
@@ -442,6 +445,297 @@ fn ln_rule() -> Rule {
         },
         reversible: false,
         cost: 2,
+    }
+}
+
+// ============================================================================
+// Phase 2: Advanced Calculus Rules (ID 400+)
+// ============================================================================
+
+/// Get all advanced calculus rules
+pub fn advanced_calculus_rules() -> Vec<Rule> {
+    vec![
+        chain_rule_tan(),
+        chain_rule_exp(),
+        chain_rule_ln(),
+        inverse_trig_deriv_arcsin(),
+        inverse_trig_deriv_arccos(),
+        inverse_trig_deriv_arctan(),
+        diff_rule(),
+        constant_multiple_rule(),
+    ]
+}
+
+// d/dx(tan(g(x))) = sec²(g(x)) * g'(x)
+fn chain_rule_tan() -> Rule {
+    Rule {
+        id: RuleId(400),
+        name: "chain_rule_tan",
+        category: RuleCategory::Derivative,
+        description: "d/dx(tan(g(x))) = sec²(g(x)) * g'(x) = g'(x)/cos²(g(x))",
+        is_applicable: |expr, ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Tan(_) = inner.as_ref() {
+                    if let Some(target) = ctx.target_var {
+                        return target == *var;
+                    }
+                    return true;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Tan(g) = inner.as_ref() {
+                    // sec²(g(x)) * g'(x) = g'(x) / cos²(g(x))
+                    let cos_sq = Expr::Pow(Box::new(Expr::Cos(g.clone())), Box::new(Expr::int(2)));
+                    let g_prime = Expr::Derivative {
+                        expr: g.clone(),
+                        var: *var,
+                    };
+                    return vec![RuleApplication {
+                        result: Expr::Div(Box::new(g_prime), Box::new(cos_sq)),
+                        justification: "d/dx(tan(g)) = g'/cos²(g)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// d/dx(e^g(x)) = e^g(x) * g'(x)
+fn chain_rule_exp() -> Rule {
+    Rule {
+        id: RuleId(401),
+        name: "chain_rule_exp",
+        category: RuleCategory::Derivative,
+        description: "d/dx(e^g(x)) = e^g(x) * g'(x)",
+        is_applicable: |expr, ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Exp(_) = inner.as_ref() {
+                    if let Some(target) = ctx.target_var {
+                        return target == *var;
+                    }
+                    return true;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Exp(g) = inner.as_ref() {
+                    let g_prime = Expr::Derivative {
+                        expr: g.clone(),
+                        var: *var,
+                    };
+                    return vec![RuleApplication {
+                        result: Expr::Mul(Box::new(Expr::Exp(g.clone())), Box::new(g_prime)),
+                        justification: "d/dx(e^g) = e^g * g'".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// d/dx(ln(g(x))) = g'(x)/g(x)
+fn chain_rule_ln() -> Rule {
+    Rule {
+        id: RuleId(402),
+        name: "chain_rule_ln",
+        category: RuleCategory::Derivative,
+        description: "d/dx(ln(g(x))) = g'(x)/g(x)",
+        is_applicable: |expr, ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Ln(_) = inner.as_ref() {
+                    if let Some(target) = ctx.target_var {
+                        return target == *var;
+                    }
+                    return true;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Ln(g) = inner.as_ref() {
+                    let g_prime = Expr::Derivative {
+                        expr: g.clone(),
+                        var: *var,
+                    };
+                    return vec![RuleApplication {
+                        result: Expr::Div(Box::new(g_prime), g.clone()),
+                        justification: "d/dx(ln(g)) = g'/g".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// d/dx(arcsin(x)) = 1/√(1-x²)
+fn inverse_trig_deriv_arcsin() -> Rule {
+    Rule {
+        id: RuleId(403),
+        name: "inverse_trig_deriv_arcsin",
+        category: RuleCategory::Derivative,
+        description: "d/dx(arcsin(x)) = 1/√(1-x²)",
+        is_applicable: |expr, ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                // For now, just check if it's a simple variable
+                if let Expr::Var(v) = inner.as_ref() {
+                    if let Some(target) = ctx.target_var {
+                        return target == *var && *v == *var;
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative {
+                expr: inner,
+                var: _,
+            } = expr
+            {
+                if let Expr::Var(_) = inner.as_ref() {
+                    // 1/√(1-x²)
+                    let x_sq = Expr::Pow(inner.clone(), Box::new(Expr::int(2)));
+                    let one_minus_x_sq = Expr::Sub(Box::new(Expr::int(1)), Box::new(x_sq));
+                    return vec![RuleApplication {
+                        result: Expr::Div(
+                            Box::new(Expr::int(1)),
+                            Box::new(Expr::Sqrt(Box::new(one_minus_x_sq))),
+                        ),
+                        justification: "d/dx(arcsin(x)) = 1/√(1-x²)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// d/dx(arccos(x)) = -1/√(1-x²)
+fn inverse_trig_deriv_arccos() -> Rule {
+    Rule {
+        id: RuleId(404),
+        name: "inverse_trig_deriv_arccos",
+        category: RuleCategory::Derivative,
+        description: "d/dx(arccos(x)) = -1/√(1-x²)",
+        is_applicable: |_expr, _ctx| false, // Placeholder - need Arccos type
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// d/dx(arctan(x)) = 1/(1+x²)
+fn inverse_trig_deriv_arctan() -> Rule {
+    Rule {
+        id: RuleId(405),
+        name: "inverse_trig_deriv_arctan",
+        category: RuleCategory::Derivative,
+        description: "d/dx(arctan(x)) = 1/(1+x²)",
+        is_applicable: |_expr, _ctx| false, // Placeholder - need Arctan type
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// d/dx(f - g) = f' - g' (difference rule)
+fn diff_rule() -> Rule {
+    Rule {
+        id: RuleId(406),
+        name: "diff_rule",
+        category: RuleCategory::Derivative,
+        description: "d/dx(f - g) = f' - g'",
+        is_applicable: |expr, ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Sub(_, _) = inner.as_ref() {
+                    if let Some(target) = ctx.target_var {
+                        return target == *var;
+                    }
+                    return true;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Sub(f, g) = inner.as_ref() {
+                    let f_prime = Expr::Derivative {
+                        expr: f.clone(),
+                        var: *var,
+                    };
+                    let g_prime = Expr::Derivative {
+                        expr: g.clone(),
+                        var: *var,
+                    };
+                    return vec![RuleApplication {
+                        result: Expr::Sub(Box::new(f_prime), Box::new(g_prime)),
+                        justification: "d/dx(f - g) = f' - g'".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// d/dx(c*f) = c*f' (constant multiple rule)
+fn constant_multiple_rule() -> Rule {
+    Rule {
+        id: RuleId(407),
+        name: "constant_multiple_rule",
+        category: RuleCategory::Derivative,
+        description: "d/dx(c*f) = c*f' where c is constant",
+        is_applicable: |expr, ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Mul(left, _) = inner.as_ref() {
+                    // Check if left is a constant
+                    if matches!(left.as_ref(), Expr::Const(_)) {
+                        if let Some(target) = ctx.target_var {
+                            return target == *var;
+                        }
+                        return true;
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Mul(c, f) = inner.as_ref() {
+                    if matches!(c.as_ref(), Expr::Const(_)) {
+                        let f_prime = Expr::Derivative {
+                            expr: f.clone(),
+                            var: *var,
+                        };
+                        return vec![RuleApplication {
+                            result: Expr::Mul(c.clone(), Box::new(f_prime)),
+                            justification: "d/dx(c*f) = c*f'".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 1,
     }
 }
 

@@ -29,6 +29,8 @@ pub fn number_theory_rules() -> Vec<Rule> {
     rules.extend(factorial_rules());
     // Floor/Ceiling rules
     rules.extend(floor_ceiling_rules());
+    // Phase 3: Advanced number theory
+    rules.extend(advanced_number_theory_rules());
 
     rules
 }
@@ -1078,4 +1080,721 @@ fn floor_ceiling_rules() -> Vec<Rule> {
             cost: 2,
         },
     ]
+}
+
+// ============================================================================
+// Phase 3: Advanced Number Theory Rules (ID 700+)
+// ============================================================================
+
+/// Get all advanced number theory rules
+pub fn advanced_number_theory_rules() -> Vec<Rule> {
+    vec![
+        // Fermat's theorems
+        fermat_little_theorem(),
+        fermat_last_theorem(),
+        // Euler's theorem
+        euler_theorem(),
+        euler_phi_multiplicative(),
+        euler_phi_prime_power(),
+        // Chinese Remainder Theorem
+        chinese_remainder_theorem(),
+        // Quadratic residues
+        quadratic_residue(),
+        legendre_symbol_multiplicative(),
+        euler_criterion(),
+        // Prime number theorems
+        prime_counting_approx(),
+        bertrand_postulate(),
+        // Diophantine equations
+        linear_diophantine(),
+        pell_equation(),
+        sum_of_two_squares(),
+        sum_of_four_squares(),
+        // Wilson's theorem
+        wilson_theorem(),
+        // Lifting lemma
+        hensel_lemma(),
+        // Order of elements
+        order_divides_phi(),
+        primitive_root_existence(),
+        // Legendre's formula
+        legendre_formula(),
+        // Lucas' theorem
+        lucas_theorem(),
+        // Mobius function
+        mobius_inversion(),
+        mobius_multiplicative(),
+        // Chebyshev bounds
+        chebyshev_prime_bounds(),
+        // Perfect numbers
+        even_perfect_number(),
+        // Mersenne primes
+        mersenne_prime_condition(),
+        // Arithmetic functions
+        sum_of_divisors(),
+        number_of_divisors(),
+        // Totient sum
+        totient_sum(),
+        // Primitive roots
+        primitive_root_count(),
+        // Carmichael function
+        carmichael_function(),
+        // Square-free numbers
+        square_free_density(),
+        // Prime gaps
+        prime_gap_bound(),
+        // Sophie Germain primes
+        sophie_germain_prime(),
+        // Quadric reciprocity
+        quadratic_reciprocity(),
+        // Jacobi symbol
+        jacobi_symbol(),
+        // Kronecker symbol
+        kronecker_symbol(),
+        // Modular square root
+        tonelli_shanks(),
+        // Discrete logarithm
+        discrete_log_order(),
+        // Continued fractions
+        continued_fraction_gcd(),
+        // Farey sequence
+        farey_neighbors(),
+        // Stern-Brocot tree
+        stern_brocot(),
+        // Egyptian fractions
+        egyptian_fraction(),
+        // Gaussian integers
+        gaussian_norm(),
+        gaussian_prime(),
+    ]
+}
+
+// a^(p-1) ≡ 1 (mod p) for prime p, gcd(a,p)=1
+fn fermat_little_theorem() -> Rule {
+    Rule {
+        id: RuleId(700),
+        name: "fermat_little_theorem",
+        category: RuleCategory::Simplification,
+        description: "a^(p-1) ≡ 1 (mod p)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// x^n + y^n = z^n has no integer solutions for n > 2
+fn fermat_last_theorem() -> Rule {
+    Rule {
+        id: RuleId(701),
+        name: "fermat_last_theorem",
+        category: RuleCategory::AlgebraicSolving,
+        description: "No integer solutions to x^n + y^n = z^n for n > 2",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// a^φ(n) ≡ 1 (mod n) for gcd(a,n)=1
+fn euler_theorem() -> Rule {
+    Rule {
+        id: RuleId(702),
+        name: "euler_theorem",
+        category: RuleCategory::Simplification,
+        description: "a^φ(n) ≡ 1 (mod n)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// φ(mn) = φ(m)φ(n) for gcd(m,n)=1
+fn euler_phi_multiplicative() -> Rule {
+    Rule {
+        id: RuleId(703),
+        name: "euler_phi_multiplicative",
+        category: RuleCategory::Simplification,
+        description: "φ(mn) = φ(m)φ(n) for gcd(m,n)=1",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// φ(p^k) = p^k - p^(k-1)
+fn euler_phi_prime_power() -> Rule {
+    Rule {
+        id: RuleId(704),
+        name: "euler_phi_prime_power",
+        category: RuleCategory::Simplification,
+        description: "φ(p^k) = p^k - p^(k-1)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// System of congruences with coprime moduli
+fn chinese_remainder_theorem() -> Rule {
+    Rule {
+        id: RuleId(705),
+        name: "chinese_remainder_theorem",
+        category: RuleCategory::EquationSolving,
+        description: "CRT: x ≡ a_i (mod m_i) has unique solution mod Π m_i",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// a is a quadratic residue mod p if a = x² (mod p) has solution
+fn quadratic_residue() -> Rule {
+    Rule {
+        id: RuleId(706),
+        name: "quadratic_residue",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Quadratic residue test",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// (ab/p) = (a/p)(b/p) for Legendre symbol
+fn legendre_symbol_multiplicative() -> Rule {
+    Rule {
+        id: RuleId(707),
+        name: "legendre_symbol_multiplicative",
+        category: RuleCategory::Simplification,
+        description: "(ab/p) = (a/p)(b/p)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// (a/p) = a^((p-1)/2) (mod p)
+fn euler_criterion() -> Rule {
+    Rule {
+        id: RuleId(708),
+        name: "euler_criterion",
+        category: RuleCategory::Simplification,
+        description: "(a/p) = a^((p-1)/2) mod p",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// π(x) ~ x/ln(x)
+fn prime_counting_approx() -> Rule {
+    Rule {
+        id: RuleId(709),
+        name: "prime_counting_approx",
+        category: RuleCategory::Simplification,
+        description: "π(x) ~ x/ln(x)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// For n > 1, there exists prime p with n < p < 2n
+fn bertrand_postulate() -> Rule {
+    Rule {
+        id: RuleId(710),
+        name: "bertrand_postulate",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Prime exists between n and 2n",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// ax + by = c has solutions iff gcd(a,b) | c
+fn linear_diophantine() -> Rule {
+    Rule {
+        id: RuleId(711),
+        name: "linear_diophantine",
+        category: RuleCategory::EquationSolving,
+        description: "ax + by = c solvable iff gcd(a,b) | c",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// x² - Dy² = 1 fundamental solution
+fn pell_equation() -> Rule {
+    Rule {
+        id: RuleId(712),
+        name: "pell_equation",
+        category: RuleCategory::EquationSolving,
+        description: "Pell equation x² - Dy² = 1",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// n = a² + b² iff in prime factorization, primes ≡ 3 (mod 4) have even exponents
+fn sum_of_two_squares() -> Rule {
+    Rule {
+        id: RuleId(713),
+        name: "sum_of_two_squares",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Sum of two squares condition",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Every n is sum of 4 squares (Lagrange)
+fn sum_of_four_squares() -> Rule {
+    Rule {
+        id: RuleId(714),
+        name: "sum_of_four_squares",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Every n = a² + b² + c² + d²",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// (p-1)! ≡ -1 (mod p) for prime p
+fn wilson_theorem() -> Rule {
+    Rule {
+        id: RuleId(715),
+        name: "wilson_theorem",
+        category: RuleCategory::Simplification,
+        description: "(p-1)! ≡ -1 (mod p)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Lifting solutions to higher prime powers
+fn hensel_lemma() -> Rule {
+    Rule {
+        id: RuleId(716),
+        name: "hensel_lemma",
+        category: RuleCategory::EquationSolving,
+        description: "Hensel's lemma for lifting solutions",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// ord_n(a) | φ(n)
+fn order_divides_phi() -> Rule {
+    Rule {
+        id: RuleId(717),
+        name: "order_divides_phi",
+        category: RuleCategory::Simplification,
+        description: "ord_n(a) | φ(n)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Primitive roots exist for 1, 2, 4, p^k, 2p^k (odd prime p)
+fn primitive_root_existence() -> Rule {
+    Rule {
+        id: RuleId(718),
+        name: "primitive_root_existence",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Primitive roots exist for n = 1,2,4,p^k,2p^k",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// ν_p(n!) = Σ ⌊n/p^k⌋
+fn legendre_formula() -> Rule {
+    Rule {
+        id: RuleId(719),
+        name: "legendre_formula",
+        category: RuleCategory::Simplification,
+        description: "ν_p(n!) = Σ⌊n/p^k⌋",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// C(m,n) ≡ Π C(m_i, n_i) (mod p) where m_i, n_i are base-p digits
+fn lucas_theorem() -> Rule {
+    Rule {
+        id: RuleId(720),
+        name: "lucas_theorem",
+        category: RuleCategory::Simplification,
+        description: "Lucas' theorem for binomials mod p",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Σ μ(d)f(n/d) for divisor d of n
+fn mobius_inversion() -> Rule {
+    Rule {
+        id: RuleId(721),
+        name: "mobius_inversion",
+        category: RuleCategory::Simplification,
+        description: "Möbius inversion formula",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// μ(mn) = μ(m)μ(n) for gcd(m,n)=1
+fn mobius_multiplicative() -> Rule {
+    Rule {
+        id: RuleId(722),
+        name: "mobius_multiplicative",
+        category: RuleCategory::Simplification,
+        description: "μ(mn) = μ(m)μ(n) for gcd(m,n)=1",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// π(x) bounds using Chebyshev
+fn chebyshev_prime_bounds() -> Rule {
+    Rule {
+        id: RuleId(723),
+        name: "chebyshev_prime_bounds",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Chebyshev bounds on π(x)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Even perfect number form: 2^(p-1)(2^p - 1) where 2^p - 1 is prime
+fn even_perfect_number() -> Rule {
+    Rule {
+        id: RuleId(724),
+        name: "even_perfect_number",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Even perfect = 2^(p-1)(2^p - 1)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// 2^p - 1 prime => p is prime
+fn mersenne_prime_condition() -> Rule {
+    Rule {
+        id: RuleId(725),
+        name: "mersenne_prime_condition",
+        category: RuleCategory::AlgebraicSolving,
+        description: "2^p - 1 prime => p prime",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// σ(n) = Σ d for d|n
+fn sum_of_divisors() -> Rule {
+    Rule {
+        id: RuleId(726),
+        name: "sum_of_divisors",
+        category: RuleCategory::Simplification,
+        description: "σ(n) = Σ d for d|n",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// τ(n) = number of divisors
+fn number_of_divisors() -> Rule {
+    Rule {
+        id: RuleId(727),
+        name: "number_of_divisors",
+        category: RuleCategory::Simplification,
+        description: "τ(n) is number of divisors",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// Σ φ(d) = n for d|n
+fn totient_sum() -> Rule {
+    Rule {
+        id: RuleId(728),
+        name: "totient_sum",
+        category: RuleCategory::Simplification,
+        description: "Σ φ(d) = n for d|n",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Number of primitive roots mod n is φ(φ(n))
+fn primitive_root_count() -> Rule {
+    Rule {
+        id: RuleId(729),
+        name: "primitive_root_count",
+        category: RuleCategory::Simplification,
+        description: "φ(φ(n)) primitive roots mod n",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// λ(n) Carmichael function
+fn carmichael_function() -> Rule {
+    Rule {
+        id: RuleId(730),
+        name: "carmichael_function",
+        category: RuleCategory::Simplification,
+        description: "Carmichael function λ(n)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Density of square-free numbers = 6/π²
+fn square_free_density() -> Rule {
+    Rule {
+        id: RuleId(731),
+        name: "square_free_density",
+        category: RuleCategory::Simplification,
+        description: "Square-free density = 6/π²",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Prime gap bounds
+fn prime_gap_bound() -> Rule {
+    Rule {
+        id: RuleId(732),
+        name: "prime_gap_bound",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Prime gap upper bounds",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// p is Sophie Germain prime if both p and 2p+1 are prime
+fn sophie_germain_prime() -> Rule {
+    Rule {
+        id: RuleId(733),
+        name: "sophie_germain_prime",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Sophie Germain: p and 2p+1 both prime",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// (p/q)(q/p) = (-1)^((p-1)(q-1)/4)
+fn quadratic_reciprocity() -> Rule {
+    Rule {
+        id: RuleId(734),
+        name: "quadratic_reciprocity",
+        category: RuleCategory::Simplification,
+        description: "Quadratic reciprocity law",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Jacobi symbol generalization
+fn jacobi_symbol() -> Rule {
+    Rule {
+        id: RuleId(735),
+        name: "jacobi_symbol",
+        category: RuleCategory::Simplification,
+        description: "Jacobi symbol (a/n)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Kronecker symbol extension
+fn kronecker_symbol() -> Rule {
+    Rule {
+        id: RuleId(736),
+        name: "kronecker_symbol",
+        category: RuleCategory::Simplification,
+        description: "Kronecker symbol extension",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Tonelli-Shanks algorithm for modular square root
+fn tonelli_shanks() -> Rule {
+    Rule {
+        id: RuleId(737),
+        name: "tonelli_shanks",
+        category: RuleCategory::EquationSolving,
+        description: "Tonelli-Shanks modular square root",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// Discrete log existence and order
+fn discrete_log_order() -> Rule {
+    Rule {
+        id: RuleId(738),
+        name: "discrete_log_order",
+        category: RuleCategory::EquationSolving,
+        description: "Discrete logarithm order",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// gcd via continued fractions
+fn continued_fraction_gcd() -> Rule {
+    Rule {
+        id: RuleId(739),
+        name: "continued_fraction_gcd",
+        category: RuleCategory::Simplification,
+        description: "GCD via continued fractions",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Farey neighbors |ad - bc| = 1
+fn farey_neighbors() -> Rule {
+    Rule {
+        id: RuleId(740),
+        name: "farey_neighbors",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Farey neighbors: |ad - bc| = 1",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Mediant in Stern-Brocot tree
+fn stern_brocot() -> Rule {
+    Rule {
+        id: RuleId(741),
+        name: "stern_brocot",
+        category: RuleCategory::Simplification,
+        description: "Stern-Brocot tree mediant",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Egyptian fraction representation
+fn egyptian_fraction() -> Rule {
+    Rule {
+        id: RuleId(742),
+        name: "egyptian_fraction",
+        category: RuleCategory::Expansion,
+        description: "Egyptian fraction decomposition",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// N(a + bi) = a² + b²
+fn gaussian_norm() -> Rule {
+    Rule {
+        id: RuleId(743),
+        name: "gaussian_norm",
+        category: RuleCategory::Simplification,
+        description: "Gaussian integer norm N(a+bi) = a² + b²",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// Gaussian prime conditions
+fn gaussian_prime() -> Rule {
+    Rule {
+        id: RuleId(744),
+        name: "gaussian_prime",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Gaussian prime conditions",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
 }

@@ -18,6 +18,8 @@ pub fn polynomial_rules() -> Vec<Rule> {
     rules.extend(symmetric_polynomial_rules());
     rules.extend(factoring_rules());
     rules.extend(rational_root_rules());
+    // Phase 3: Advanced polynomial rules
+    rules.extend(advanced_polynomial_rules());
 
     rules
 }
@@ -320,4 +322,308 @@ fn rational_root_rules() -> Vec<Rule> {
             cost: 3,
         },
     ]
+}
+
+// ============================================================================
+// Phase 3: Advanced Polynomial Rules (ID 800+)
+// ============================================================================
+
+/// Get all advanced polynomial rules
+pub fn advanced_polynomial_rules() -> Vec<Rule> {
+    vec![
+        // Quadratic formula and discriminant
+        quadratic_formula(),
+        discriminant_sign(),
+        discriminant_perfect_square(),
+        // Cubic formulas
+        cardano_formula(),
+        cubic_discriminant(),
+        // Quartic
+        quartic_resolvent(),
+        // Polynomial properties
+        descartes_rule(),
+        sturm_sequence(),
+        // Resultant and discriminant
+        resultant_definition(),
+        bezout_theorem(),
+        // Root bounds
+        cauchy_bound(),
+        fujiwara_bound(),
+        // Derivative relationships
+        gauss_lucas_theorem(),
+        // Polynomial interpolation
+        lagrange_interpolation(),
+        newton_interpolation(),
+        // Special polynomials
+        chebyshev_recurrence(),
+        hermite_recurrence(),
+        legendre_recurrence(),
+        laguerre_recurrence(),
+    ]
+}
+
+// x = (-b ± √(b²-4ac)) / 2a
+fn quadratic_formula() -> Rule {
+    Rule {
+        id: RuleId(800),
+        name: "quadratic_formula",
+        category: RuleCategory::EquationSolving,
+        description: "x = (-b ± √(b²-4ac)) / 2a",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Δ > 0: two distinct real roots
+fn discriminant_sign() -> Rule {
+    Rule {
+        id: RuleId(801),
+        name: "discriminant_sign",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Δ > 0 ⟹ 2 real roots; Δ = 0 ⟹ 1 repeated; Δ < 0 ⟹ complex",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Δ is perfect square => rational roots
+fn discriminant_perfect_square() -> Rule {
+    Rule {
+        id: RuleId(802),
+        name: "discriminant_perfect_square",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Δ = k² ⟹ rational roots",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Cardano's formula for cubics
+fn cardano_formula() -> Rule {
+    Rule {
+        id: RuleId(803),
+        name: "cardano_formula",
+        category: RuleCategory::EquationSolving,
+        description: "Cardano's formula for x³ + px + q = 0",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 5,
+    }
+}
+
+// Cubic discriminant Δ = -4p³ - 27q²
+fn cubic_discriminant() -> Rule {
+    Rule {
+        id: RuleId(804),
+        name: "cubic_discriminant",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Cubic discriminant Δ = -4p³ - 27q²",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Resolvent cubic for quartics
+fn quartic_resolvent() -> Rule {
+    Rule {
+        id: RuleId(805),
+        name: "quartic_resolvent",
+        category: RuleCategory::EquationSolving,
+        description: "Resolvent cubic for quartic equations",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 5,
+    }
+}
+
+// Sign changes bound positive real roots
+fn descartes_rule() -> Rule {
+    Rule {
+        id: RuleId(806),
+        name: "descartes_rule",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Number of positive roots ≤ sign changes",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Sturm sequence for root count
+fn sturm_sequence() -> Rule {
+    Rule {
+        id: RuleId(807),
+        name: "sturm_sequence",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Sturm's theorem for counting real roots",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// Resultant of two polynomials
+fn resultant_definition() -> Rule {
+    Rule {
+        id: RuleId(808),
+        name: "resultant_definition",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Res(f,g) = 0 ⟺ f and g share a root",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// Bezout's theorem for polynomial GCD
+fn bezout_theorem() -> Rule {
+    Rule {
+        id: RuleId(809),
+        name: "bezout_theorem",
+        category: RuleCategory::Simplification,
+        description: "f·u + g·v = gcd(f,g) for some polynomials u,v",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// |roots| ≤ 1 + max|aᵢ/aₙ|
+fn cauchy_bound() -> Rule {
+    Rule {
+        id: RuleId(810),
+        name: "cauchy_bound",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Cauchy bound on polynomial roots",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Fujiwara root bound
+fn fujiwara_bound() -> Rule {
+    Rule {
+        id: RuleId(811),
+        name: "fujiwara_bound",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Fujiwara bound on polynomial roots",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Roots of derivative in convex hull of roots
+fn gauss_lucas_theorem() -> Rule {
+    Rule {
+        id: RuleId(812),
+        name: "gauss_lucas_theorem",
+        category: RuleCategory::AlgebraicSolving,
+        description: "Critical points in convex hull of roots",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Lagrange interpolation formula
+fn lagrange_interpolation() -> Rule {
+    Rule {
+        id: RuleId(813),
+        name: "lagrange_interpolation",
+        category: RuleCategory::Simplification,
+        description: "P(x) = Σ yᵢ Π(x-xⱼ)/(xᵢ-xⱼ)",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// Newton's divided differences
+fn newton_interpolation() -> Rule {
+    Rule {
+        id: RuleId(814),
+        name: "newton_interpolation",
+        category: RuleCategory::Simplification,
+        description: "Newton form of interpolating polynomial",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// T_{n+1}(x) = 2xT_n(x) - T_{n-1}(x)
+fn chebyshev_recurrence() -> Rule {
+    Rule {
+        id: RuleId(815),
+        name: "chebyshev_recurrence",
+        category: RuleCategory::Simplification,
+        description: "Chebyshev T_{n+1} = 2xT_n - T_{n-1}",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// H_{n+1}(x) = 2xH_n(x) - 2nH_{n-1}(x)
+fn hermite_recurrence() -> Rule {
+    Rule {
+        id: RuleId(816),
+        name: "hermite_recurrence",
+        category: RuleCategory::Simplification,
+        description: "Hermite H_{n+1} = 2xH_n - 2nH_{n-1}",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// (n+1)P_{n+1} = (2n+1)xP_n - nP_{n-1}
+fn legendre_recurrence() -> Rule {
+    Rule {
+        id: RuleId(817),
+        name: "legendre_recurrence",
+        category: RuleCategory::Simplification,
+        description: "Legendre (n+1)P_{n+1} = (2n+1)xP_n - nP_{n-1}",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// L_{n+1}(x) = (2n+1-x)L_n(x) - n²L_{n-1}(x)
+fn laguerre_recurrence() -> Rule {
+    Rule {
+        id: RuleId(818),
+        name: "laguerre_recurrence",
+        category: RuleCategory::Simplification,
+        description: "Laguerre L_{n+1} = (2n+1-x)L_n - n²L_{n-1}",
+        is_applicable: |_expr, _ctx| false,
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
 }

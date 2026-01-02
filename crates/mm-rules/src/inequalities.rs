@@ -19,6 +19,8 @@ pub fn inequality_rules() -> Vec<Rule> {
     rules.extend(triangle_inequality_rules());
     rules.extend(absolute_value_rules());
     rules.extend(square_inequality_rules());
+    // Phase 3: Advanced inequalities
+    rules.extend(advanced_inequality_rules());
 
     rules
 }
@@ -510,4 +512,305 @@ fn square_inequality_rules() -> Vec<Rule> {
             cost: 1,
         },
     ]
+}
+
+// ============================================================================
+// Phase 3: Advanced Inequalities (ID 500+)
+// ============================================================================
+
+/// Get all advanced inequality rules
+pub fn advanced_inequality_rules() -> Vec<Rule> {
+    vec![
+        // Bernoulli's inequality
+        bernoulli_inequality(),
+        // Power mean inequalities
+        qm_am_inequality(),
+        hm_gm_inequality(),
+        // Basic comparison rules
+        positive_square_root(),
+        exp_positivity(),
+        // More absolute value rules
+        abs_product(),
+        abs_quotient(),
+        abs_power(),
+        // Inequality manipulations
+        add_to_both_sides(),
+        mul_positive_both_sides(),
+        // Square root comparisons
+        sqrt_comparison(),
+        ln_comparison(),
+        // Exponential and log inequalities
+        exp_monotonic(),
+        ln_monotonic(),
+    ]
+}
+
+// (1+x)^n >= 1 + nx for x >= -1, n >= 1
+fn bernoulli_inequality() -> Rule {
+    Rule {
+        id: RuleId(500),
+        name: "bernoulli_inequality",
+        category: RuleCategory::AlgebraicSolving,
+        description: "(1+x)^n >= 1 + nx for x >= -1, n >= 1",
+        is_applicable: |expr, _ctx| {
+            // Match (1+x)^n pattern
+            if let Expr::Pow(base, _) = expr {
+                if let Expr::Add(left, _) = base.as_ref() {
+                    if let Expr::Const(c) = left.as_ref() {
+                        return *c == Rational::from_integer(1);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Pow(base, exp) = expr {
+                if let Expr::Add(_, x) = base.as_ref() {
+                    // Lower bound: 1 + nx
+                    let nx = Expr::Mul(exp.clone(), x.clone());
+                    let lower_bound = Expr::Add(Box::new(Expr::int(1)), Box::new(nx));
+                    return vec![RuleApplication {
+                        result: lower_bound,
+                        justification: "(1+x)^n >= 1+nx (Bernoulli)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// QM >= AM: sqrt((a² + b²)/2) >= (a + b)/2
+fn qm_am_inequality() -> Rule {
+    Rule {
+        id: RuleId(501),
+        name: "qm_am_inequality",
+        category: RuleCategory::AlgebraicSolving,
+        description: "QM >= AM: √((a²+b²)/2) >= (a+b)/2",
+        is_applicable: |_expr, _ctx| false, // Placeholder
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// HM <= GM: 2ab/(a+b) <= sqrt(ab)
+fn hm_gm_inequality() -> Rule {
+    Rule {
+        id: RuleId(502),
+        name: "hm_gm_inequality",
+        category: RuleCategory::AlgebraicSolving,
+        description: "HM <= GM: 2ab/(a+b) <= √(ab)",
+        is_applicable: |_expr, _ctx| false, // Placeholder
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// sqrt(a) is real for a >= 0
+fn positive_square_root() -> Rule {
+    Rule {
+        id: RuleId(503),
+        name: "positive_square_root",
+        category: RuleCategory::Simplification,
+        description: "√a >= 0 for a >= 0",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Sqrt(_)),
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// e^x > 0 for all x
+fn exp_positivity() -> Rule {
+    Rule {
+        id: RuleId(504),
+        name: "exp_positivity",
+        category: RuleCategory::Simplification,
+        description: "e^x > 0 for all x",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Exp(_)),
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// |ab| = |a||b|
+fn abs_product() -> Rule {
+    Rule {
+        id: RuleId(505),
+        name: "abs_product",
+        category: RuleCategory::Simplification,
+        description: "|ab| = |a||b|",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Abs(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Mul(_, _));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Abs(inner) = expr {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Mul(
+                            Box::new(Expr::Abs(a.clone())),
+                            Box::new(Expr::Abs(b.clone())),
+                        ),
+                        justification: "|ab| = |a||b|".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// |a/b| = |a|/|b|
+fn abs_quotient() -> Rule {
+    Rule {
+        id: RuleId(506),
+        name: "abs_quotient",
+        category: RuleCategory::Simplification,
+        description: "|a/b| = |a|/|b|",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Abs(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Div(_, _));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Abs(inner) = expr {
+                if let Expr::Div(a, b) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Div(
+                            Box::new(Expr::Abs(a.clone())),
+                            Box::new(Expr::Abs(b.clone())),
+                        ),
+                        justification: "|a/b| = |a|/|b|".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// |a^n| = |a|^n for integer n
+fn abs_power() -> Rule {
+    Rule {
+        id: RuleId(507),
+        name: "abs_power",
+        category: RuleCategory::Simplification,
+        description: "|a^n| = |a|^n",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Abs(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Pow(_, _));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Abs(inner) = expr {
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Pow(Box::new(Expr::Abs(base.clone())), exp.clone()),
+                        justification: "|a^n| = |a|^n".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// a = b => a + c = b + c
+fn add_to_both_sides() -> Rule {
+    Rule {
+        id: RuleId(508),
+        name: "add_to_both_sides",
+        category: RuleCategory::EquationSolving,
+        description: "Add same expression to both sides of equation",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. }),
+        apply: |_expr, _ctx| vec![], // Needs c from context
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// a = b => ac = bc (for c > 0)
+fn mul_positive_both_sides() -> Rule {
+    Rule {
+        id: RuleId(509),
+        name: "mul_positive_both_sides",
+        category: RuleCategory::EquationSolving,
+        description: "Multiply both sides by positive expression",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. }),
+        apply: |_expr, _ctx| vec![], // Needs c from context
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// a >= b >= 0 => sqrt(a) >= sqrt(b)
+fn sqrt_comparison() -> Rule {
+    Rule {
+        id: RuleId(510),
+        name: "sqrt_comparison",
+        category: RuleCategory::AlgebraicSolving,
+        description: "For a,b >= 0: a >= b => √a >= √b",
+        is_applicable: |_expr, _ctx| false, // Placeholder
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// a > b > 0 => ln(a) > ln(b)
+fn ln_comparison() -> Rule {
+    Rule {
+        id: RuleId(511),
+        name: "ln_comparison",
+        category: RuleCategory::AlgebraicSolving,
+        description: "For a,b > 0: a > b => ln(a) > ln(b)",
+        is_applicable: |_expr, _ctx| false, // Placeholder
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// a > b => e^a > e^b
+fn exp_monotonic() -> Rule {
+    Rule {
+        id: RuleId(512),
+        name: "exp_monotonic",
+        category: RuleCategory::AlgebraicSolving,
+        description: "a > b => e^a > e^b (exp is increasing)",
+        is_applicable: |_expr, _ctx| false, // Placeholder
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// a > b > 0 => ln(a) > ln(b)
+fn ln_monotonic() -> Rule {
+    Rule {
+        id: RuleId(513),
+        name: "ln_monotonic",
+        category: RuleCategory::AlgebraicSolving,
+        description: "a > b > 0 => ln(a) > ln(b) (ln is increasing)",
+        is_applicable: |_expr, _ctx| false, // Placeholder
+        apply: |_expr, _ctx| vec![],
+        reversible: false,
+        cost: 1,
+    }
 }
