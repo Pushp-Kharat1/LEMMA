@@ -1,0 +1,195 @@
+[
+  {
+    "id": "imo_2022_p3",
+    "year": 2022,
+    "problem_number": 3,
+    "category": "functional_equation",
+    "problem_text": "Find all functions f: ℝ⁺ → ℝ⁺ such that for every x ∈ ℝ⁺, there is exactly one y ∈ ℝ⁺ satisfying xf(y) + yf(x) ≤ 2.",
+    "substitutions": [
+      "x = y",
+      "x = 1",
+      "y = 1/x",
+      "Assume f is monotonic"
+    ],
+    "proof_steps": [
+      "1. Substitute x = y: xf(x) + xf(x) ≤ 2 → 2xf(x) ≤ 2 → xf(x) ≤ 1",
+      "2. For each x, unique y means f defines an involution-like pairing",
+      "3. Substitute y = 1/x to explore structure",
+      "4. Show f(x) = 1/x satisfies uniqueness condition"
+    ],
+    "solution": "f(x) = 1/x"
+  },
+  {
+    "id": "imo_2019_p1",
+    "year": 2019,
+    "problem_number": 1,
+    "category": "functional_equation",
+    "problem_text": "Find all functions f: ℤ → ℤ such that for all integers a, b: f(2a) + 2f(b) = f(f(a + b)).",
+    "substitutions": [
+      "a = 0, b = 0",
+      "a = 0",
+      "b = 0",
+      "a = b"
+    ],
+    "proof_steps": [
+      "1. Set a = b = 0: f(0) + 2f(0) = f(f(0)) → 3f(0) = f(f(0))",
+      "2. Set a = 0: f(0) + 2f(b) = f(f(b))",
+      "3. Set b = 0: f(2a) + 2f(0) = f(f(a))",
+      "4. Compare to show f is linear: f(x) = x + c or f(x) = 2x + c"
+    ],
+    "solution": "f(x) = 2x + c for any constant c ∈ ℤ"
+  },
+  {
+    "id": "imo_2017_p2",
+    "year": 2017,
+    "problem_number": 2,
+    "category": "functional_equation",
+    "problem_text": "Find all functions f: ℝ → ℝ such that f(f(x)f(y)) + f(x + y) = f(xy) for all x, y ∈ ℝ.",
+    "substitutions": [
+      "x = 0, y = 0",
+      "x = 1, y = 1",
+      "y = 0",
+      "x = y"
+    ],
+    "proof_steps": [
+      "1. Set x = y = 0: f(f(0)²) + f(0) = f(0) → f(f(0)²) = 0",
+      "2. Set y = 0: f(f(x)f(0)) + f(x) = f(0)",
+      "3. This suggests f(0) = 0 or special structure",
+      "4. Test f(x) = x - 1 and f(x) = 1 - x"
+    ],
+    "solution": "f(x) = x - 1 or f(x) = 1 - x"
+  },
+  {
+    "id": "imo_2010_p1",
+    "year": 2010,
+    "problem_number": 1,
+    "category": "functional_equation",
+    "problem_text": "Find all functions f: ℝ → ℝ such that for all x, y ∈ ℝ: f(⌊x⌋y) = f(x)⌊f(y)⌋.",
+    "substitutions": [
+      "x = 0",
+      "y = 0",
+      "x = n (integer)",
+      "y = 1"
+    ],
+    "proof_steps": [
+      "1. Set x = 0: f(0) = f(0)⌊f(y)⌋ for all y",
+      "2. Either f(0) = 0 or ⌊f(y)⌋ = 1 for all y",
+      "3. Set y = 0: f(0) = f(x)⌊f(0)⌋",
+      "4. Analyze cases to find f(x) = 0 or f(x) = x"
+    ],
+    "solution": "f(x) = 0 or f(x) = x"
+  },
+  {
+    "id": "imo_2015_p5",
+    "year": 2015,
+    "problem_number": 5,
+    "category": "functional_equation",
+    "problem_text": "Find all functions f: ℝ → ℝ that satisfy f(x + f(x + y)) + f(xy) = x + f(x + y) + yf(x) for all x, y ∈ ℝ.",
+    "substitutions": [
+      "y = 0",
+      "x = 0",
+      "x = 1",
+      "y = -x"
+    ],
+    "proof_steps": [
+      "1. Set y = 0: f(x + f(x)) + f(0) = x + f(x) + 0·f(x)",
+      "2. Set x = 0: f(f(y)) + f(0) = f(y)",
+      "3. From (2): f(f(y)) = f(y) - f(0), suggests f(x) = x + c",
+      "4. Verify f(x) = x and f(x) = 2 - x"
+    ],
+    "solution": "f(x) = x or f(x) = 2 - x"
+  },
+  {
+    "id": "imo_2008_p2",
+    "year": 2008,
+    "problem_number": 2,
+    "category": "algebra",
+    "problem_text": "Prove that for positive reals a, b, c with abc = 1: (a-1+1/b)(b-1+1/c)(c-1+1/a) ≤ 1.",
+    "substitutions": [
+      "Use abc = 1 constraint",
+      "Set a = b = c = 1",
+      "Substitute c = 1/(ab)",
+      "Apply AM-GM to each factor"
+    ],
+    "proof_steps": [
+      "1. With abc = 1: c = 1/(ab)",
+      "2. Expand each factor: a - 1 + 1/b = a - 1 + c/1",
+      "3. Use symmetry and AM-GM on the product",
+      "4. Show equality holds when a = b = c = 1"
+    ],
+    "solution": "Inequality holds with equality at a = b = c = 1"
+  },
+  {
+    "id": "imo_2000_p2",
+    "year": 2000,
+    "problem_number": 2,
+    "category": "algebra",
+    "problem_text": "Let a, b, c be positive reals with abc = 1. Prove that (a - 1 + 1/b)(b - 1 + 1/c)(c - 1 + 1/a) ≤ 1.",
+    "substitutions": [
+      "abc = 1 implies 1/a = bc, 1/b = ac, 1/c = ab",
+      "Substitute and simplify",
+      "Check boundary case a = b = c = 1"
+    ],
+    "proof_steps": [
+      "1. Rewrite using abc = 1",
+      "2. Factor and apply Cauchy-Schwarz",
+      "3. Bound the product"
+    ],
+    "solution": "Proved using substitution and AM-GM"
+  },
+  {
+    "id": "imo_2001_p2",
+    "year": 2001,
+    "problem_number": 2,
+    "category": "algebra",
+    "problem_text": "Prove that for positive reals a, b, c: a/√(a² + 8bc) + b/√(b² + 8ca) + c/√(c² + 8ab) ≥ 1.",
+    "substitutions": [
+      "Set a = b = c",
+      "Homogenize: set a + b + c = 1 or abc = 1",
+      "Apply Cauchy-Schwarz"
+    ],
+    "proof_steps": [
+      "1. For a = b = c: 3 · a/√(9a²) = 3 · a/(3a) = 1, equality holds",
+      "2. Apply Cauchy-Schwarz to the sum",
+      "3. Bound √(a² + 8bc) ≤ a + k√(bc) for appropriate k"
+    ],
+    "solution": "Proved using Cauchy-Schwarz with equality at a = b = c"
+  },
+  {
+    "id": "imo_2006_p3",
+    "year": 2006,
+    "problem_number": 3,
+    "category": "algebra",
+    "problem_text": "Determine the least M such that for all a, b, c ∈ ℝ: |ab(a² - b²) + bc(b² - c²) + ca(c² - a²)| ≤ M(a² + b² + c²)².",
+    "substitutions": [
+      "Set c = 0",
+      "Set a = cos(θ), b = sin(θ), c = 0",
+      "Use trigonometric substitution"
+    ],
+    "proof_steps": [
+      "1. Set c = 0: |ab(a² - b²)| ≤ M(a² + b²)²",
+      "2. Let a = r·cos(θ), b = r·sin(θ)",
+      "3. Maximize |sin(θ)cos(θ)(cos²θ - sin²θ)| = |sin(2θ)cos(2θ)/2|",
+      "4. Maximum is 1/4 at θ = π/8"
+    ],
+    "solution": "M = 9√2/32"
+  },
+  {
+    "id": "imo_2012_p2",
+    "year": 2012,
+    "problem_number": 2,
+    "category": "number_theory",
+    "problem_text": "Find all positive integers n for which there exist non-negative integers a₁, a₂, ..., aₙ such that 1/(2^a₁) + 1/(2^a₂) + ... + 1/(2^aₙ) = 1/(3^a₁) + 2/(3^a₂) + ... + n/(3^aₙ) = 1.",
+    "substitutions": [
+      "Check small cases: n = 1, 2, 3, 4",
+      "Use bounds on the sums",
+      "Consider 2-adic and 3-adic valuations"
+    ],
+    "proof_steps": [
+      "1. For n = 1: 1/2^a = 1 and 1/3^a = 1 → a = 0 works",
+      "2. Check feasibility for larger n",
+      "3. Use generating functions or direct construction"
+    ],
+    "solution": "n = 1, 2 (verify specific constructions)"
+  }
+]

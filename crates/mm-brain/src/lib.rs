@@ -26,10 +26,12 @@ pub mod data;
 pub mod encoder;
 pub mod network;
 pub mod policy;
+pub mod substitution;
 pub mod training;
 
 pub use data::DataGenerator;
 pub use encoder::ExpressionEncoder;
 pub use network::MathNetwork;
 pub use policy::PolicyNetwork;
+pub use substitution::{SearchHint, SubstitutionPrediction, SubstitutionPredictor};
 pub use training::{Trainer, TrainingConfig};
