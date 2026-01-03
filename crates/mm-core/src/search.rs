@@ -48,6 +48,15 @@ impl Default for SearchConfig {
     }
 }
 
+/// A neural network hint for guiding proof search
+#[derive(Clone, Debug)]
+pub struct NeuralHint {
+    /// The suggested action (e.g., "x = 0", "Apply AM-GM")
+    pub action: String,
+    /// Confidence score from the NN (0.0 to 1.0)
+    pub confidence: f32,
+}
+
 // ============================================================================
 // Search Node - A node in the proof search tree
 // ============================================================================
@@ -170,6 +179,9 @@ pub struct ProofSearchEngine {
     
     /// Statistics
     pub stats: SearchStats,
+    
+    /// Neural network hints for guiding search
+    neural_hints: Vec<NeuralHint>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -191,7 +203,51 @@ impl ProofSearchEngine {
             next_id: 0,
             symbols: SymbolTable::new(),
             stats: SearchStats::default(),
+            neural_hints: Vec::new(),
         }
+    }
+    
+    /// Set neural hints from the substitution predictor
+    /// These guide the search to prioritize certain strategies
+    pub fn set_neural_hints(&mut self, hints: Vec<NeuralHint>) {
+        self.neural_hints = hints;
+    }
+    
+    /// Check if a strategy is suggested by neural hints
+    fn hint_suggests(&self, strategy: &str) -> f32 {
+        for hint in &self.neural_hints {
+            let hint_lower = hint.action.to_lowercase();
+            let strategy_lower = strategy.to_lowercase();
+            
+            // Check for keyword matches
+            if hint_lower.contains(&strategy_lower) || strategy_lower.contains(&hint_lower) {
+                return hint.confidence;
+            }
+            
+            // Map common patterns
+            if (hint_lower.contains("x = 0") || hint_lower.contains("y = 0")) 
+                && strategy_lower.contains("substitut") {
+                return hint.confidence;
+            }
+            if hint_lower.contains("am-gm") && strategy_lower.contains("am") {
+                return hint.confidence;
+            }
+            if hint_lower.contains("cauchy") && strategy_lower.contains("cauchy") {
+                return hint.confidence;
+            }
+            if hint_lower.contains("small cases") && strategy_lower.contains("case") {
+                return hint.confidence;
+            }
+            if hint_lower.contains("modular") && strategy_lower.contains("modular") {
+                return hint.confidence;
+            }
+        }
+        0.0 // No hint for this strategy
+    }
+    
+    /// Get the priority boost for a strategy based on neural hints
+    fn get_strategy_priority(&self, strategy: &str) -> f32 {
+        self.hint_suggests(strategy)
     }
     
     /// Search for a proof of the given problem

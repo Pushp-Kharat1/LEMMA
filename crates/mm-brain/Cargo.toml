@@ -19,5 +19,9 @@ string-interner.workspace = true
 candle-core.workspace = true
 candle-nn.workspace = true
 
+# ONNX Runtime for model inference
+ort = "2.0.0-rc.10"
+
 [dev-dependencies]
 proptest.workspace = true
+

@@ -59,5 +59,5 @@ pub use proof::{
     ProofState, ProofStep, Variable,
 };
 pub use rational::Rational;
-pub use search::{ProofSearchEngine, SearchConfig, SearchStats};
+pub use search::{NeuralHint, ProofSearchEngine, SearchConfig, SearchStats};
 pub use symbol::{Symbol, SymbolTable};
