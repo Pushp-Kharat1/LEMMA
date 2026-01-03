@@ -80,7 +80,11 @@ fn is_calculus_expr(expr: &Expr) -> bool {
         | Expr::GCD(lhs, rhs)
         | Expr::LCM(lhs, rhs)
         | Expr::Mod(lhs, rhs)
-        | Expr::Binomial(lhs, rhs) => is_calculus_expr(lhs) || is_calculus_expr(rhs),
+        | Expr::Binomial(lhs, rhs)
+        | Expr::Gte(lhs, rhs)
+        | Expr::Gt(lhs, rhs)
+        | Expr::Lte(lhs, rhs)
+        | Expr::Lt(lhs, rhs) => is_calculus_expr(lhs) || is_calculus_expr(rhs),
         Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => is_calculus_expr(e),
         Expr::Summation { from, to, body, .. } | Expr::BigProduct { from, to, body, .. } => {
             is_calculus_expr(from) || is_calculus_expr(to) || is_calculus_expr(body)
@@ -325,6 +329,22 @@ fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
         Expr::Binomial(n, k) => Expr::Binomial(
             Box::new(substitute(n, var, value)),
             Box::new(substitute(k, var, value)),
+        ),
+        Expr::Gte(a, b) => Expr::Gte(
+            Box::new(substitute(a, var, value)),
+            Box::new(substitute(b, var, value)),
+        ),
+        Expr::Gt(a, b) => Expr::Gt(
+            Box::new(substitute(a, var, value)),
+            Box::new(substitute(b, var, value)),
+        ),
+        Expr::Lte(a, b) => Expr::Lte(
+            Box::new(substitute(a, var, value)),
+            Box::new(substitute(b, var, value)),
+        ),
+        Expr::Lt(a, b) => Expr::Lt(
+            Box::new(substitute(a, var, value)),
+            Box::new(substitute(b, var, value)),
         ),
         Expr::Floor(e) => Expr::Floor(Box::new(substitute(e, var, value))),
         Expr::Ceiling(e) => Expr::Ceiling(Box::new(substitute(e, var, value))),

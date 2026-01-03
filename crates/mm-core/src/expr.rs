@@ -99,6 +99,18 @@ pub enum Expr {
     /// Equation: lhs = rhs
     Equation { lhs: Box<Expr>, rhs: Box<Expr> },
 
+    /// Greater than or equal: lhs ≥ rhs
+    Gte(Box<Expr>, Box<Expr>),
+
+    /// Greater than: lhs > rhs
+    Gt(Box<Expr>, Box<Expr>),
+
+    /// Less than or equal: lhs ≤ rhs
+    Lte(Box<Expr>, Box<Expr>),
+
+    /// Less than: lhs < rhs
+    Lt(Box<Expr>, Box<Expr>),
+
     // ========== Number Theory ==========
     /// Greatest common divisor: gcd(a, b)
     GCD(Box<Expr>, Box<Expr>),
@@ -203,6 +215,10 @@ impl PartialEq for Expr {
             (Expr::Equation { lhs: l1, rhs: r1 }, Expr::Equation { lhs: l2, rhs: r2 }) => {
                 l1 == l2 && r1 == r2
             }
+            (Expr::Gte(a1, a2), Expr::Gte(b1, b2)) => a1 == b1 && a2 == b2,
+            (Expr::Gt(a1, a2), Expr::Gt(b1, b2)) => a1 == b1 && a2 == b2,
+            (Expr::Lte(a1, a2), Expr::Lte(b1, b2)) => a1 == b1 && a2 == b2,
+            (Expr::Lt(a1, a2), Expr::Lt(b1, b2)) => a1 == b1 && a2 == b2,
             _ => false,
         }
     }
@@ -243,7 +259,11 @@ impl Hash for Expr {
             | Expr::GCD(lhs, rhs)
             | Expr::LCM(lhs, rhs)
             | Expr::Mod(lhs, rhs)
-            | Expr::Binomial(lhs, rhs) => {
+            | Expr::Binomial(lhs, rhs)
+            | Expr::Gte(lhs, rhs)
+            | Expr::Gt(lhs, rhs)
+            | Expr::Lte(lhs, rhs)
+            | Expr::Lt(lhs, rhs) => {
                 lhs.hash(state);
                 rhs.hash(state);
             }
@@ -437,7 +457,11 @@ impl Expr {
             | Expr::GCD(lhs, rhs)
             | Expr::LCM(lhs, rhs)
             | Expr::Mod(lhs, rhs)
-            | Expr::Binomial(lhs, rhs) => 1 + lhs.complexity() + rhs.complexity(),
+            | Expr::Binomial(lhs, rhs)
+            | Expr::Gte(lhs, rhs)
+            | Expr::Gt(lhs, rhs)
+            | Expr::Lte(lhs, rhs)
+            | Expr::Lt(lhs, rhs) => 1 + lhs.complexity() + rhs.complexity(),
             Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => 1 + e.complexity(),
             Expr::Summation { from, to, body, .. } | Expr::BigProduct { from, to, body, .. } => {
                 1 + from.complexity() + to.complexity() + body.complexity()

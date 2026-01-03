@@ -142,6 +142,22 @@ impl Expr {
                 Box::new(n.canonicalize_with_depth(depth)),
                 Box::new(k.canonicalize_with_depth(depth)),
             ),
+            Expr::Gte(a, b) => Expr::Gte(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Gt(a, b) => Expr::Gt(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Lte(a, b) => Expr::Lte(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Lt(a, b) => Expr::Lt(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
             Expr::Floor(e) => Expr::Floor(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Ceiling(e) => Expr::Ceiling(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Factorial(e) => Expr::Factorial(Box::new(e.canonicalize_with_depth(depth))),

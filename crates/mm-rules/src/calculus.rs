@@ -766,7 +766,11 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
         | Expr::GCD(lhs, rhs)
         | Expr::LCM(lhs, rhs)
         | Expr::Mod(lhs, rhs)
-        | Expr::Binomial(lhs, rhs) => contains_var(lhs, var) || contains_var(rhs, var),
+        | Expr::Binomial(lhs, rhs)
+        | Expr::Gte(lhs, rhs)
+        | Expr::Gt(lhs, rhs)
+        | Expr::Lte(lhs, rhs)
+        | Expr::Lt(lhs, rhs) => contains_var(lhs, var) || contains_var(rhs, var),
         Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => contains_var(e, var),
         Expr::Summation {
             var: v,

@@ -314,6 +314,26 @@ impl ExpressionEncoder {
                 self.tokenize_recursive(e, tokens);
                 tokens.push("!".to_string());
             }
+            Expr::Gte(a, b) => {
+                self.tokenize_recursive(a, tokens);
+                tokens.push(">=".to_string());
+                self.tokenize_recursive(b, tokens);
+            }
+            Expr::Gt(a, b) => {
+                self.tokenize_recursive(a, tokens);
+                tokens.push(">".to_string());
+                self.tokenize_recursive(b, tokens);
+            }
+            Expr::Lte(a, b) => {
+                self.tokenize_recursive(a, tokens);
+                tokens.push("<=".to_string());
+                self.tokenize_recursive(b, tokens);
+            }
+            Expr::Lt(a, b) => {
+                self.tokenize_recursive(a, tokens);
+                tokens.push("<".to_string());
+                self.tokenize_recursive(b, tokens);
+            }
             Expr::Summation {
                 var,
                 from,

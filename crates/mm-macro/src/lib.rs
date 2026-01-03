@@ -180,6 +180,10 @@ fn expr_to_token_stream(
         Expr::Ceiling(e) => unary!(Ceiling, e),
         Expr::Factorial(e) => unary!(Factorial, e),
         Expr::Binomial(l, r) => binary!(Binomial, l, r),
+        Expr::Gte(l, r) => binary!(Gte, l, r),
+        Expr::Gt(l, r) => binary!(Gt, l, r),
+        Expr::Lte(l, r) => binary!(Lte, l, r),
+        Expr::Lt(l, r) => binary!(Lt, l, r),
         Expr::Summation {
             var,
             from,

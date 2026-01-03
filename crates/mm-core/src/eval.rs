@@ -151,6 +151,28 @@ impl Expr {
                 Some(vl - vr)
             }
 
+            // Comparison operators - return 1.0 for true, 0.0 for false
+            Expr::Gte(lhs, rhs) => {
+                let vl = lhs.evaluate(env)?;
+                let vr = rhs.evaluate(env)?;
+                Some(if vl >= vr { 1.0 } else { 0.0 })
+            }
+            Expr::Gt(lhs, rhs) => {
+                let vl = lhs.evaluate(env)?;
+                let vr = rhs.evaluate(env)?;
+                Some(if vl > vr { 1.0 } else { 0.0 })
+            }
+            Expr::Lte(lhs, rhs) => {
+                let vl = lhs.evaluate(env)?;
+                let vr = rhs.evaluate(env)?;
+                Some(if vl <= vr { 1.0 } else { 0.0 })
+            }
+            Expr::Lt(lhs, rhs) => {
+                let vl = lhs.evaluate(env)?;
+                let vr = rhs.evaluate(env)?;
+                Some(if vl < vr { 1.0 } else { 0.0 })
+            }
+
             // Number theory operations
             Expr::GCD(a, b) => {
                 let va = a.evaluate(env)? as i64;
@@ -336,7 +358,11 @@ impl Expr {
             | Expr::GCD(lhs, rhs)
             | Expr::LCM(lhs, rhs)
             | Expr::Mod(lhs, rhs)
-            | Expr::Binomial(lhs, rhs) => {
+            | Expr::Binomial(lhs, rhs)
+            | Expr::Gte(lhs, rhs)
+            | Expr::Gt(lhs, rhs)
+            | Expr::Lte(lhs, rhs)
+            | Expr::Lt(lhs, rhs) => {
                 lhs.collect_vars(vars);
                 rhs.collect_vars(vars);
             }

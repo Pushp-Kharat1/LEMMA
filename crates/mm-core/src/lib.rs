@@ -47,10 +47,17 @@ pub mod error;
 pub mod eval;
 pub mod expr;
 pub mod parse;
+pub mod proof;
 pub mod rational;
+pub mod search;
 pub mod symbol;
 
 pub use error::MathError;
 pub use expr::{Expr, Factor, Term};
+pub use proof::{
+    Constraint, Domain, Goal, GoalId, GoalStatus, HypId, Hypothesis, HypothesisOrigin, Proof,
+    ProofState, ProofStep, Variable,
+};
 pub use rational::Rational;
+pub use search::{ProofSearchEngine, SearchConfig, SearchStats};
 pub use symbol::{Symbol, SymbolTable};
