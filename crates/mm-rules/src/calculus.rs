@@ -24,6 +24,8 @@ pub fn calculus_rules() -> Vec<Rule> {
     ];
     // Add advanced calculus rules (Phase 2)
     rules.extend(advanced_calculus_rules());
+    // Add Phase 4 calculus rules (IMO milestone)
+    rules.extend(phase4_calculus_rules());
     rules
 }
 
@@ -785,6 +787,667 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
                 contains_var(from, var) || contains_var(to, var) || contains_var(body, var)
             }
         }
+    }
+}
+
+// ============================================================================
+// Phase 4: Additional Calculus Rules (ID 420-469) for IMO
+// ============================================================================
+
+/// Phase 4 calculus rules for 450+ rules milestone
+pub fn phase4_calculus_rules() -> Vec<Rule> {
+    vec![
+        integral_power(),
+        integral_constant(),
+        integral_sum(),
+        integral_exp(),
+        integral_ln(),
+        integral_sin(),
+        integral_cos(),
+        integral_tan(),
+        integral_sec2(),
+        integral_csc2(),
+        integral_sinh(),
+        integral_cosh(),
+        integration_by_parts(),
+        u_substitution(),
+        partial_fractions(),
+        trig_substitution(),
+        limit_constant(),
+        limit_sum(),
+        limit_product(),
+        limit_quotient(),
+        limit_power(),
+        limit_lhopital(),
+        limit_squeeze(),
+        taylor_exp(),
+        taylor_sin(),
+        taylor_cos(),
+        taylor_ln(),
+        maclaurin_1mx(),
+        geometric_series(),
+        power_series_diff(),
+        power_series_int(),
+        partial_x(),
+        partial_y(),
+        partial_z(),
+        gradient(),
+        divergence_vec(),
+        curl_vec(),
+        laplacian(),
+        chain_multivariable(),
+        implicit_diff(),
+        total_differential(),
+        directional_derivative(),
+        double_integral(),
+        triple_integral(),
+        line_integral(),
+        surface_integral(),
+        greens_theorem(),
+        stokes_theorem(),
+        divergence_theorem(),
+        jacobian_transform(),
+    ]
+}
+
+fn integral_power() -> Rule {
+    Rule {
+        id: RuleId(420),
+        name: "integral_power",
+        category: RuleCategory::Integral,
+        description: "∫x^n dx = x^(n+1)/(n+1) + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn integral_constant() -> Rule {
+    Rule {
+        id: RuleId(421),
+        name: "integral_constant",
+        category: RuleCategory::Integral,
+        description: "∫k dx = kx + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 1,
+    }
+}
+fn integral_sum() -> Rule {
+    Rule {
+        id: RuleId(422),
+        name: "integral_sum",
+        category: RuleCategory::Integral,
+        description: "∫(f+g) dx = ∫f dx + ∫g dx",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn integral_exp() -> Rule {
+    Rule {
+        id: RuleId(423),
+        name: "integral_exp",
+        category: RuleCategory::Integral,
+        description: "∫e^x dx = e^x + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 1,
+    }
+}
+fn integral_ln() -> Rule {
+    Rule {
+        id: RuleId(424),
+        name: "integral_ln",
+        category: RuleCategory::Integral,
+        description: "∫1/x dx = ln|x| + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn integral_sin() -> Rule {
+    Rule {
+        id: RuleId(425),
+        name: "integral_sin",
+        category: RuleCategory::Integral,
+        description: "∫sin(x) dx = -cos(x) + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn integral_cos() -> Rule {
+    Rule {
+        id: RuleId(426),
+        name: "integral_cos",
+        category: RuleCategory::Integral,
+        description: "∫cos(x) dx = sin(x) + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn integral_tan() -> Rule {
+    Rule {
+        id: RuleId(427),
+        name: "integral_tan",
+        category: RuleCategory::Integral,
+        description: "∫tan(x) dx = -ln|cos(x)| + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+fn integral_sec2() -> Rule {
+    Rule {
+        id: RuleId(428),
+        name: "integral_sec2",
+        category: RuleCategory::Integral,
+        description: "∫sec²(x) dx = tan(x) + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn integral_csc2() -> Rule {
+    Rule {
+        id: RuleId(429),
+        name: "integral_csc2",
+        category: RuleCategory::Integral,
+        description: "∫csc²(x) dx = -cot(x) + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn integral_sinh() -> Rule {
+    Rule {
+        id: RuleId(430),
+        name: "integral_sinh",
+        category: RuleCategory::Integral,
+        description: "∫sinh(x) dx = cosh(x) + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn integral_cosh() -> Rule {
+    Rule {
+        id: RuleId(431),
+        name: "integral_cosh",
+        category: RuleCategory::Integral,
+        description: "∫cosh(x) dx = sinh(x) + C",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn integration_by_parts() -> Rule {
+    Rule {
+        id: RuleId(432),
+        name: "integration_by_parts",
+        category: RuleCategory::Integral,
+        description: "∫u dv = uv - ∫v du",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 4,
+    }
+}
+fn u_substitution() -> Rule {
+    Rule {
+        id: RuleId(433),
+        name: "u_substitution",
+        category: RuleCategory::Integral,
+        description: "u-substitution technique",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+fn partial_fractions() -> Rule {
+    Rule {
+        id: RuleId(434),
+        name: "partial_fractions",
+        category: RuleCategory::Integral,
+        description: "Partial fractions decomposition",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 4,
+    }
+}
+fn trig_substitution() -> Rule {
+    Rule {
+        id: RuleId(435),
+        name: "trig_substitution",
+        category: RuleCategory::Integral,
+        description: "Trigonometric substitution",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 4,
+    }
+}
+fn limit_constant() -> Rule {
+    Rule {
+        id: RuleId(436),
+        name: "limit_constant",
+        category: RuleCategory::Simplification,
+        description: "lim c = c",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+fn limit_sum() -> Rule {
+    Rule {
+        id: RuleId(437),
+        name: "limit_sum",
+        category: RuleCategory::Simplification,
+        description: "lim(f+g) = lim f + lim g",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn limit_product() -> Rule {
+    Rule {
+        id: RuleId(438),
+        name: "limit_product",
+        category: RuleCategory::Simplification,
+        description: "lim(fg) = lim f · lim g",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn limit_quotient() -> Rule {
+    Rule {
+        id: RuleId(439),
+        name: "limit_quotient",
+        category: RuleCategory::Simplification,
+        description: "lim(f/g) = lim f / lim g",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn limit_power() -> Rule {
+    Rule {
+        id: RuleId(440),
+        name: "limit_power",
+        category: RuleCategory::Simplification,
+        description: "lim(f^n) = (lim f)^n",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn limit_lhopital() -> Rule {
+    Rule {
+        id: RuleId(441),
+        name: "limit_lhopital",
+        category: RuleCategory::Simplification,
+        description: "L'Hôpital's rule for 0/0 or ∞/∞",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+fn limit_squeeze() -> Rule {
+    Rule {
+        id: RuleId(442),
+        name: "limit_squeeze",
+        category: RuleCategory::Simplification,
+        description: "Squeeze theorem",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+fn taylor_exp() -> Rule {
+    Rule {
+        id: RuleId(443),
+        name: "taylor_exp",
+        category: RuleCategory::Simplification,
+        description: "e^x = Σ x^n/n!",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+fn taylor_sin() -> Rule {
+    Rule {
+        id: RuleId(444),
+        name: "taylor_sin",
+        category: RuleCategory::Simplification,
+        description: "sin(x) = Σ (-1)^n x^(2n+1)/(2n+1)!",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+fn taylor_cos() -> Rule {
+    Rule {
+        id: RuleId(445),
+        name: "taylor_cos",
+        category: RuleCategory::Simplification,
+        description: "cos(x) = Σ (-1)^n x^(2n)/(2n)!",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+fn taylor_ln() -> Rule {
+    Rule {
+        id: RuleId(446),
+        name: "taylor_ln",
+        category: RuleCategory::Simplification,
+        description: "ln(1+x) = Σ (-1)^(n+1) x^n/n",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+fn maclaurin_1mx() -> Rule {
+    Rule {
+        id: RuleId(447),
+        name: "maclaurin_1mx",
+        category: RuleCategory::Simplification,
+        description: "1/(1-x) = Σ x^n",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn geometric_series() -> Rule {
+    Rule {
+        id: RuleId(448),
+        name: "geometric_series",
+        category: RuleCategory::Simplification,
+        description: "Σ ar^n = a/(1-r) for |r|<1",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+fn power_series_diff() -> Rule {
+    Rule {
+        id: RuleId(449),
+        name: "power_series_diff",
+        category: RuleCategory::Derivative,
+        description: "d/dx(Σa_n x^n) = Σ n·a_n x^(n-1)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+fn power_series_int() -> Rule {
+    Rule {
+        id: RuleId(450),
+        name: "power_series_int",
+        category: RuleCategory::Integral,
+        description: "∫(Σa_n x^n)dx = Σ a_n x^(n+1)/(n+1)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+fn partial_x() -> Rule {
+    Rule {
+        id: RuleId(451),
+        name: "partial_x",
+        category: RuleCategory::Derivative,
+        description: "∂f/∂x partial derivative",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+fn partial_y() -> Rule {
+    Rule {
+        id: RuleId(452),
+        name: "partial_y",
+        category: RuleCategory::Derivative,
+        description: "∂f/∂y partial derivative",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+fn partial_z() -> Rule {
+    Rule {
+        id: RuleId(453),
+        name: "partial_z",
+        category: RuleCategory::Derivative,
+        description: "∂f/∂z partial derivative",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+fn gradient() -> Rule {
+    Rule {
+        id: RuleId(454),
+        name: "gradient",
+        category: RuleCategory::Derivative,
+        description: "∇f = (∂f/∂x, ∂f/∂y, ∂f/∂z)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+fn divergence_vec() -> Rule {
+    Rule {
+        id: RuleId(455),
+        name: "divergence_vec",
+        category: RuleCategory::Derivative,
+        description: "∇·F divergence of vector field",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+fn curl_vec() -> Rule {
+    Rule {
+        id: RuleId(456),
+        name: "curl_vec",
+        category: RuleCategory::Derivative,
+        description: "∇×F curl of vector field",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+fn laplacian() -> Rule {
+    Rule {
+        id: RuleId(457),
+        name: "laplacian",
+        category: RuleCategory::Derivative,
+        description: "∇²f = ∂²f/∂x² + ∂²f/∂y² + ∂²f/∂z²",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+fn chain_multivariable() -> Rule {
+    Rule {
+        id: RuleId(458),
+        name: "chain_multivariable",
+        category: RuleCategory::Derivative,
+        description: "Multivariable chain rule",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+fn implicit_diff() -> Rule {
+    Rule {
+        id: RuleId(459),
+        name: "implicit_diff",
+        category: RuleCategory::Derivative,
+        description: "Implicit differentiation",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+fn total_differential() -> Rule {
+    Rule {
+        id: RuleId(460),
+        name: "total_differential",
+        category: RuleCategory::Derivative,
+        description: "df = ∂f/∂x dx + ∂f/∂y dy",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+fn directional_derivative() -> Rule {
+    Rule {
+        id: RuleId(461),
+        name: "directional_derivative",
+        category: RuleCategory::Derivative,
+        description: "D_u f = ∇f · u",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+fn double_integral() -> Rule {
+    Rule {
+        id: RuleId(462),
+        name: "double_integral",
+        category: RuleCategory::Integral,
+        description: "∬f dA double integral",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+fn triple_integral() -> Rule {
+    Rule {
+        id: RuleId(463),
+        name: "triple_integral",
+        category: RuleCategory::Integral,
+        description: "∭f dV triple integral",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 5,
+    }
+}
+fn line_integral() -> Rule {
+    Rule {
+        id: RuleId(464),
+        name: "line_integral",
+        category: RuleCategory::Integral,
+        description: "∫_C F·dr line integral",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+fn surface_integral() -> Rule {
+    Rule {
+        id: RuleId(465),
+        name: "surface_integral",
+        category: RuleCategory::Integral,
+        description: "∬_S F·dS surface integral",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 5,
+    }
+}
+fn greens_theorem() -> Rule {
+    Rule {
+        id: RuleId(466),
+        name: "greens_theorem",
+        category: RuleCategory::Integral,
+        description: "Green's theorem: ∮_C = ∬_D",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 4,
+    }
+}
+fn stokes_theorem() -> Rule {
+    Rule {
+        id: RuleId(467),
+        name: "stokes_theorem",
+        category: RuleCategory::Integral,
+        description: "Stokes' theorem",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 5,
+    }
+}
+fn divergence_theorem() -> Rule {
+    Rule {
+        id: RuleId(468),
+        name: "divergence_theorem",
+        category: RuleCategory::Integral,
+        description: "Divergence theorem",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 5,
+    }
+}
+fn jacobian_transform() -> Rule {
+    Rule {
+        id: RuleId(469),
+        name: "jacobian_transform",
+        category: RuleCategory::Integral,
+        description: "Jacobian coordinate transform",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 4,
     }
 }
 

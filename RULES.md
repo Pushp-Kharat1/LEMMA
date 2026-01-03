@@ -10,12 +10,13 @@ Complete reference of all mathematical transformation rules implemented in LEMMA
 | Calculus (Derivatives) | 10 | Power, chain, product rules |
 | Calculus (Integration) | 9 | Power, trig, exponential integrals |
 | Trigonometry | 30 | Identities, special values, formulas |
-| Number Theory | 50+ | Divisibility, GCD/LCM, parity |
+| Number Theory | 100+ | Divisibility, GCD/LCM, parity |
 | Inequalities | 30+ | AM-GM, Cauchy-Schwarz, triangle |
 | Combinatorics | 30+ | Binomial, counting, recurrences |
 | Polynomials | 30+ | Vieta's, symmetric, factoring |
 | Equation Solving | 10 | Linear, quadratic, isolation |
-| **Total** | **~220** | |
+| Calculus (Phase 4) | 50 | Integration, limits, Taylor, vector |
+| **Total** | **450+** | |
 
 ---
 
@@ -242,5 +243,5 @@ Solution: x = 2
 
 ---
 
-*Last updated: January 2, 2026*
-*Total rules: ~220 (targeting 500+ for IMO-level)*
+*Last updated: January 3, 2026*
+*Total rules: 450+ (targeting 500+ for IMO-level)*

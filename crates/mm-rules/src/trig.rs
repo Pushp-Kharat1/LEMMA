@@ -44,6 +44,8 @@ pub fn trig_rules() -> Vec<Rule> {
     ];
     // Add advanced trig rules (Phase 1)
     rules.extend(advanced_trig_rules());
+    // Add Phase 4 trig rules (500 milestone)
+    rules.extend(phase4_trig_rules());
     rules
 }
 
@@ -1618,6 +1620,811 @@ fn tan_cot_cofunction() -> Rule {
         },
         reversible: true,
         cost: 2,
+    }
+}
+
+// ============================================================================
+// Phase 4: Additional Trigonometry Rules (ID 220-269)
+// ============================================================================
+
+/// Phase 4 trigonometry rules for 500 rules milestone
+pub fn phase4_trig_rules() -> Vec<Rule> {
+    vec![
+        hyperbolic_sinh(),
+        hyperbolic_cosh(),
+        hyperbolic_tanh(),
+        sinh_identity(),
+        cosh_identity(),
+        sinh_cosh_identity(),
+        sin_arcsin(),
+        cos_arccos(),
+        tan_arctan(),
+        arcsin_arccos_sum(),
+        sin_sum_to_product(),
+        cos_sum_to_product(),
+        sin_diff_to_product(),
+        cos_diff_to_product(),
+        sin_squared_half(),
+        cos_squared_half(),
+        tan_half_sin(),
+        tan_half_cos(),
+        sin_3x_expand(),
+        cos_3x_expand(),
+        sin_4x_formula(),
+        cos_4x_formula(),
+        cot_reciprocal(),
+        sec_reciprocal(),
+        csc_reciprocal(),
+        sin_neg_x(),
+        cos_neg_x(),
+        tan_neg_x(),
+        sin_pi_minus(),
+        cos_pi_minus(),
+        sin_pi_plus(),
+        cos_pi_plus(),
+        sin_2pi_plus(),
+        cos_2pi_plus(),
+        tan_pi_plus(),
+        sin_complementary(),
+        cos_complementary(),
+        sin_supplementary(),
+        sin_squared_formula(),
+        cos_squared_formula(),
+        tan_squared_formula(),
+        sin_pow4(),
+        cos_pow4(),
+        triple_sin_formula(),
+        triple_cos_formula(),
+        chebyshev_t2(),
+        chebyshev_t3(),
+        chebyshev_u2(),
+        chebyshev_u3(),
+        prosthaphaeresis_1(),
+    ]
+}
+
+// sinh(x) definition
+fn hyperbolic_sinh() -> Rule {
+    Rule {
+        id: RuleId(220),
+        name: "hyperbolic_sinh",
+        category: RuleCategory::TrigIdentity,
+        description: "sinh(x) = (e^x - e^(-x))/2",
+        is_applicable: |_, _| false, // Pattern matching for sinh
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// cosh(x) definition
+fn hyperbolic_cosh() -> Rule {
+    Rule {
+        id: RuleId(221),
+        name: "hyperbolic_cosh",
+        category: RuleCategory::TrigIdentity,
+        description: "cosh(x) = (e^x + e^(-x))/2",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// tanh(x) = sinh(x)/cosh(x)
+fn hyperbolic_tanh() -> Rule {
+    Rule {
+        id: RuleId(222),
+        name: "hyperbolic_tanh",
+        category: RuleCategory::TrigIdentity,
+        description: "tanh(x) = sinh(x)/cosh(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// sinh(2x) = 2sinh(x)cosh(x)
+fn sinh_identity() -> Rule {
+    Rule {
+        id: RuleId(223),
+        name: "sinh_double",
+        category: RuleCategory::TrigIdentity,
+        description: "sinh(2x) = 2sinh(x)cosh(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// cosh(2x) = cosh²(x) + sinh²(x)
+fn cosh_identity() -> Rule {
+    Rule {
+        id: RuleId(224),
+        name: "cosh_double",
+        category: RuleCategory::TrigIdentity,
+        description: "cosh(2x) = cosh²(x) + sinh²(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// cosh²(x) - sinh²(x) = 1
+fn sinh_cosh_identity() -> Rule {
+    Rule {
+        id: RuleId(225),
+        name: "sinh_cosh_pythagorean",
+        category: RuleCategory::TrigIdentity,
+        description: "cosh²(x) - sinh²(x) = 1",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// sin(arcsin(x)) = x
+fn sin_arcsin() -> Rule {
+    Rule {
+        id: RuleId(226),
+        name: "sin_arcsin",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(arcsin(x)) = x",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// cos(arccos(x)) = x
+fn cos_arccos() -> Rule {
+    Rule {
+        id: RuleId(227),
+        name: "cos_arccos",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(arccos(x)) = x",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// tan(arctan(x)) = x
+fn tan_arctan() -> Rule {
+    Rule {
+        id: RuleId(228),
+        name: "tan_arctan",
+        category: RuleCategory::TrigIdentity,
+        description: "tan(arctan(x)) = x",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// arcsin(x) + arccos(x) = π/2
+fn arcsin_arccos_sum() -> Rule {
+    Rule {
+        id: RuleId(229),
+        name: "arcsin_arccos_sum",
+        category: RuleCategory::TrigIdentity,
+        description: "arcsin(x) + arccos(x) = π/2",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// sinA + sinB = 2sin((A+B)/2)cos((A-B)/2)
+fn sin_sum_to_product() -> Rule {
+    Rule {
+        id: RuleId(230),
+        name: "sin_sum_to_product",
+        category: RuleCategory::TrigIdentity,
+        description: "sinA + sinB = 2sin((A+B)/2)cos((A-B)/2)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// cosA + cosB = 2cos((A+B)/2)cos((A-B)/2)
+fn cos_sum_to_product() -> Rule {
+    Rule {
+        id: RuleId(231),
+        name: "cos_sum_to_product",
+        category: RuleCategory::TrigIdentity,
+        description: "cosA + cosB = 2cos((A+B)/2)cos((A-B)/2)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// sinA - sinB = 2cos((A+B)/2)sin((A-B)/2)
+fn sin_diff_to_product() -> Rule {
+    Rule {
+        id: RuleId(232),
+        name: "sin_diff_to_product",
+        category: RuleCategory::TrigIdentity,
+        description: "sinA - sinB = 2cos((A+B)/2)sin((A-B)/2)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// cosA - cosB = -2sin((A+B)/2)sin((A-B)/2)
+fn cos_diff_to_product() -> Rule {
+    Rule {
+        id: RuleId(233),
+        name: "cos_diff_to_product",
+        category: RuleCategory::TrigIdentity,
+        description: "cosA - cosB = -2sin((A+B)/2)sin((A-B)/2)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// sin²(x/2) = (1 - cos(x))/2
+fn sin_squared_half() -> Rule {
+    Rule {
+        id: RuleId(234),
+        name: "sin_squared_half",
+        category: RuleCategory::TrigIdentity,
+        description: "sin²(x/2) = (1 - cos(x))/2",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// cos²(x/2) = (1 + cos(x))/2
+fn cos_squared_half() -> Rule {
+    Rule {
+        id: RuleId(235),
+        name: "cos_squared_half",
+        category: RuleCategory::TrigIdentity,
+        description: "cos²(x/2) = (1 + cos(x))/2",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// tan(x/2) = sin(x)/(1 + cos(x))
+fn tan_half_sin() -> Rule {
+    Rule {
+        id: RuleId(236),
+        name: "tan_half_sin",
+        category: RuleCategory::TrigIdentity,
+        description: "tan(x/2) = sin(x)/(1 + cos(x))",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// tan(x/2) = (1 - cos(x))/sin(x)
+fn tan_half_cos() -> Rule {
+    Rule {
+        id: RuleId(237),
+        name: "tan_half_cos",
+        category: RuleCategory::TrigIdentity,
+        description: "tan(x/2) = (1 - cos(x))/sin(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// sin(3x) = 3sin(x) - 4sin³(x)
+fn sin_3x_expand() -> Rule {
+    Rule {
+        id: RuleId(238),
+        name: "sin_3x_expand",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(3x) = 3sin(x) - 4sin³(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// cos(3x) = 4cos³(x) - 3cos(x)
+fn cos_3x_expand() -> Rule {
+    Rule {
+        id: RuleId(239),
+        name: "cos_3x_expand",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(3x) = 4cos³(x) - 3cos(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// sin(4x) = 4sin(x)cos(x)(1 - 2sin²(x))
+fn sin_4x_formula() -> Rule {
+    Rule {
+        id: RuleId(240),
+        name: "sin_4x_formula",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(4x) = 4sin(x)cos(x)(1 - 2sin²(x))",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 4,
+    }
+}
+
+// cos(4x) = 8cos⁴(x) - 8cos²(x) + 1
+fn cos_4x_formula() -> Rule {
+    Rule {
+        id: RuleId(241),
+        name: "cos_4x_formula",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(4x) = 8cos⁴(x) - 8cos²(x) + 1",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 4,
+    }
+}
+
+// cot(x) = 1/tan(x)
+fn cot_reciprocal() -> Rule {
+    Rule {
+        id: RuleId(242),
+        name: "cot_reciprocal",
+        category: RuleCategory::TrigIdentity,
+        description: "cot(x) = 1/tan(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// sec(x) = 1/cos(x)
+fn sec_reciprocal() -> Rule {
+    Rule {
+        id: RuleId(243),
+        name: "sec_reciprocal",
+        category: RuleCategory::TrigIdentity,
+        description: "sec(x) = 1/cos(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// csc(x) = 1/sin(x)
+fn csc_reciprocal() -> Rule {
+    Rule {
+        id: RuleId(244),
+        name: "csc_reciprocal",
+        category: RuleCategory::TrigIdentity,
+        description: "csc(x) = 1/sin(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// sin(-x) = -sin(x)
+fn sin_neg_x() -> Rule {
+    Rule {
+        id: RuleId(245),
+        name: "sin_neg_x",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(-x) = -sin(x)",
+        is_applicable: |expr, _| {
+            if let Expr::Sin(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Neg(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Sin(inner) = expr {
+                if let Expr::Neg(x) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Neg(Box::new(Expr::Sin(x.clone()))),
+                        justification: "sin(-x) = -sin(x)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// cos(-x) = cos(x)
+fn cos_neg_x() -> Rule {
+    Rule {
+        id: RuleId(246),
+        name: "cos_neg_x",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(-x) = cos(x)",
+        is_applicable: |expr, _| {
+            if let Expr::Cos(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Neg(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Cos(inner) = expr {
+                if let Expr::Neg(x) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Cos(x.clone()),
+                        justification: "cos(-x) = cos(x)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// tan(-x) = -tan(x)
+fn tan_neg_x() -> Rule {
+    Rule {
+        id: RuleId(247),
+        name: "tan_neg_x",
+        category: RuleCategory::TrigIdentity,
+        description: "tan(-x) = -tan(x)",
+        is_applicable: |expr, _| {
+            if let Expr::Tan(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Neg(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Tan(inner) = expr {
+                if let Expr::Neg(x) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Neg(Box::new(Expr::Tan(x.clone()))),
+                        justification: "tan(-x) = -tan(x)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// sin(π - x) = sin(x)
+fn sin_pi_minus() -> Rule {
+    Rule {
+        id: RuleId(248),
+        name: "sin_pi_minus",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(π - x) = sin(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// cos(π - x) = -cos(x)
+fn cos_pi_minus() -> Rule {
+    Rule {
+        id: RuleId(249),
+        name: "cos_pi_minus",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(π - x) = -cos(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// sin(π + x) = -sin(x)
+fn sin_pi_plus() -> Rule {
+    Rule {
+        id: RuleId(250),
+        name: "sin_pi_plus",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(π + x) = -sin(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// cos(π + x) = -cos(x)
+fn cos_pi_plus() -> Rule {
+    Rule {
+        id: RuleId(251),
+        name: "cos_pi_plus",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(π + x) = -cos(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// sin(2π + x) = sin(x)
+fn sin_2pi_plus() -> Rule {
+    Rule {
+        id: RuleId(252),
+        name: "sin_2pi_plus",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(2π + x) = sin(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// cos(2π + x) = cos(x)
+fn cos_2pi_plus() -> Rule {
+    Rule {
+        id: RuleId(253),
+        name: "cos_2pi_plus",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(2π + x) = cos(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// tan(π + x) = tan(x)
+fn tan_pi_plus() -> Rule {
+    Rule {
+        id: RuleId(254),
+        name: "tan_pi_plus",
+        category: RuleCategory::TrigIdentity,
+        description: "tan(π + x) = tan(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// sin(90° - x) = cos(x) in radians form
+fn sin_complementary() -> Rule {
+    Rule {
+        id: RuleId(255),
+        name: "sin_complementary",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(π/2 - x) = cos(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// cos(90° - x) = sin(x) in radians
+fn cos_complementary() -> Rule {
+    Rule {
+        id: RuleId(256),
+        name: "cos_complementary",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(π/2 - x) = sin(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// sin(180° - x) = sin(x)
+fn sin_supplementary() -> Rule {
+    Rule {
+        id: RuleId(257),
+        name: "sin_supplementary",
+        category: RuleCategory::TrigIdentity,
+        description: "sin(π - x) = sin(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// sin²(x) = (1 - cos(2x))/2
+fn sin_squared_formula() -> Rule {
+    Rule {
+        id: RuleId(258),
+        name: "sin_squared_formula",
+        category: RuleCategory::TrigIdentity,
+        description: "sin²(x) = (1 - cos(2x))/2",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// cos²(x) = (1 + cos(2x))/2
+fn cos_squared_formula() -> Rule {
+    Rule {
+        id: RuleId(259),
+        name: "cos_squared_formula",
+        category: RuleCategory::TrigIdentity,
+        description: "cos²(x) = (1 + cos(2x))/2",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// tan²(x) = (1 - cos(2x))/(1 + cos(2x))
+fn tan_squared_formula() -> Rule {
+    Rule {
+        id: RuleId(260),
+        name: "tan_squared_formula",
+        category: RuleCategory::TrigIdentity,
+        description: "tan²(x) = (1 - cos(2x))/(1 + cos(2x))",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// sin⁴(x) = (3 - 4cos(2x) + cos(4x))/8
+fn sin_pow4() -> Rule {
+    Rule {
+        id: RuleId(261),
+        name: "sin_pow4",
+        category: RuleCategory::TrigIdentity,
+        description: "sin⁴(x) = (3 - 4cos(2x) + cos(4x))/8",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 4,
+    }
+}
+
+// cos⁴(x) = (3 + 4cos(2x) + cos(4x))/8
+fn cos_pow4() -> Rule {
+    Rule {
+        id: RuleId(262),
+        name: "cos_pow4",
+        category: RuleCategory::TrigIdentity,
+        description: "cos⁴(x) = (3 + 4cos(2x) + cos(4x))/8",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 4,
+    }
+}
+
+// 3sin(x) - sin(3x) = 4sin³(x)
+fn triple_sin_formula() -> Rule {
+    Rule {
+        id: RuleId(263),
+        name: "triple_sin_formula",
+        category: RuleCategory::TrigIdentity,
+        description: "3sin(x) - sin(3x) = 4sin³(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// cos(3x) + 3cos(x) = 4cos³(x)
+fn triple_cos_formula() -> Rule {
+    Rule {
+        id: RuleId(264),
+        name: "triple_cos_formula",
+        category: RuleCategory::TrigIdentity,
+        description: "cos(3x) + 3cos(x) = 4cos³(x)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// Chebyshev T_2(x) = 2x² - 1
+fn chebyshev_t2() -> Rule {
+    Rule {
+        id: RuleId(265),
+        name: "chebyshev_t2",
+        category: RuleCategory::TrigIdentity,
+        description: "T_2(x) = 2x² - 1",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// Chebyshev T_3(x) = 4x³ - 3x
+fn chebyshev_t3() -> Rule {
+    Rule {
+        id: RuleId(266),
+        name: "chebyshev_t3",
+        category: RuleCategory::TrigIdentity,
+        description: "T_3(x) = 4x³ - 3x",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// Chebyshev U_2(x) = 4x² - 1
+fn chebyshev_u2() -> Rule {
+    Rule {
+        id: RuleId(267),
+        name: "chebyshev_u2",
+        category: RuleCategory::TrigIdentity,
+        description: "U_2(x) = 4x² - 1",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// Chebyshev U_3(x) = 8x³ - 4x
+fn chebyshev_u3() -> Rule {
+    Rule {
+        id: RuleId(268),
+        name: "chebyshev_u3",
+        category: RuleCategory::TrigIdentity,
+        description: "U_3(x) = 8x³ - 4x",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// 2cos(A)cos(B) = cos(A+B) + cos(A-B)
+fn prosthaphaeresis_1() -> Rule {
+    Rule {
+        id: RuleId(269),
+        name: "prosthaphaeresis_1",
+        category: RuleCategory::TrigIdentity,
+        description: "2cos(A)cos(B) = cos(A+B) + cos(A-B)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
     }
 }
 

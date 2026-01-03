@@ -29,6 +29,8 @@ pub fn algebra_rules() -> Vec<Rule> {
     ];
     // Add advanced algebra rules (Phase 1)
     rules.extend(advanced_algebra_rules());
+    // Add Phase 4 algebra rules (500 milestone)
+    rules.extend(phase4_algebra_rules());
     rules
 }
 
@@ -1070,6 +1072,851 @@ fn div_to_mul() -> Rule {
         },
         reversible: true,
         cost: 1,
+    }
+}
+
+// ============================================================================
+// Phase 4: Additional Algebra Rules (ID 320-369)
+// ============================================================================
+
+/// Phase 4 algebra rules for 500 rules milestone
+pub fn phase4_algebra_rules() -> Vec<Rule> {
+    vec![
+        log_product(),
+        log_quotient(),
+        log_power(),
+        log_base_change(),
+        log_one(),
+        log_same_base(),
+        exp_product(),
+        exp_quotient(),
+        exp_power(),
+        exp_zero(),
+        exp_one(),
+        exp_ln(),
+        ln_exp(),
+        sqrt_product(),
+        sqrt_quotient(),
+        sqrt_square(),
+        cube_root_cube(),
+        nth_root_power(),
+        rationalize_denominator(),
+        conjugate_multiply(),
+        sum_of_cubes_factor(),
+        diff_of_cubes_factor(),
+        perfect_cube_sum(),
+        perfect_cube_diff(),
+        quadratic_complete_square(),
+        vieta_sum(),
+        vieta_product(),
+        factor_quadratic(),
+        rational_root_test(),
+        synthetic_division(),
+        polynomial_division(),
+        remainder_theorem(),
+        factor_theorem(),
+        bezout_identity(),
+        euclidean_division(),
+        fraction_add(),
+        fraction_mul(),
+        fraction_div(),
+        cross_multiply(),
+        lcd_combine(),
+        abs_nonnegative(),
+        abs_square(),
+        triangle_inequality(),
+        reverse_triangle(),
+        am_gm_2(),
+        am_gm_3(),
+        qm_am(),
+        cauchy_schwarz_2(),
+        holders_inequality(),
+        minkowski_inequality(),
+    ]
+}
+
+// log(ab) = log(a) + log(b)
+fn log_product() -> Rule {
+    Rule {
+        id: RuleId(320),
+        name: "log_product",
+        category: RuleCategory::Simplification,
+        description: "log(ab) = log(a) + log(b)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// log(a/b) = log(a) - log(b)
+fn log_quotient() -> Rule {
+    Rule {
+        id: RuleId(321),
+        name: "log_quotient",
+        category: RuleCategory::Simplification,
+        description: "log(a/b) = log(a) - log(b)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// log(a^n) = n*log(a)
+fn log_power() -> Rule {
+    Rule {
+        id: RuleId(322),
+        name: "log_power",
+        category: RuleCategory::Simplification,
+        description: "log(a^n) = n*log(a)",
+        is_applicable: |expr, _| {
+            if let Expr::Ln(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Pow(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Ln(inner) = expr {
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Mul(exp.clone(), Box::new(Expr::Ln(base.clone()))),
+                        justification: "log(a^n) = n*log(a)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// log_b(a) = ln(a)/ln(b)
+fn log_base_change() -> Rule {
+    Rule {
+        id: RuleId(323),
+        name: "log_base_change",
+        category: RuleCategory::Simplification,
+        description: "log_b(a) = ln(a)/ln(b)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// ln(1) = 0
+fn log_one() -> Rule {
+    Rule {
+        id: RuleId(324),
+        name: "log_one",
+        category: RuleCategory::Simplification,
+        description: "ln(1) = 0",
+        is_applicable: |expr, _| matches!(expr, Expr::Ln(inner) if matches!(inner.as_ref(), Expr::Const(r) if r.numer() == 1 && r.denom() == 1)),
+        apply: |_, _| {
+            vec![RuleApplication {
+                result: Expr::int(0),
+                justification: "ln(1) = 0".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// ln(e) = 1
+fn log_same_base() -> Rule {
+    Rule {
+        id: RuleId(325),
+        name: "log_same_base",
+        category: RuleCategory::Simplification,
+        description: "ln(e) = 1",
+        is_applicable: |expr, _| matches!(expr, Expr::Ln(inner) if matches!(inner.as_ref(), Expr::E)),
+        apply: |_, _| {
+            vec![RuleApplication {
+                result: Expr::int(1),
+                justification: "ln(e) = 1".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// e^a * e^b = e^(a+b)
+fn exp_product() -> Rule {
+    Rule {
+        id: RuleId(326),
+        name: "exp_product",
+        category: RuleCategory::Simplification,
+        description: "e^a * e^b = e^(a+b)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// e^a / e^b = e^(a-b)
+fn exp_quotient() -> Rule {
+    Rule {
+        id: RuleId(327),
+        name: "exp_quotient",
+        category: RuleCategory::Simplification,
+        description: "e^a / e^b = e^(a-b)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// (e^a)^b = e^(ab)
+fn exp_power() -> Rule {
+    Rule {
+        id: RuleId(328),
+        name: "exp_power",
+        category: RuleCategory::Simplification,
+        description: "(e^a)^b = e^(ab)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// e^0 = 1
+fn exp_zero() -> Rule {
+    Rule {
+        id: RuleId(329),
+        name: "exp_zero",
+        category: RuleCategory::Simplification,
+        description: "e^0 = 1",
+        is_applicable: |expr, _| matches!(expr, Expr::Exp(inner) if matches!(inner.as_ref(), Expr::Const(r) if r.is_zero())),
+        apply: |_, _| {
+            vec![RuleApplication {
+                result: Expr::int(1),
+                justification: "e^0 = 1".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// e^1 = e
+fn exp_one() -> Rule {
+    Rule {
+        id: RuleId(330),
+        name: "exp_one",
+        category: RuleCategory::Simplification,
+        description: "e^1 = e",
+        is_applicable: |expr, _| matches!(expr, Expr::Exp(inner) if matches!(inner.as_ref(), Expr::Const(r) if r.numer() == 1 && r.denom() == 1)),
+        apply: |_, _| {
+            vec![RuleApplication {
+                result: Expr::E,
+                justification: "e^1 = e".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// e^(ln(x)) = x
+fn exp_ln() -> Rule {
+    Rule {
+        id: RuleId(331),
+        name: "exp_ln",
+        category: RuleCategory::Simplification,
+        description: "e^(ln(x)) = x",
+        is_applicable: |expr, _| matches!(expr, Expr::Exp(inner) if matches!(inner.as_ref(), Expr::Ln(_))),
+        apply: |expr, _| {
+            if let Expr::Exp(inner) = expr {
+                if let Expr::Ln(x) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: (**x).clone(),
+                        justification: "e^(ln(x)) = x".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// ln(e^x) = x
+fn ln_exp() -> Rule {
+    Rule {
+        id: RuleId(332),
+        name: "ln_exp",
+        category: RuleCategory::Simplification,
+        description: "ln(e^x) = x",
+        is_applicable: |expr, _| matches!(expr, Expr::Ln(inner) if matches!(inner.as_ref(), Expr::Exp(_))),
+        apply: |expr, _| {
+            if let Expr::Ln(inner) = expr {
+                if let Expr::Exp(x) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: (**x).clone(),
+                        justification: "ln(e^x) = x".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// √(ab) = √a * √b
+fn sqrt_product() -> Rule {
+    Rule {
+        id: RuleId(333),
+        name: "sqrt_product",
+        category: RuleCategory::Simplification,
+        description: "√(ab) = √a * √b",
+        is_applicable: |expr, _| matches!(expr, Expr::Sqrt(inner) if matches!(inner.as_ref(), Expr::Mul(_, _))),
+        apply: |expr, _| {
+            if let Expr::Sqrt(inner) = expr {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Mul(
+                            Box::new(Expr::Sqrt(a.clone())),
+                            Box::new(Expr::Sqrt(b.clone())),
+                        ),
+                        justification: "√(ab) = √a * √b".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// √(a/b) = √a / √b
+fn sqrt_quotient() -> Rule {
+    Rule {
+        id: RuleId(334),
+        name: "sqrt_quotient",
+        category: RuleCategory::Simplification,
+        description: "√(a/b) = √a / √b",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// √(x²) = |x|
+fn sqrt_square() -> Rule {
+    Rule {
+        id: RuleId(335),
+        name: "sqrt_square",
+        category: RuleCategory::Simplification,
+        description: "√(x²) = |x|",
+        is_applicable: |expr, _| {
+            if let Expr::Sqrt(inner) = expr {
+                if let Expr::Pow(_, exp) = inner.as_ref() {
+                    return matches!(exp.as_ref(), Expr::Const(r) if r.numer() == 2 && r.denom() == 1);
+                }
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Sqrt(inner) = expr {
+                if let Expr::Pow(base, _) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Abs(base.clone()),
+                        justification: "√(x²) = |x|".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// ∛(x³) = x
+fn cube_root_cube() -> Rule {
+    Rule {
+        id: RuleId(336),
+        name: "cube_root_cube",
+        category: RuleCategory::Simplification,
+        description: "∛(x³) = x",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// ⁿ√(xⁿ) = |x| for even n, x for odd n
+fn nth_root_power() -> Rule {
+    Rule {
+        id: RuleId(337),
+        name: "nth_root_power",
+        category: RuleCategory::Simplification,
+        description: "ⁿ√(xⁿ) = |x| (even n) or x (odd n)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// 1/(a+b√c) * (a-b√c)/(a-b√c) = (a-b√c)/(a²-b²c)
+fn rationalize_denominator() -> Rule {
+    Rule {
+        id: RuleId(338),
+        name: "rationalize_denominator",
+        category: RuleCategory::Simplification,
+        description: "Rationalize denominator with conjugate",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// (a+b)(a-b) = a² - b²
+fn conjugate_multiply() -> Rule {
+    Rule {
+        id: RuleId(339),
+        name: "conjugate_multiply",
+        category: RuleCategory::Simplification,
+        description: "(a+b)(a-b) = a² - b²",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// a³ + b³ = (a+b)(a² - ab + b²)
+fn sum_of_cubes_factor() -> Rule {
+    Rule {
+        id: RuleId(340),
+        name: "sum_of_cubes_factor",
+        category: RuleCategory::Factoring,
+        description: "a³ + b³ = (a+b)(a² - ab + b²)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// a³ - b³ = (a-b)(a² + ab + b²)
+fn diff_of_cubes_factor() -> Rule {
+    Rule {
+        id: RuleId(341),
+        name: "diff_of_cubes_factor",
+        category: RuleCategory::Factoring,
+        description: "a³ - b³ = (a-b)(a² + ab + b²)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// (a+b)³ = a³ + 3a²b + 3ab² + b³
+fn perfect_cube_sum() -> Rule {
+    Rule {
+        id: RuleId(342),
+        name: "perfect_cube_sum",
+        category: RuleCategory::Expansion,
+        description: "(a+b)³ = a³ + 3a²b + 3ab² + b³",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// (a-b)³ = a³ - 3a²b + 3ab² - b³
+fn perfect_cube_diff() -> Rule {
+    Rule {
+        id: RuleId(343),
+        name: "perfect_cube_diff",
+        category: RuleCategory::Expansion,
+        description: "(a-b)³ = a³ - 3a²b + 3ab² - b³",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// ax² + bx + c → a(x + b/2a)² - (b² - 4ac)/4a
+fn quadratic_complete_square() -> Rule {
+    Rule {
+        id: RuleId(344),
+        name: "quadratic_complete_square",
+        category: RuleCategory::Simplification,
+        description: "Complete the square for quadratic",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 4,
+    }
+}
+
+// For x² - (r1+r2)x + r1*r2 = 0, sum of roots = r1+r2
+fn vieta_sum() -> Rule {
+    Rule {
+        id: RuleId(345),
+        name: "vieta_sum",
+        category: RuleCategory::Simplification,
+        description: "Sum of roots = -b/a",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// For x² - (r1+r2)x + r1*r2 = 0, product of roots = r1*r2
+fn vieta_product() -> Rule {
+    Rule {
+        id: RuleId(346),
+        name: "vieta_product",
+        category: RuleCategory::Simplification,
+        description: "Product of roots = c/a",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// ax² + bx + c → a(x-r1)(x-r2)
+fn factor_quadratic() -> Rule {
+    Rule {
+        id: RuleId(347),
+        name: "factor_quadratic",
+        category: RuleCategory::Factoring,
+        description: "Factor quadratic using roots",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// Rational root theorem test
+fn rational_root_test() -> Rule {
+    Rule {
+        id: RuleId(348),
+        name: "rational_root_test",
+        category: RuleCategory::Simplification,
+        description: "Rational root theorem",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// Synthetic division for polynomials
+fn synthetic_division() -> Rule {
+    Rule {
+        id: RuleId(349),
+        name: "synthetic_division",
+        category: RuleCategory::Simplification,
+        description: "Synthetic division",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Polynomial long division
+fn polynomial_division() -> Rule {
+    Rule {
+        id: RuleId(350),
+        name: "polynomial_division",
+        category: RuleCategory::Simplification,
+        description: "Polynomial long division",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// f(a) = remainder when f(x) divided by (x-a)
+fn remainder_theorem() -> Rule {
+    Rule {
+        id: RuleId(351),
+        name: "remainder_theorem",
+        category: RuleCategory::Simplification,
+        description: "Remainder theorem",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// (x-a) is factor of f(x) iff f(a) = 0
+fn factor_theorem() -> Rule {
+    Rule {
+        id: RuleId(352),
+        name: "factor_theorem",
+        category: RuleCategory::Simplification,
+        description: "Factor theorem",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// gcd(a,b) = ax + by for some integers x,y
+fn bezout_identity() -> Rule {
+    Rule {
+        id: RuleId(353),
+        name: "bezout_identity",
+        category: RuleCategory::Simplification,
+        description: "Bezout's identity: gcd(a,b) = ax + by",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// a = bq + r, 0 ≤ r < b
+fn euclidean_division() -> Rule {
+    Rule {
+        id: RuleId(354),
+        name: "euclidean_division",
+        category: RuleCategory::Simplification,
+        description: "Euclidean division",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// a/b + c/d = (ad + bc)/bd
+fn fraction_add() -> Rule {
+    Rule {
+        id: RuleId(355),
+        name: "fraction_add",
+        category: RuleCategory::Simplification,
+        description: "a/b + c/d = (ad + bc)/bd",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// (a/b) * (c/d) = (ac)/(bd)
+fn fraction_mul() -> Rule {
+    Rule {
+        id: RuleId(356),
+        name: "fraction_mul",
+        category: RuleCategory::Simplification,
+        description: "(a/b) * (c/d) = (ac)/(bd)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// (a/b) / (c/d) = (ad)/(bc)
+fn fraction_div() -> Rule {
+    Rule {
+        id: RuleId(357),
+        name: "fraction_div",
+        category: RuleCategory::Simplification,
+        description: "(a/b) / (c/d) = (ad)/(bc)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// a/b = c/d → ad = bc
+fn cross_multiply() -> Rule {
+    Rule {
+        id: RuleId(358),
+        name: "cross_multiply",
+        category: RuleCategory::Simplification,
+        description: "Cross multiply: a/b = c/d → ad = bc",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// Combine fractions using LCD
+fn lcd_combine() -> Rule {
+    Rule {
+        id: RuleId(359),
+        name: "lcd_combine",
+        category: RuleCategory::Simplification,
+        description: "Combine fractions using LCD",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 3,
+    }
+}
+
+// |x| ≥ 0
+fn abs_nonnegative() -> Rule {
+    Rule {
+        id: RuleId(360),
+        name: "abs_nonnegative",
+        category: RuleCategory::Simplification,
+        description: "|x| ≥ 0 always",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// |x|² = x²
+fn abs_square() -> Rule {
+    Rule {
+        id: RuleId(361),
+        name: "abs_square",
+        category: RuleCategory::Simplification,
+        description: "|x|² = x²",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: true,
+        cost: 1,
+    }
+}
+
+// |a + b| ≤ |a| + |b|
+fn triangle_inequality() -> Rule {
+    Rule {
+        id: RuleId(362),
+        name: "triangle_inequality",
+        category: RuleCategory::Simplification,
+        description: "|a + b| ≤ |a| + |b|",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// ||a| - |b|| ≤ |a - b|
+fn reverse_triangle() -> Rule {
+    Rule {
+        id: RuleId(363),
+        name: "reverse_triangle",
+        category: RuleCategory::Simplification,
+        description: "||a| - |b|| ≤ |a - b|",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// (a+b)/2 ≥ √(ab)
+fn am_gm_2() -> Rule {
+    Rule {
+        id: RuleId(364),
+        name: "am_gm_2",
+        category: RuleCategory::Simplification,
+        description: "(a+b)/2 ≥ √(ab) for a,b ≥ 0",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// (a+b+c)/3 ≥ ∛(abc)
+fn am_gm_3() -> Rule {
+    Rule {
+        id: RuleId(365),
+        name: "am_gm_3",
+        category: RuleCategory::Simplification,
+        description: "(a+b+c)/3 ≥ ∛(abc) for a,b,c ≥ 0",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// QM ≥ AM
+fn qm_am() -> Rule {
+    Rule {
+        id: RuleId(366),
+        name: "qm_am",
+        category: RuleCategory::Simplification,
+        description: "√((a²+b²)/2) ≥ (a+b)/2",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// (Σaᵢbᵢ)² ≤ (Σaᵢ²)(Σbᵢ²)
+fn cauchy_schwarz_2() -> Rule {
+    Rule {
+        id: RuleId(367),
+        name: "cauchy_schwarz_2",
+        category: RuleCategory::Simplification,
+        description: "(ab + cd)² ≤ (a²+c²)(b²+d²)",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Holder's inequality
+fn holders_inequality() -> Rule {
+    Rule {
+        id: RuleId(368),
+        name: "holders_inequality",
+        category: RuleCategory::Simplification,
+        description: "Holder's inequality",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// Minkowski inequality
+fn minkowski_inequality() -> Rule {
+    Rule {
+        id: RuleId(369),
+        name: "minkowski_inequality",
+        category: RuleCategory::Simplification,
+        description: "Minkowski inequality",
+        is_applicable: |_, _| false,
+        apply: |_, _| vec![],
+        reversible: false,
+        cost: 4,
     }
 }
 

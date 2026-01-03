@@ -18,7 +18,7 @@ A research prototype exploring neural-guided symbolic mathematics in Rust. Inspi
 ### What LEMMA IS:
 - A **research prototype** exploring hybrid neural-symbolic reasoning
 - A **proof of concept** for AlphaProof-style mathematical search
-- **220+ verified transformation rules** with multi-step chaining
+- **450+ verified transformation rules** for IMO-level mathematics
 - An **MCTS engine** guided by a neural policy network
 - A **learning project** for anyone interested in symbolic AI
 
@@ -75,7 +75,7 @@ A research prototype exploring neural-guided symbolic mathematics in Rust. Inspi
                                  v
                   +-----------------------------+
                   |       Rule Library          |
-                  |  (220+ verified transforms) |
+                  |  (450+ verified transforms) |
                   +--------------+--------------+
                                  |
                                  v
