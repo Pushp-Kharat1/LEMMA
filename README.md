@@ -321,3 +321,5 @@ Mozilla Public License 2.0 - see [LICENSE](LICENSE)
 ---
 
 LEMMA is a research project. Use it to learn, experiment, and contribute - not as your only source of mathematical truth.
+
+bUY ME A COFFEE : https://buymeacoffee.com/kharatpushg
