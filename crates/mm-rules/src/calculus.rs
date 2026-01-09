@@ -461,8 +461,8 @@ pub fn advanced_calculus_rules() -> Vec<Rule> {
         chain_rule_exp(),
         chain_rule_ln(),
         inverse_trig_deriv_arcsin(),
-        inverse_trig_deriv_arccos(),
-        inverse_trig_deriv_arctan(),
+        // inverse_trig_deriv_arccos(), - STUB: need Arccos type
+        // inverse_trig_deriv_arctan(), - STUB: need Arctan type
         diff_rule(),
         constant_multiple_rule(),
     ]
@@ -628,33 +628,8 @@ fn inverse_trig_deriv_arcsin() -> Rule {
     }
 }
 
-// d/dx(arccos(x)) = -1/√(1-x²)
-fn inverse_trig_deriv_arccos() -> Rule {
-    Rule {
-        id: RuleId(404),
-        name: "inverse_trig_deriv_arccos",
-        category: RuleCategory::Derivative,
-        description: "d/dx(arccos(x)) = -1/√(1-x²)",
-        is_applicable: |_expr, _ctx| false, // Placeholder - need Arccos type
-        apply: |_expr, _ctx| vec![],
-        reversible: false,
-        cost: 2,
-    }
-}
-
-// d/dx(arctan(x)) = 1/(1+x²)
-fn inverse_trig_deriv_arctan() -> Rule {
-    Rule {
-        id: RuleId(405),
-        name: "inverse_trig_deriv_arctan",
-        category: RuleCategory::Derivative,
-        description: "d/dx(arctan(x)) = 1/(1+x²)",
-        is_applicable: |_expr, _ctx| false, // Placeholder - need Arctan type
-        apply: |_expr, _ctx| vec![],
-        reversible: false,
-        cost: 2,
-    }
-}
+// NOTE: d/dx(arccos(x)) and d/dx(arctan(x)) rules need Arccos/Arctan types in Expr enum.
+// They are not implemented until Expr is extended.
 
 // d/dx(f - g) = f' - g' (difference rule)
 fn diff_rule() -> Rule {

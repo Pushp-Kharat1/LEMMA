@@ -16,3 +16,4 @@ rand_chacha.workspace = true
 thiserror.workspace = true
 candle-core.workspace = true
 rayon = "1.10"
+num_cpus = "1.16"

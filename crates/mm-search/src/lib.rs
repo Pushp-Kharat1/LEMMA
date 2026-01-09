@@ -12,9 +12,11 @@
 //! This crate provides:
 //! - [`BeamSearch`] - A simple beam search algorithm (good for v1)
 //! - [`NeuralMCTS`] - Neural-guided Monte Carlo Tree Search
+//! - [`DeepMCTS`] - Industrial-strength MCTS for 10M+ nodes
 //! - [`MCTS`] - Legacy MCTS (delegates to NeuralMCTS)
 
 pub mod beam;
+pub mod deep_mcts;
 pub mod mcts;
 
 use mm_core::Expr;
@@ -89,4 +91,5 @@ impl Default for SearchConfig {
 }
 
 pub use beam::BeamSearch;
+pub use deep_mcts::{DeepMCTS, DeepMCTSConfig, DeepNode, SearchStats};
 pub use mcts::{MCTSConfig, MCTSNode, NeuralMCTS, MCTS};

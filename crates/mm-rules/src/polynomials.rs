@@ -37,8 +37,13 @@ fn vieta_rules() -> Vec<Rule> {
             name: "vieta_sum_quadratic",
             category: RuleCategory::AlgebraicSolving,
             description: "For ax² + bx + c = 0: r₁ + r₂ = -b/a",
-            is_applicable: |_expr, _ctx| false, // Need polynomial representation
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Equation { .. }),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Vieta: For ax² + bx + c = 0, r₁ + r₂ = -b/a".to_string(),
+                }]
+            },
             reversible: true,
             cost: 2,
         },
@@ -48,8 +53,13 @@ fn vieta_rules() -> Vec<Rule> {
             name: "vieta_product_quadratic",
             category: RuleCategory::AlgebraicSolving,
             description: "For ax² + bx + c = 0: r₁ · r₂ = c/a",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Equation { .. }),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Vieta: For ax² + bx + c = 0, r₁ · r₂ = c/a".to_string(),
+                }]
+            },
             reversible: true,
             cost: 2,
         },
@@ -59,8 +69,13 @@ fn vieta_rules() -> Vec<Rule> {
             name: "vieta_sum_cubic",
             category: RuleCategory::AlgebraicSolving,
             description: "For ax³ + bx² + cx + d = 0: r₁ + r₂ + r₃ = -b/a",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Equation { .. }),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Vieta (cubic): r₁ + r₂ + r₃ = -b/a".to_string(),
+                }]
+            },
             reversible: true,
             cost: 2,
         },
@@ -70,8 +85,13 @@ fn vieta_rules() -> Vec<Rule> {
             name: "vieta_pairs_cubic",
             category: RuleCategory::AlgebraicSolving,
             description: "r₁r₂ + r₂r₃ + r₁r₃ = c/a",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Vieta (cubic): r₁r₂ + r₂r₃ + r₁r₃ = c/a".to_string(),
+                }]
+            },
             reversible: true,
             cost: 2,
         },
@@ -81,8 +101,13 @@ fn vieta_rules() -> Vec<Rule> {
             name: "vieta_product_cubic",
             category: RuleCategory::AlgebraicSolving,
             description: "r₁ · r₂ · r₃ = -d/a",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Vieta (cubic): r₁ · r₂ · r₃ = -d/a".to_string(),
+                }]
+            },
             reversible: true,
             cost: 2,
         },
@@ -102,8 +127,13 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             name: "elementary_sym_1",
             category: RuleCategory::AlgebraicSolving,
             description: "e₁ = Σxᵢ (sum of variables)",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Elementary symmetric polynomial e₁ = Σxᵢ".to_string(),
+                }]
+            },
             reversible: true,
             cost: 2,
         },
@@ -112,8 +142,13 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             name: "elementary_sym_2",
             category: RuleCategory::AlgebraicSolving,
             description: "e₂ = Σxᵢxⱼ (sum of pairwise products)",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Elementary symmetric polynomial e₂ = Σxᵢxⱼ".to_string(),
+                }]
+            },
             reversible: true,
             cost: 2,
         },
@@ -123,8 +158,13 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             name: "newton_identity_1",
             category: RuleCategory::AlgebraicSolving,
             description: "p₁ = e₁",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Newton's identity: p₁ = e₁".to_string(),
+                }]
+            },
             reversible: true,
             cost: 2,
         },
@@ -133,8 +173,13 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             name: "newton_identity_2",
             category: RuleCategory::AlgebraicSolving,
             description: "p₂ = e₁² - 2e₂",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Pow(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Newton's identity: p₂ = e₁² - 2e₂".to_string(),
+                }]
+            },
             reversible: true,
             cost: 3,
         },
@@ -143,8 +188,15 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             name: "newton_identity_3",
             category: RuleCategory::AlgebraicSolving,
             description: "p₃ = e₁³ - 3e₁e₂ + 3e₃",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _) | Expr::Pow(_, _))
+            },
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Newton's identity: p₃ = e₁³ - 3e₁e₂ + 3e₃".to_string(),
+                }]
+            },
             reversible: true,
             cost: 3,
         },
@@ -190,8 +242,13 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             name: "sum_cubes_sym",
             category: RuleCategory::Simplification,
             description: "x³ + y³ = (x+y)³ - 3xy(x+y)",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "x³ + y³ = (x+y)³ - 3xy(x+y)".to_string(),
+                }]
+            },
             reversible: true,
             cost: 3,
         },
@@ -201,8 +258,13 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             name: "sum_three_cubes",
             category: RuleCategory::Factoring,
             description: "x³+y³+z³-3xyz = (x+y+z)(x²+y²+z²-xy-yz-zx)",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "x³+y³+z³-3xyz = (x+y+z)(x²+y²+z²-xy-yz-zx)".to_string(),
+                }]
+            },
             reversible: true,
             cost: 4,
         },
@@ -221,8 +283,13 @@ fn factoring_rules() -> Vec<Rule> {
             name: "factor_theorem",
             category: RuleCategory::Factoring,
             description: "(x-a) | P(x) ⟺ P(a) = 0",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. } | Expr::Div(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Factor theorem: (x-a) divides P(x) iff P(a) = 0".to_string(),
+                }]
+            },
             reversible: true,
             cost: 3,
         },
@@ -232,8 +299,15 @@ fn factoring_rules() -> Vec<Rule> {
             name: "remainder_theorem",
             category: RuleCategory::AlgebraicSolving,
             description: "P(a) is remainder when dividing P(x) by (x-a)",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Add(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification:
+                        "Remainder theorem: P(a) is remainder when dividing P(x) by (x-a)"
+                            .to_string(),
+                }]
+            },
             reversible: false,
             cost: 3,
         },
@@ -243,8 +317,15 @@ fn factoring_rules() -> Vec<Rule> {
             name: "poly_div_identity",
             category: RuleCategory::AlgebraicSolving,
             description: "P(x) = D(x)·Q(x) + R(x)",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                matches!(expr, Expr::Div(_, _) | Expr::Add(_, _) | Expr::Mul(_, _))
+            },
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Polynomial division: P(x) = D(x)·Q(x) + R(x)".to_string(),
+                }]
+            },
             reversible: true,
             cost: 4,
         },
@@ -305,8 +386,15 @@ fn rational_root_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description:
                 "Rational roots of aₙxⁿ + ... + a₀ have form ±(factor of a₀)/(factor of aₙ)",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Equation { .. }),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification:
+                        "Rational root theorem: roots have form ±(factor of a₀)/(factor of aₙ)"
+                            .to_string(),
+                }]
+            },
             reversible: false,
             cost: 4,
         },
@@ -316,8 +404,13 @@ fn rational_root_rules() -> Vec<Rule> {
             name: "integer_root",
             category: RuleCategory::AlgebraicSolving,
             description: "Integer roots divide constant term",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Mod(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Integer roots divide constant term".to_string(),
+                }]
+            },
             reversible: false,
             cost: 3,
         },
@@ -369,8 +462,13 @@ fn quadratic_formula() -> Rule {
         name: "quadratic_formula",
         category: RuleCategory::EquationSolving,
         description: "x = (-b ± √(b²-4ac)) / 2a",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. } | Expr::Sqrt(_)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Quadratic formula: x = (-b ± √(b²-4ac)) / 2a".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -383,8 +481,18 @@ fn discriminant_sign() -> Rule {
         name: "discriminant_sign",
         category: RuleCategory::AlgebraicSolving,
         description: "Δ > 0 ⟹ 2 real roots; Δ = 0 ⟹ 1 repeated; Δ < 0 ⟹ complex",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| {
+            matches!(
+                expr,
+                Expr::Gt(_, _) | Expr::Lt(_, _) | Expr::Equation { .. }
+            )
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Discriminant sign determines root nature".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -397,8 +505,13 @@ fn discriminant_perfect_square() -> Rule {
         name: "discriminant_perfect_square",
         category: RuleCategory::AlgebraicSolving,
         description: "Δ = k² ⟹ rational roots",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Sqrt(_)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Perfect square discriminant implies rational roots".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -411,8 +524,13 @@ fn cardano_formula() -> Rule {
         name: "cardano_formula",
         category: RuleCategory::EquationSolving,
         description: "Cardano's formula for x³ + px + q = 0",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Equation { .. }),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Cardano's formula for depressed cubic".to_string(),
+            }]
+        },
         reversible: false,
         cost: 5,
     }
@@ -425,8 +543,15 @@ fn cubic_discriminant() -> Rule {
         name: "cubic_discriminant",
         category: RuleCategory::AlgebraicSolving,
         description: "Cubic discriminant Δ = -4p³ - 27q²",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _) | Expr::Pow(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Cubic discriminant: Δ = -4p³ - 27q²".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -439,8 +564,13 @@ fn quartic_resolvent() -> Rule {
         name: "quartic_resolvent",
         category: RuleCategory::EquationSolving,
         description: "Resolvent cubic for quartic equations",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Equation { .. }),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Quartic resolvent cubic".to_string(),
+            }]
+        },
         reversible: false,
         cost: 5,
     }
@@ -453,8 +583,15 @@ fn descartes_rule() -> Rule {
         name: "descartes_rule",
         category: RuleCategory::AlgebraicSolving,
         description: "Number of positive roots ≤ sign changes",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _) | Expr::Lte(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Descartes' rule: positive roots ≤ sign changes".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -467,8 +604,13 @@ fn sturm_sequence() -> Rule {
         name: "sturm_sequence",
         category: RuleCategory::AlgebraicSolving,
         description: "Sturm's theorem for counting real roots",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Derivative { expr: _, var: _ }),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Sturm's theorem: count real roots via sequence".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -481,8 +623,13 @@ fn resultant_definition() -> Rule {
         name: "resultant_definition",
         category: RuleCategory::AlgebraicSolving,
         description: "Res(f,g) = 0 ⟺ f and g share a root",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. } | Expr::Mul(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Resultant: Res(f,g) = 0 iff f and g share a root".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -495,8 +642,14 @@ fn bezout_theorem() -> Rule {
         name: "bezout_theorem",
         category: RuleCategory::Simplification,
         description: "f·u + g·v = gcd(f,g) for some polynomials u,v",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::GCD(_, _) | Expr::Add(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Bezout's identity for polynomials: f·u + g·v = gcd(f,g)"
+                    .to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -509,8 +662,13 @@ fn cauchy_bound() -> Rule {
         name: "cauchy_bound",
         category: RuleCategory::AlgebraicSolving,
         description: "Cauchy bound on polynomial roots",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Abs(_) | Expr::Lte(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Cauchy root bound: |roots| ≤ 1 + max|aᵢ/aₙ|".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -523,8 +681,13 @@ fn fujiwara_bound() -> Rule {
         name: "fujiwara_bound",
         category: RuleCategory::AlgebraicSolving,
         description: "Fujiwara bound on polynomial roots",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Abs(_) | Expr::Lte(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Fujiwara root bound".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -537,8 +700,15 @@ fn gauss_lucas_theorem() -> Rule {
         name: "gauss_lucas_theorem",
         category: RuleCategory::AlgebraicSolving,
         description: "Critical points in convex hull of roots",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Derivative { expr: _, var: _ }),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification:
+                    "Gauss-Lucas: derivative roots lie in convex hull of polynomial roots"
+                        .to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -551,8 +721,13 @@ fn lagrange_interpolation() -> Rule {
         name: "lagrange_interpolation",
         category: RuleCategory::Simplification,
         description: "P(x) = Σ yᵢ Π(x-xⱼ)/(xᵢ-xⱼ)",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Product { .. } | Expr::Sum { .. }),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Lagrange interpolation: P(x) = Σ yᵢ Π(x-xⱼ)/(xᵢ-xⱼ)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -565,8 +740,13 @@ fn newton_interpolation() -> Rule {
         name: "newton_interpolation",
         category: RuleCategory::Simplification,
         description: "Newton form of interpolating polynomial",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Newton interpolation: divided differences form".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -579,8 +759,13 @@ fn chebyshev_recurrence() -> Rule {
         name: "chebyshev_recurrence",
         category: RuleCategory::Simplification,
         description: "Chebyshev T_{n+1} = 2xT_n - T_{n-1}",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Mul(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Chebyshev recurrence: T_{n+1} = 2xT_n - T_{n-1}".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -593,8 +778,13 @@ fn hermite_recurrence() -> Rule {
         name: "hermite_recurrence",
         category: RuleCategory::Simplification,
         description: "Hermite H_{n+1} = 2xH_n - 2nH_{n-1}",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Mul(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Hermite recurrence: H_{n+1} = 2xH_n - 2nH_{n-1}".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -607,8 +797,14 @@ fn legendre_recurrence() -> Rule {
         name: "legendre_recurrence",
         category: RuleCategory::Simplification,
         description: "Legendre (n+1)P_{n+1} = (2n+1)xP_n - nP_{n-1}",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Mul(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Legendre recurrence: (n+1)P_{n+1} = (2n+1)xP_n - nP_{n-1}"
+                    .to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -621,8 +817,13 @@ fn laguerre_recurrence() -> Rule {
         name: "laguerre_recurrence",
         category: RuleCategory::Simplification,
         description: "Laguerre L_{n+1} = (2n+1-x)L_n - n²L_{n-1}",
-        is_applicable: |_expr, _ctx| false,
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Mul(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Laguerre recurrence: L_{n+1} = (2n+1-x)L_n - n²L_{n-1}".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }

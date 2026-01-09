@@ -129,8 +129,60 @@ fn am_gm_rules() -> Vec<Rule> {
             name: "sum_three_squares",
             category: RuleCategory::AlgebraicSolving,
             description: "a² + b² + c² ≥ ab + bc + ca",
-            is_applicable: |_expr, _ctx| false, // Need 3-term pattern matching
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                // Match (a² + b²) + c² or similar 3-term sum of squares
+                fn is_square(e: &Expr) -> bool {
+                    matches!(e, Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)))
+                }
+                if let Expr::Add(left, right) = expr {
+                    if is_square(right.as_ref()) {
+                        if let Expr::Add(a, b) = left.as_ref() {
+                            return is_square(a.as_ref()) && is_square(b.as_ref());
+                        }
+                    }
+                    if is_square(left.as_ref()) {
+                        if let Expr::Add(a, b) = right.as_ref() {
+                            return is_square(a.as_ref()) && is_square(b.as_ref());
+                        }
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                fn extract_base(e: &Expr) -> Option<Box<Expr>> {
+                    if let Expr::Pow(base, _) = e {
+                        Some(base.clone())
+                    } else {
+                        None
+                    }
+                }
+                if let Expr::Add(left, right) = expr {
+                    let (a_sq, b_sq, c_sq) = if let Expr::Add(a, b) = left.as_ref() {
+                        (a.as_ref(), b.as_ref(), right.as_ref())
+                    } else if let Expr::Add(a, b) = right.as_ref() {
+                        (a.as_ref(), b.as_ref(), left.as_ref())
+                    } else {
+                        return vec![];
+                    };
+                    if let (Some(a), Some(b), Some(c)) =
+                        (extract_base(a_sq), extract_base(b_sq), extract_base(c_sq))
+                    {
+                        // a² + b² + c² >= ab + bc + ca
+                        let ab = Expr::Mul(a.clone(), b.clone());
+                        let bc = Expr::Mul(b.clone(), c.clone());
+                        let ca = Expr::Mul(c.clone(), a.clone());
+                        let sum = Expr::Add(
+                            Box::new(Expr::Add(Box::new(ab), Box::new(bc))),
+                            Box::new(ca),
+                        );
+                        return vec![RuleApplication {
+                            result: sum,
+                            justification: "a² + b² + c² ≥ ab + bc + ca (lower bound)".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 3,
         },
@@ -172,8 +224,49 @@ fn am_gm_rules() -> Vec<Rule> {
             name: "am_gm_3",
             category: RuleCategory::AlgebraicSolving,
             description: "AM-GM for 3 terms: (a+b+c)/3 ≥ ∛(abc)",
-            is_applicable: |_expr, _ctx| false, // Would need cube root in Expr
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                // Match (a + b + c) / 3 or ((a + b) + c) / 3
+                if let Expr::Div(num, denom) = expr {
+                    if let Expr::Const(d) = denom.as_ref() {
+                        if *d == Rational::from_integer(3) {
+                            // Check if numerator is a 3-term sum
+                            if let Expr::Add(left, right) = num.as_ref() {
+                                if let Expr::Add(_, _) = left.as_ref() {
+                                    return true;
+                                }
+                                if let Expr::Add(_, _) = right.as_ref() {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Div(num, _) = expr {
+                    // Extract the 3 terms from the sum
+                    if let Expr::Add(left, right) = num.as_ref() {
+                        let (a, b, c) = if let Expr::Add(a, b) = left.as_ref() {
+                            (a.clone(), b.clone(), right.clone())
+                        } else if let Expr::Add(a, b) = right.as_ref() {
+                            (left.clone(), a.clone(), b.clone())
+                        } else {
+                            return vec![];
+                        };
+                        // AM-GM: (a+b+c)/3 >= (abc)^(1/3)
+                        let abc = Expr::Mul(Box::new(Expr::Mul(a, b)), c);
+                        let one_third = Expr::Div(Box::new(Expr::int(1)), Box::new(Expr::int(3)));
+                        let cube_root = Expr::Pow(Box::new(abc), Box::new(one_third));
+                        return vec![RuleApplication {
+                            result: cube_root,
+                            justification: "AM-GM: (a+b+c)/3 ≥ ∛(abc), equality iff a=b=c"
+                                .to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 3,
         },
@@ -216,8 +309,42 @@ fn cauchy_schwarz_rules() -> Vec<Rule> {
             name: "titus_lemma",
             category: RuleCategory::AlgebraicSolving,
             description: "Titu's Lemma: a²/x + b²/y ≥ (a+b)²/(x+y)",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                // Match a²/x + b²/y pattern
+                fn is_sq_over_var(e: &Expr) -> bool {
+                    if let Expr::Div(num, _denom) = e {
+                        matches!(num.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)))
+                    } else {
+                        false
+                    }
+                }
+                if let Expr::Add(left, right) = expr {
+                    return is_sq_over_var(left.as_ref()) && is_sq_over_var(right.as_ref());
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Add(left, right) = expr {
+                    if let (Expr::Div(num1, denom1), Expr::Div(num2, denom2)) =
+                        (left.as_ref(), right.as_ref())
+                    {
+                        if let (Expr::Pow(a, _), Expr::Pow(b, _)) = (num1.as_ref(), num2.as_ref()) {
+                            // (a+b)² / (x+y)
+                            let a_plus_b = Expr::Add(a.clone(), b.clone());
+                            let a_plus_b_sq = Expr::Pow(Box::new(a_plus_b), Box::new(Expr::int(2)));
+                            let x_plus_y = Expr::Add(denom1.clone(), denom2.clone());
+                            let result = Expr::Div(Box::new(a_plus_b_sq), Box::new(x_plus_y));
+                            return vec![RuleApplication {
+                                result,
+                                justification:
+                                    "Titu's Lemma: a²/x + b²/y ≥ (a+b)²/(x+y) (lower bound)"
+                                        .to_string(),
+                            }];
+                        }
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 4,
         },
@@ -304,8 +431,16 @@ fn absolute_value_rules() -> Vec<Rule> {
             name: "abs_nonneg",
             category: RuleCategory::Simplification,
             description: "|a| ≥ 0 for all a",
-            is_applicable: |_expr, _ctx| false, // Informational
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Abs(_)),
+            apply: |expr, _ctx| {
+                if let Expr::Abs(_) = expr {
+                    return vec![RuleApplication {
+                        result: Expr::Gte(Box::new(expr.clone()), Box::new(Expr::int(0))),
+                        justification: "|a| ≥ 0 always holds".to_string(),
+                    }];
+                }
+                vec![]
+            },
             reversible: false,
             cost: 1,
         },
@@ -462,8 +597,22 @@ fn square_inequality_rules() -> Vec<Rule> {
             name: "square_nonneg",
             category: RuleCategory::AlgebraicSolving,
             description: "a² ≥ 0 for all real a",
-            is_applicable: |_expr, _ctx| false, // Informational
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                if let Expr::Pow(_, exp) = expr {
+                    return matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2));
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Pow(_, _) = expr {
+                    return vec![RuleApplication {
+                        result: Expr::Gte(Box::new(expr.clone()), Box::new(Expr::int(0))),
+                        justification: "a² ≥ 0 for all real a (squares are non-negative)"
+                            .to_string(),
+                    }];
+                }
+                vec![]
+            },
             reversible: false,
             cost: 1,
         },
@@ -506,8 +655,29 @@ fn square_inequality_rules() -> Vec<Rule> {
             name: "diff_squared_ge_zero",
             category: RuleCategory::AlgebraicSolving,
             description: "(a-b)² ≥ 0",
-            is_applicable: |_expr, _ctx| false,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                // Match (a-b)² pattern
+                if let Expr::Pow(base, exp) = expr {
+                    if let Expr::Const(e) = exp.as_ref() {
+                        if *e == Rational::from_integer(2) {
+                            return matches!(base.as_ref(), Expr::Sub(_, _));
+                        }
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Pow(base, _) = expr {
+                    if let Expr::Sub(_, _) = base.as_ref() {
+                        return vec![RuleApplication {
+                            result: Expr::Gte(Box::new(expr.clone()), Box::new(Expr::int(0))),
+                            justification: "(a-b)² ≥ 0 always holds (squares are non-negative)"
+                                .to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: false,
             cost: 1,
         },
@@ -589,8 +759,50 @@ fn qm_am_inequality() -> Rule {
         name: "qm_am_inequality",
         category: RuleCategory::AlgebraicSolving,
         description: "QM >= AM: √((a²+b²)/2) >= (a+b)/2",
-        is_applicable: |_expr, _ctx| false, // Placeholder
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| {
+            // Match sqrt((a² + b²)/2) pattern
+            if let Expr::Sqrt(inner) = expr {
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if let Expr::Const(d) = denom.as_ref() {
+                        if *d == Rational::from_integer(2) {
+                            return matches!(num.as_ref(), Expr::Add(_, _));
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            // Transform to lower bound (a+b)/2
+            if let Expr::Sqrt(inner) = expr {
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if let Expr::Add(a_sq, b_sq) = num.as_ref() {
+                        // Try to extract bases from squares
+                        fn extract_base(e: &Expr) -> Option<Box<Expr>> {
+                            if let Expr::Pow(base, exp) = e {
+                                if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2))
+                                {
+                                    return Some(base.clone());
+                                }
+                            }
+                            None
+                        }
+                        if let (Some(a), Some(b)) =
+                            (extract_base(a_sq.as_ref()), extract_base(b_sq.as_ref()))
+                        {
+                            let a_plus_b = Expr::Add(a, b);
+                            let am = Expr::Div(Box::new(a_plus_b), denom.clone());
+                            return vec![RuleApplication {
+                                result: am,
+                                justification: "QM >= AM: √((a²+b²)/2) >= (a+b)/2 (lower bound)"
+                                    .to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
+        },
         reversible: false,
         cost: 2,
     }
@@ -603,8 +815,35 @@ fn hm_gm_inequality() -> Rule {
         name: "hm_gm_inequality",
         category: RuleCategory::AlgebraicSolving,
         description: "HM <= GM: 2ab/(a+b) <= √(ab)",
-        is_applicable: |_expr, _ctx| false, // Placeholder
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| {
+            // Match 2ab/(a+b) pattern
+            if let Expr::Div(num, denom) = expr {
+                if let Expr::Mul(two, ab) = num.as_ref() {
+                    if matches!(two.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)) {
+                        if matches!(ab.as_ref(), Expr::Mul(_, _)) {
+                            return matches!(denom.as_ref(), Expr::Add(_, _));
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Div(num, _denom) = expr {
+                if let Expr::Mul(_, ab) = num.as_ref() {
+                    if let Expr::Mul(a, b) = ab.as_ref() {
+                        // Upper bound: sqrt(ab)
+                        let ab_prod = Expr::Mul(a.clone(), b.clone());
+                        let gm = Expr::Sqrt(Box::new(ab_prod));
+                        return vec![RuleApplication {
+                            result: gm,
+                            justification: "HM <= GM: 2ab/(a+b) <= √(ab) (upper bound)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
         reversible: false,
         cost: 2,
     }
@@ -766,8 +1005,22 @@ fn sqrt_comparison() -> Rule {
         name: "sqrt_comparison",
         category: RuleCategory::AlgebraicSolving,
         description: "For a,b >= 0: a >= b => √a >= √b",
-        is_applicable: |_expr, _ctx| false, // Placeholder
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| {
+            // Match a >= b where both could have sqrt
+            matches!(expr, Expr::Gte(_, _) | Expr::Gt(_, _))
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Gte(a, b) = expr {
+                let sqrt_a = Expr::Sqrt(a.clone());
+                let sqrt_b = Expr::Sqrt(b.clone());
+                return vec![RuleApplication {
+                    result: Expr::Gte(Box::new(sqrt_a), Box::new(sqrt_b)),
+                    justification: "For a,b >= 0: a >= b => √a >= √b (sqrt is increasing)"
+                        .to_string(),
+                }];
+            }
+            vec![]
+        },
         reversible: false,
         cost: 1,
     }
@@ -780,8 +1033,19 @@ fn ln_comparison() -> Rule {
         name: "ln_comparison",
         category: RuleCategory::AlgebraicSolving,
         description: "For a,b > 0: a > b => ln(a) > ln(b)",
-        is_applicable: |_expr, _ctx| false, // Placeholder
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _)),
+        apply: |expr, _ctx| {
+            if let Expr::Gt(a, b) = expr {
+                let ln_a = Expr::Ln(a.clone());
+                let ln_b = Expr::Ln(b.clone());
+                return vec![RuleApplication {
+                    result: Expr::Gt(Box::new(ln_a), Box::new(ln_b)),
+                    justification: "For a,b > 0: a > b => ln(a) > ln(b) (ln is increasing)"
+                        .to_string(),
+                }];
+            }
+            vec![]
+        },
         reversible: false,
         cost: 1,
     }
@@ -794,8 +1058,18 @@ fn exp_monotonic() -> Rule {
         name: "exp_monotonic",
         category: RuleCategory::AlgebraicSolving,
         description: "a > b => e^a > e^b (exp is increasing)",
-        is_applicable: |_expr, _ctx| false, // Placeholder
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _)),
+        apply: |expr, _ctx| {
+            if let Expr::Gt(a, b) = expr {
+                let exp_a = Expr::Exp(a.clone());
+                let exp_b = Expr::Exp(b.clone());
+                return vec![RuleApplication {
+                    result: Expr::Gt(Box::new(exp_a), Box::new(exp_b)),
+                    justification: "a > b => e^a > e^b (exp is strictly increasing)".to_string(),
+                }];
+            }
+            vec![]
+        },
         reversible: false,
         cost: 1,
     }
@@ -808,8 +1082,19 @@ fn ln_monotonic() -> Rule {
         name: "ln_monotonic",
         category: RuleCategory::AlgebraicSolving,
         description: "a > b > 0 => ln(a) > ln(b) (ln is increasing)",
-        is_applicable: |_expr, _ctx| false, // Placeholder
-        apply: |_expr, _ctx| vec![],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _)),
+        apply: |expr, _ctx| {
+            if let Expr::Gt(a, b) = expr {
+                let ln_a = Expr::Ln(a.clone());
+                let ln_b = Expr::Ln(b.clone());
+                return vec![RuleApplication {
+                    result: Expr::Gt(Box::new(ln_a), Box::new(ln_b)),
+                    justification: "a > b > 0 => ln(a) > ln(b) (ln is strictly increasing on R+)"
+                        .to_string(),
+                }];
+            }
+            vec![]
+        },
         reversible: false,
         cost: 1,
     }

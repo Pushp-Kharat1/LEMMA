@@ -26,6 +26,9 @@ pub fn algebra_rules() -> Vec<Rule> {
         power_of_zero(),
         power_add(),
         power_mul(),
+        binomial_expand(),      // NEW: (a+b)² → a² + 2ab + b²
+        binomial_expand_diff(), // NEW: (a-b)² → a² - 2ab + b²
+        sub_same(),             // NEW: x - x → 0
     ];
     // Add advanced algebra rules (Phase 1)
     rules.extend(advanced_algebra_rules());
@@ -440,7 +443,7 @@ fn difference_of_squares() -> Rule {
 }
 
 // ============================================================================
-// Rule 9: Perfect Square (sum)
+// Rule 9: Perfect Square (sum) - Factor a² + 2ab + b² → (a + b)²
 // ============================================================================
 
 fn perfect_square_sum() -> Rule {
@@ -449,13 +452,48 @@ fn perfect_square_sum() -> Rule {
         name: "perfect_square_sum",
         category: RuleCategory::Factoring,
         description: "Factor perfect square: a² + 2ab + b² → (a + b)²",
-        is_applicable: |_expr, _ctx| {
-            // This requires more complex pattern matching
-            // Simplified check for now
+        is_applicable: |expr, _ctx| {
+            // Match a² + 2ab + b² pattern
+            if let Expr::Add(left, right) = expr {
+                // Check if we have (something + something) structure
+                // Try to match a² + (2ab + b²) or (a² + 2ab) + b²
+                if let Expr::Add(_, _) = left.as_ref() {
+                    return true; // Could be a² + 2ab + b²
+                }
+                if let Expr::Add(_, _) = right.as_ref() {
+                    return true;
+                }
+            }
             false
         },
-        apply: |_expr, _ctx| {
-            // TODO: Implement pattern matching for a² + 2ab + b²
+        apply: |expr, _ctx| {
+            // Try to pattern match a² + 2ab + b²
+            // This is a simplified version - full matching is complex
+            if let Expr::Add(left, right) = expr {
+                // Look for pattern: a² + (2ab + b²)
+                if let (Expr::Pow(a1, exp1), Expr::Add(mid, right2)) =
+                    (left.as_ref(), right.as_ref())
+                {
+                    if let (Expr::Const(two), Expr::Mul(_, _)) = (exp1.as_ref(), mid.as_ref()) {
+                        if *two == Rational::from(2) {
+                            if let Expr::Pow(b1, exp2) = right2.as_ref() {
+                                if let Expr::Const(two2) = exp2.as_ref() {
+                                    if *two2 == Rational::from(2) {
+                                        // Return (a + b)²
+                                        return vec![RuleApplication {
+                                            result: Expr::Pow(
+                                                Box::new(Expr::Add(a1.clone(), b1.clone())),
+                                                Box::new(Expr::Const(Rational::from(2))),
+                                            ),
+                                            justification: "a² + 2ab + b² = (a + b)²".to_string(),
+                                        }];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             vec![]
         },
         reversible: true,
@@ -614,13 +652,151 @@ fn power_mul() -> Rule {
 }
 
 // ============================================================================
+// Rule 15: Binomial Expansion (a + b)² → a² + 2ab + b²
+// ============================================================================
+
+fn binomial_expand() -> Rule {
+    Rule {
+        id: RuleId(15),
+        name: "binomial_expand",
+        category: RuleCategory::Expansion,
+        description: "Expand (a + b)² → a² + 2ab + b²",
+        is_applicable: |expr, _ctx| {
+            // Match (something)^2 where something is an Add
+            if let Expr::Pow(base, exp) = expr {
+                if let Expr::Const(e) = exp.as_ref() {
+                    return *e == Rational::from(2) && matches!(base.as_ref(), Expr::Add(_, _));
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Pow(base, exp) = expr {
+                if let Expr::Const(e) = exp.as_ref() {
+                    if *e == Rational::from(2) {
+                        if let Expr::Add(a, b) = base.as_ref() {
+                            // (a + b)² = a² + 2ab + b²
+                            let a_squared =
+                                Expr::Pow(a.clone(), Box::new(Expr::Const(Rational::from(2))));
+                            let two_ab = Expr::Mul(
+                                Box::new(Expr::Const(Rational::from(2))),
+                                Box::new(Expr::Mul(a.clone(), b.clone())),
+                            );
+                            let b_squared =
+                                Expr::Pow(b.clone(), Box::new(Expr::Const(Rational::from(2))));
+
+                            let result = Expr::Add(
+                                Box::new(Expr::Add(Box::new(a_squared), Box::new(two_ab))),
+                                Box::new(b_squared),
+                            );
+
+                            return vec![RuleApplication {
+                                result,
+                                justification: "(a + b)² = a² + 2ab + b²".to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 4,
+    }
+}
+
+// ============================================================================
+// Rule 16: Binomial Expansion Difference (a - b)² → a² - 2ab + b²
+// ============================================================================
+
+fn binomial_expand_diff() -> Rule {
+    Rule {
+        id: RuleId(16),
+        name: "binomial_expand_diff",
+        category: RuleCategory::Expansion,
+        description: "Expand (a - b)² → a² - 2ab + b²",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Pow(base, exp) = expr {
+                if let Expr::Const(e) = exp.as_ref() {
+                    return *e == Rational::from(2) && matches!(base.as_ref(), Expr::Sub(_, _));
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Pow(base, exp) = expr {
+                if let Expr::Const(e) = exp.as_ref() {
+                    if *e == Rational::from(2) {
+                        if let Expr::Sub(a, b) = base.as_ref() {
+                            // (a - b)² = a² - 2ab + b²
+                            let a_squared =
+                                Expr::Pow(a.clone(), Box::new(Expr::Const(Rational::from(2))));
+                            let two_ab = Expr::Mul(
+                                Box::new(Expr::Const(Rational::from(2))),
+                                Box::new(Expr::Mul(a.clone(), b.clone())),
+                            );
+                            let b_squared =
+                                Expr::Pow(b.clone(), Box::new(Expr::Const(Rational::from(2))));
+
+                            let result = Expr::Add(
+                                Box::new(Expr::Sub(Box::new(a_squared), Box::new(two_ab))),
+                                Box::new(b_squared),
+                            );
+
+                            return vec![RuleApplication {
+                                result,
+                                justification: "(a - b)² = a² - 2ab + b²".to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 4,
+    }
+}
+
+// ============================================================================
+// Rule 17: Subtraction Same (x - x = 0)
+// ============================================================================
+
+fn sub_same() -> Rule {
+    Rule {
+        id: RuleId(17),
+        name: "sub_same",
+        category: RuleCategory::Simplification,
+        description: "x - x = 0",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Sub(a, b) = expr {
+                return a == b;
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Sub(a, b) = expr {
+                if a == b {
+                    return vec![RuleApplication {
+                        result: Expr::Const(Rational::from(0)),
+                        justification: "x - x = 0".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// ============================================================================
 // Phase 1: Advanced Algebra Rules (ID 300+)
 // ============================================================================
 
 /// Get all advanced algebra rules
 pub fn advanced_algebra_rules() -> Vec<Rule> {
     vec![
-        // Safe rules that don't affect Pythagorean identity
         // Sum/Difference of cubes
         sum_of_cubes(),
         diff_of_cubes(),
@@ -632,13 +808,13 @@ pub fn advanced_algebra_rules() -> Vec<Rule> {
         fractional_distribute(),
         // Double negative
         double_negative(),
-        // Binomial identities (may interfere - testing disabled)
-        // binomial_square_expand(),
-        // binomial_cube_expand(),
-        // Subtraction to addition (may interfere - testing disabled)
-        // sub_to_add(),
-        // Division to multiplication (may interfere - testing disabled)
-        // div_to_mul(),
+        // Binomial identities - NOW ENABLED
+        binomial_square_expand(),
+        binomial_cube_expand(),
+        // Subtraction to addition - NOW ENABLED
+        sub_to_add(),
+        // Division to multiplication - NOW ENABLED
+        div_to_mul(),
     ]
 }
 

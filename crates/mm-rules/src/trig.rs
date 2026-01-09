@@ -966,13 +966,13 @@ pub fn advanced_trig_rules() -> Vec<Rule> {
         // Pythagorean extensions
         tan_sec_identity(),
         cot_csc_identity(),
-        // Product-to-sum (disabled - too greedy, matches sin*sin where we don't want it)
-        // sin_sin_product(),
-        // cos_cos_product(),
-        // sin_cos_product(),
-        // Half-angle (disabled - expands sin²/cos² which breaks other simplifications)
-        // sin_half_angle(),
-        // cos_half_angle(),
+        // Product-to-sum - NOW ENABLED
+        sin_sin_product(),
+        cos_cos_product(),
+        sin_cos_product(),
+        // Half-angle - NOW ENABLED
+        sin_half_angle(),
+        cos_half_angle(),
         // Cofunction identities
         sin_cos_cofunction(),
         cos_sin_cofunction(),

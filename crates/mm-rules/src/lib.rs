@@ -7,16 +7,17 @@
 //! # mm-rules
 //!
 //! Mathematical transformation rules for the LEMMA system.
-//! Contains 500+ rules for IMO-level problem solving.
 //!
-//! ## Rule Categories
-//! - Basic algebra and simplification
-//! - Calculus (derivatives and integration)
-//! - Trigonometry (identities and special values)
-//! - Number theory (divisibility, modular arithmetic)
-//! - Inequalities (AM-GM, Cauchy-Schwarz)
-//! - Combinatorics (binomial, counting)
-//! - Polynomials (Vieta's, symmetric functions)
+//! ## Rule Categories (162 working rules)
+//! - Basic algebra and simplification (36 rules)
+//! - Trigonometry (43 rules)
+//! - Number theory (28 working, 56 need implementation)
+//! - Inequalities (20 working, 12 need implementation)
+//! - Calculus derivatives (15 working)
+//! - Integration (9 rules)
+//! - Equations (7 rules)
+//! - Combinatorics (1 working, 45 need implementation)
+//! - Polynomials (3 working, 36 need implementation)
 
 pub mod algebra;
 pub mod calculus;

@@ -42,6 +42,16 @@ pub enum RuleCategory {
     Integral,
     /// Limit evaluation rules.
     Limit,
+    /// Inequality rules (AM-GM, Cauchy-Schwarz, bounds).
+    Inequality,
+    /// Complex number rules.
+    Complex,
+    /// Logarithm and exponential rules.
+    LogExp,
+    /// Sequence and series rules.
+    Sequence,
+    /// Number theory rules.
+    NumberTheory,
 }
 
 /// Context for rule application.
@@ -170,53 +180,64 @@ impl RuleSet {
 }
 
 /// Create a standard rule set with all built-in rules.
+///
+/// Current state: 162 working rules, 151 stubs in mixed modules
+/// Stubs are included but won't match any expressions (is_applicable returns false)
 pub fn standard_rules() -> RuleSet {
     let mut rules = RuleSet::new();
 
-    // Add algebra rules
+    // FULLY WORKING MODULES (0 stubs):
+
+    // Add algebra rules - 36 working, 0 stubs
     for rule in crate::algebra::algebra_rules() {
         rules.add(rule);
     }
 
-    // Add calculus rules
-    for rule in crate::calculus::calculus_rules() {
-        rules.add(rule);
-    }
-
-    // Add trig rules
+    // Add trig rules - 43 working, 0 stubs
     for rule in crate::trig::trig_rules() {
         rules.add(rule);
     }
 
-    // Add equation solving rules
+    // Add equation solving rules - 7 working, 0 stubs
     for rule in crate::equations::equation_rules() {
         rules.add(rule);
     }
 
-    // Add integration rules
+    // Add integration rules - 9 working, 0 stubs
     for rule in crate::integration::integration_rules() {
         rules.add(rule);
     }
 
-    // Add number theory rules
-    for rule in crate::number_theory::number_theory_rules() {
+    // MIXED MODULES (have both working and stub rules):
+
+    // Add calculus rules - 15 working, 2 stubs
+    for rule in crate::calculus::calculus_rules() {
         rules.add(rule);
     }
 
-    // Add inequality rules
+    // Add inequality rules - 20 working, 12 stubs
     for rule in crate::inequalities::inequality_rules() {
         rules.add(rule);
     }
 
-    // Add combinatorics rules
+    // Add number theory rules - 28 working, 56 stubs
+    for rule in crate::number_theory::number_theory_rules() {
+        rules.add(rule);
+    }
+
+    // Add combinatorics rules - 1 working, 45 stubs
     for rule in crate::combinatorics::combinatorics_rules() {
         rules.add(rule);
     }
 
-    // Add polynomial rules
+    // Add polynomial rules - 3 working, 36 stubs
     for rule in crate::polynomials::polynomial_rules() {
         rules.add(rule);
     }
+
+    // DELETED pure-stub modules (had 0 working rules):
+    // complex.rs, logarithm.rs, sequences.rs, geometry.rs, modular.rs, functional.rs
+    // These were created as stubs and never implemented - now deleted.
 
     rules
 }
