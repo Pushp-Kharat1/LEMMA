@@ -44,3 +44,11 @@ path = "examples/test_new_rules.rs"
 [[example]]
 name = "train_beast"
 path = "examples/train_beast.rs"
+
+[[example]]
+name = "neural_mcts_demo"
+path = "examples/neural_mcts_demo.rs"
+
+[[example]]
+name = "imo_2024_official"
+path = "examples/imo_2024_official.rs"
