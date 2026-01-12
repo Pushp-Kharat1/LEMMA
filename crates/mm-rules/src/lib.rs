@@ -20,6 +20,7 @@
 //! - Polynomials (3 working, 36 need implementation)
 
 pub mod algebra;
+pub mod backward;
 pub mod calculus;
 pub mod combinatorics;
 pub mod equations;

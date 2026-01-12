@@ -16,6 +16,7 @@
 //! - [`MCTS`] - Legacy MCTS (delegates to NeuralMCTS)
 
 pub mod beam;
+pub mod bridge;
 pub mod deep_mcts;
 pub mod mcts;
 

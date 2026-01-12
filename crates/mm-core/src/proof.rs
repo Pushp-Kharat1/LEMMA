@@ -37,6 +37,17 @@ pub struct HypId(pub u32);
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct GoalId(pub u32);
 
+/// Direction of proof search
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SearchDirection {
+    /// Apply rules forward from hypotheses
+    Forward,
+    /// Apply rules backward from goals
+    Backward,
+    /// Both directions simultaneously
+    Bidirectional,
+}
+
 // ============================================================================
 // ProofState - The main proof context
 // ============================================================================
@@ -63,6 +74,9 @@ pub struct ProofState {
     /// Constraints on variables (e.g., abc = 1)
     pub constraints: Vec<Constraint>,
     
+    /// Search direction for this proof state
+    pub search_direction: SearchDirection,
+    
     /// Counter for generating unique hypothesis IDs
     next_hyp_id: u32,
     
@@ -81,10 +95,18 @@ impl ProofState {
             goals: Vec::new(),
             variables: Vec::new(),
             constraints: Vec::new(),
+            search_direction: SearchDirection::Forward,
             next_hyp_id: 0,
             next_goal_id: 0,
             symbols: SymbolTable::new(),
         }
+    }
+    
+    /// Create a new proof state with specified search direction.
+    pub fn with_direction(direction: SearchDirection) -> Self {
+        let mut state = Self::new();
+        state.search_direction = direction;
+        state
     }
     
     /// Add a variable with a domain.

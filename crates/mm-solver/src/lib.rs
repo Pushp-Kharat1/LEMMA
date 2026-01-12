@@ -11,26 +11,33 @@
 //! This crate combines all components into a single, easy-to-use interface
 //! for solving mathematical problems with step-by-step reasoning.
 //!
+//! ## Solvers
+//!
+//! - [`LemmaSolver`] - Basic algebraic simplification and calculus
+//! - [`IMOSolver`] - Full IMO competition solver with DeepMCTS
+//!
 //! ## Example
 //!
 //! ```rust
-//! use mm_solver::LemmaSolver;
+//! use mm_solver::{LemmaSolver, IMOSolver};
 //!
+//! // Basic simplification
 //! let mut solver = LemmaSolver::new();
-//!
-//! // Simplify an expression
 //! let result = solver.simplify("2 + 3").unwrap();
-//! println!("Result: {:?}", result.result);  // Const(5)
 //!
-//! // Compute a derivative
-//! let result = solver.differentiate("x^2", "x").unwrap();
-//! println!("Derivative: {:?}", result.result);
+//! // IMO-level solving
+//! let imo = IMOSolver::new();
+//! let result = imo.solve_text("Find all functions f such that f(x+y) = f(x) + f(y)");
 //! ```
+
+pub mod imo_solver;
 
 use mm_core::{Expr, MathError, SymbolTable};
 use mm_rules::{rule::standard_rules, RuleSet};
 use mm_search::{BeamSearch, SearchConfig, Step};
 use mm_verifier::{Verifier, VerifyResult};
+
+pub use imo_solver::{IMOSolveResult, IMOSolver, IMOSolverConfig, SolutionStep};
 
 /// The LEMMA solver.
 ///

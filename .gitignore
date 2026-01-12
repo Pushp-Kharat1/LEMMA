@@ -18,9 +18,26 @@ Thumbs.db
 # Logs
 *.log
 
-# Model weights (if any)
+# Model weights
 *.safetensors
 *.ot
+*.onnx
+*.zip
 
-#Model 
+# Models directory
 /model/
+/models/
+
+# Data files (large)
+/data/
+synthetic_problems.json
+synthetic_*.json
+real_imo_problems.json
+
+# Notebooks (large)
+*.ipynb
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo

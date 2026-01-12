@@ -52,3 +52,19 @@ path = "examples/neural_mcts_demo.rs"
 [[example]]
 name = "imo_2024_official"
 path = "examples/imo_2024_official.rs"
+
+[[example]]
+name = "imo_solver"
+path = "examples/imo_solver.rs"
+
+[[example]]
+name = "imo_2024_solve"
+path = "examples/imo_2024_solve.rs"
+
+[[example]]
+name = "bidirectional_demo"
+path = "examples/bidirectional_demo.rs"
+
+[[example]]
+name = "comprehensive_proof_demo"
+path = "examples/comprehensive_proof_demo.rs"

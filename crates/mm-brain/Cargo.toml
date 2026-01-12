@@ -21,6 +21,7 @@ candle-nn.workspace = true
 
 # ONNX Runtime for model inference
 ort = "2.0.0-rc.10"
+ndarray = "0.15"
 
 [dev-dependencies]
 proptest.workspace = true

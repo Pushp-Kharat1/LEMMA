@@ -8,6 +8,7 @@ members = [
     "crates/mm-brain",
     "crates/mm-solver",
     "crates/mm-macro",
+    "crates/mm-synth",
 ]
 
 [workspace.package]

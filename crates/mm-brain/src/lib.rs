@@ -25,6 +25,7 @@
 pub mod data;
 pub mod encoder;
 pub mod network;
+pub mod onnx_inference;
 pub mod policy;
 pub mod substitution;
 pub mod training;
@@ -32,6 +33,7 @@ pub mod training;
 pub use data::DataGenerator;
 pub use encoder::ExpressionEncoder;
 pub use network::MathNetwork;
+pub use onnx_inference::MathBertModel;
 pub use policy::PolicyNetwork;
 pub use substitution::{SearchHint, SubstitutionPrediction, SubstitutionPredictor};
 pub use training::{Trainer, TrainingConfig};

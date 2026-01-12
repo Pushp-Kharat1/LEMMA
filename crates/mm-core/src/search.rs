@@ -7,11 +7,8 @@
 //! 4. Neural-guided rule selection
 
 use crate::{Expr, Symbol, SymbolTable, Rational};
-use crate::proof::{
-    ProofState, Proof, ProofStep, Goal, GoalId, GoalStatus,
-    Hypothesis, HypId, HypothesisOrigin, Domain, Variable, Constraint
-};
-use std::collections::{HashMap, HashSet, VecDeque};
+use crate::proof::{ProofState, Proof, ProofStep, Domain};
+use std::collections::{HashMap, VecDeque};
 
 // ============================================================================
 // Proof Search Configuration
@@ -214,6 +211,7 @@ impl ProofSearchEngine {
     }
     
     /// Check if a strategy is suggested by neural hints
+    #[allow(dead_code)]
     fn hint_suggests(&self, strategy: &str) -> f32 {
         for hint in &self.neural_hints {
             let hint_lower = hint.action.to_lowercase();
@@ -246,6 +244,7 @@ impl ProofSearchEngine {
     }
     
     /// Get the priority boost for a strategy based on neural hints
+    #[allow(dead_code)]
     fn get_strategy_priority(&self, strategy: &str) -> f32 {
         self.hint_suggests(strategy)
     }
@@ -813,7 +812,7 @@ fn substitute_var_in_expr(expr: &Expr, old_var: Symbol, new_var: Symbol) -> Expr
     }
 }
 
-fn try_apply_am_gm(lhs: &Expr, rhs: &Expr) -> Option<Expr> {
+fn try_apply_am_gm(_lhs: &Expr, _rhs: &Expr) -> Option<Expr> {
     // Check if this is AM-GM applicable
     // a + b >= 2*sqrt(a*b) transforms to (sqrt(a) - sqrt(b))^2 >= 0
     // For now, just return the goal as proved if it looks like AM-GM form

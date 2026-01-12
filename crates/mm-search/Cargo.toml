@@ -17,3 +17,15 @@ thiserror.workspace = true
 candle-core.workspace = true
 rayon = "1.10"
 num_cpus = "1.16"
+
+[[example]]
+name = "mcts_rule_explorer"
+path = "examples/mcts_rule_explorer.rs"
+
+[[example]]
+name = "deep_mcts_bench"
+path = "examples/deep_mcts_bench.rs"
+
+[[example]]
+name = "bidirectional_search_demo"
+path = "examples/bidirectional_search_demo.rs"
