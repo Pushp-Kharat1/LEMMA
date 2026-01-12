@@ -28,6 +28,7 @@ pub mod inequalities;
 pub mod integration;
 pub mod number_theory;
 pub mod polynomials;
+pub mod quantifier;
 pub mod rule;
 pub mod trig;
 

@@ -28,6 +28,12 @@ pub enum BackwardStrategy {
 
     /// Substitute to create simpler goal
     Substitution,
+
+    /// Universal introduction: To prove ∀x.P(x), prove P for arbitrary x
+    UniversalIntro,
+
+    /// Existential witness: To prove ∃x.P(x), find witness w and prove P(w)
+    ExistentialWitness,
 }
 
 /// Result of backward reasoning
@@ -69,6 +75,16 @@ pub fn find_proof_of(goal: &Expr) -> Vec<BackwardStep> {
 
     // Strategy 3: Equation A = B ← factored/expanded form
     if let Some(step) = equation_to_factored(goal) {
+        steps.push(step);
+    }
+
+    // Strategy 4: Universal quantifier ← prove for arbitrary variable
+    if let Some(step) = forall_introduction(goal) {
+        steps.push(step);
+    }
+
+    // Strategy 5: Existential quantifier ← find witness
+    if let Some(step) = exists_witness(goal) {
         steps.push(step);
     }
 
@@ -219,6 +235,129 @@ fn equation_to_factored(goal: &Expr) -> Option<BackwardStep> {
     }
 }
 
+/// Strategy: ∀x.P(x) ← prove P(x) for arbitrary x
+///
+/// To prove a universal statement, we prove it for an arbitrary/fresh variable.
+/// The subgoal is the body with the bound variable.
+fn forall_introduction(goal: &Expr) -> Option<BackwardStep> {
+    match goal {
+        Expr::ForAll { var, body, .. } => {
+            // Subgoal is the body - prover will need to treat 'var' as arbitrary
+            Some(BackwardStep {
+                subgoals: vec![body.as_ref().clone()],
+                strategy: BackwardStrategy::UniversalIntro,
+                justification: format!("To prove ∀{:?}.P, prove P for arbitrary {:?}", var, var),
+            })
+        }
+        _ => None,
+    }
+}
+
+/// Strategy: ∃x.P(x) ← find witness w and prove P(w)
+///
+/// To prove an existential, we need to find a witness value.
+/// Returns common potential witnesses as subgoals.
+fn exists_witness(goal: &Expr) -> Option<BackwardStep> {
+    match goal {
+        Expr::Exists { var, body, .. } => {
+            // For existential, we suggest trying common witnesses
+            // The prover should try substituting these values
+            let witnesses = vec![Expr::int(0), Expr::int(1), Expr::int(-1)];
+
+            // Generate subgoals by substituting each witness
+            let subgoals: Vec<Expr> = witnesses
+                .iter()
+                .map(|w| substitute_var(body, *var, w))
+                .collect();
+
+            Some(BackwardStep {
+                subgoals,
+                strategy: BackwardStrategy::ExistentialWitness,
+                justification: format!("To prove ∃{:?}.P, find witness w where P(w) holds", var),
+            })
+        }
+        _ => None,
+    }
+}
+
+/// Simple variable substitution for backward reasoning
+fn substitute_var(body: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
+    match body {
+        Expr::Var(v) if *v == var => value.clone(),
+        Expr::Var(_) | Expr::Const(_) | Expr::Pi | Expr::E => body.clone(),
+
+        Expr::Neg(e) => Expr::Neg(Box::new(substitute_var(e, var, value))),
+        Expr::Sqrt(e) => Expr::Sqrt(Box::new(substitute_var(e, var, value))),
+        Expr::Sin(e) => Expr::Sin(Box::new(substitute_var(e, var, value))),
+        Expr::Cos(e) => Expr::Cos(Box::new(substitute_var(e, var, value))),
+        Expr::Tan(e) => Expr::Tan(Box::new(substitute_var(e, var, value))),
+        Expr::Ln(e) => Expr::Ln(Box::new(substitute_var(e, var, value))),
+        Expr::Exp(e) => Expr::Exp(Box::new(substitute_var(e, var, value))),
+        Expr::Abs(e) => Expr::Abs(Box::new(substitute_var(e, var, value))),
+        Expr::Floor(e) => Expr::Floor(Box::new(substitute_var(e, var, value))),
+        Expr::Ceiling(e) => Expr::Ceiling(Box::new(substitute_var(e, var, value))),
+        Expr::Factorial(e) => Expr::Factorial(Box::new(substitute_var(e, var, value))),
+        Expr::Not(e) => Expr::Not(Box::new(substitute_var(e, var, value))),
+
+        Expr::Add(a, b) => Expr::Add(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::Sub(a, b) => Expr::Sub(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::Mul(a, b) => Expr::Mul(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::Div(a, b) => Expr::Div(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::Pow(a, b) => Expr::Pow(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::Gte(a, b) => Expr::Gte(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::Gt(a, b) => Expr::Gt(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::Lte(a, b) => Expr::Lte(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::Lt(a, b) => Expr::Lt(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::And(a, b) => Expr::And(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::Or(a, b) => Expr::Or(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+        Expr::Implies(a, b) => Expr::Implies(
+            Box::new(substitute_var(a, var, value)),
+            Box::new(substitute_var(b, var, value)),
+        ),
+
+        Expr::Equation { lhs, rhs } => Expr::Equation {
+            lhs: Box::new(substitute_var(lhs, var, value)),
+            rhs: Box::new(substitute_var(rhs, var, value)),
+        },
+
+        // For other complex expressions, just clone (simplified)
+        _ => body.clone(),
+    }
+}
+
 // ============================================================================
 // Helper functions
 // ============================================================================
@@ -289,5 +428,32 @@ mod tests {
 
         // Should find at least the difference strategy
         assert!(!steps.is_empty());
+    }
+
+    #[test]
+    fn test_forall_backward() {
+        let mut symbols = SymbolTable::new();
+        let n = symbols.intern("n");
+
+        // Goal: ∀n. n² ≥ 0
+        let goal = Expr::ForAll {
+            var: n,
+            domain: None,
+            body: Box::new(Expr::Gte(
+                Box::new(Expr::Pow(Box::new(Expr::Var(n)), Box::new(Expr::int(2)))),
+                Box::new(Expr::int(0)),
+            )),
+        };
+
+        let steps = backward_search(&goal);
+
+        // Should find universal introduction strategy
+        let has_forall_strategy = steps
+            .iter()
+            .any(|s| s.strategy == BackwardStrategy::UniversalIntro);
+        assert!(
+            has_forall_strategy,
+            "Should find UniversalIntro strategy for ∀ goal"
+        );
     }
 }
