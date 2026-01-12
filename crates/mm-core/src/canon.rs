@@ -183,6 +183,37 @@ impl Expr {
                 to: Box::new(to.canonicalize_with_depth(depth)),
                 body: Box::new(body.canonicalize_with_depth(depth)),
             },
+
+            // Quantifiers
+            Expr::ForAll { var, domain, body } => Expr::ForAll {
+                var: *var,
+                domain: domain
+                    .as_ref()
+                    .map(|d| Box::new(d.canonicalize_with_depth(depth))),
+                body: Box::new(body.canonicalize_with_depth(depth)),
+            },
+            Expr::Exists { var, domain, body } => Expr::Exists {
+                var: *var,
+                domain: domain
+                    .as_ref()
+                    .map(|d| Box::new(d.canonicalize_with_depth(depth))),
+                body: Box::new(body.canonicalize_with_depth(depth)),
+            },
+
+            // Logical connectives
+            Expr::And(a, b) => Expr::And(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Or(a, b) => Expr::Or(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
+            Expr::Not(e) => Expr::Not(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Implies(a, b) => Expr::Implies(
+                Box::new(a.canonicalize_with_depth(depth)),
+                Box::new(b.canonicalize_with_depth(depth)),
+            ),
         }
     }
 

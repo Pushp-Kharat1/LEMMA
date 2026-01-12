@@ -766,6 +766,34 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
                 contains_var(from, var) || contains_var(to, var) || contains_var(body, var)
             }
         }
+        Expr::ForAll {
+            var: v,
+            domain,
+            body,
+        }
+        | Expr::Exists {
+            var: v,
+            domain,
+            body,
+        } => {
+            // Don't count bound var if it shadows
+            if *v == var {
+                domain
+                    .as_ref()
+                    .map(|d| contains_var(d, var))
+                    .unwrap_or(false)
+            } else {
+                domain
+                    .as_ref()
+                    .map(|d| contains_var(d, var))
+                    .unwrap_or(false)
+                    || contains_var(body, var)
+            }
+        }
+        Expr::And(a, b) | Expr::Or(a, b) | Expr::Implies(a, b) => {
+            contains_var(a, var) || contains_var(b, var)
+        }
+        Expr::Not(e) => contains_var(e, var),
     }
 }
 

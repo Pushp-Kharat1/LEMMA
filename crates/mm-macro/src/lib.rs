@@ -222,5 +222,14 @@ fn expr_to_token_stream(
                 }
             }
         }
+        // Quantifiers and logical connectives - fallback (not normally parsed from expr macro)
+        Expr::ForAll { .. }
+        | Expr::Exists { .. }
+        | Expr::And(_, _)
+        | Expr::Or(_, _)
+        | Expr::Not(_)
+        | Expr::Implies(_, _) => {
+            panic!("Quantifiers and logical connectives cannot be parsed by expr! macro yet")
+        }
     }
 }

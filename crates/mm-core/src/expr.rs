@@ -151,6 +151,38 @@ pub enum Expr {
         to: Box<Expr>,
         body: Box<Expr>,
     },
+
+    // ========== Quantifiers ==========
+    /// Universal quantifier: ∀var. body
+    /// Example: ∀n. n² ≥ 0 (for all n, n squared is nonnegative)
+    ForAll {
+        var: Symbol,
+        /// Optional domain constraint (e.g., n ∈ ℕ)
+        domain: Option<Box<Expr>>,
+        body: Box<Expr>,
+    },
+
+    /// Existential quantifier: ∃var. body
+    /// Example: ∃x. x² = 2 (there exists x such that x squared equals 2)
+    Exists {
+        var: Symbol,
+        /// Optional domain constraint
+        domain: Option<Box<Expr>>,
+        body: Box<Expr>,
+    },
+
+    // ========== Logical Connectives ==========
+    /// Logical AND: P ∧ Q
+    And(Box<Expr>, Box<Expr>),
+
+    /// Logical OR: P ∨ Q  
+    Or(Box<Expr>, Box<Expr>),
+
+    /// Logical NOT: ¬P
+    Not(Box<Expr>),
+
+    /// Implication: P → Q
+    Implies(Box<Expr>, Box<Expr>),
 }
 
 /// A term in a sum: coefficient × expression
@@ -285,6 +317,16 @@ impl Hash for Expr {
                 to.hash(state);
                 body.hash(state);
             }
+            Expr::ForAll { var, domain, body } | Expr::Exists { var, domain, body } => {
+                var.hash(state);
+                domain.hash(state);
+                body.hash(state);
+            }
+            Expr::And(a, b) | Expr::Or(a, b) | Expr::Implies(a, b) => {
+                a.hash(state);
+                b.hash(state);
+            }
+            Expr::Not(e) => e.hash(state),
         }
     }
 }
@@ -466,6 +508,13 @@ impl Expr {
             Expr::Summation { from, to, body, .. } | Expr::BigProduct { from, to, body, .. } => {
                 1 + from.complexity() + to.complexity() + body.complexity()
             }
+            Expr::ForAll { domain, body, .. } | Expr::Exists { domain, body, .. } => {
+                1 + domain.as_ref().map(|d| d.complexity()).unwrap_or(0) + body.complexity()
+            }
+            Expr::And(a, b) | Expr::Or(a, b) | Expr::Implies(a, b) => {
+                1 + a.complexity() + b.complexity()
+            }
+            Expr::Not(e) => 1 + e.complexity(),
         }
     }
 }

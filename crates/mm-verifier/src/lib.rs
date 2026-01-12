@@ -89,6 +89,17 @@ fn is_calculus_expr(expr: &Expr) -> bool {
         Expr::Summation { from, to, body, .. } | Expr::BigProduct { from, to, body, .. } => {
             is_calculus_expr(from) || is_calculus_expr(to) || is_calculus_expr(body)
         }
+        Expr::ForAll { domain, body, .. } | Expr::Exists { domain, body, .. } => {
+            domain
+                .as_ref()
+                .map(|d| is_calculus_expr(d))
+                .unwrap_or(false)
+                || is_calculus_expr(body)
+        }
+        Expr::And(a, b) | Expr::Or(a, b) | Expr::Implies(a, b) => {
+            is_calculus_expr(a) || is_calculus_expr(b)
+        }
+        Expr::Not(e) => is_calculus_expr(e),
         Expr::Const(_) | Expr::Var(_) | Expr::Pi | Expr::E => false,
     }
 }
@@ -394,6 +405,49 @@ fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
                 }
             }
         }
+        Expr::ForAll { var: v, domain, body } => {
+            if *v == var {
+                Expr::ForAll {
+                    var: *v,
+                    domain: domain.as_ref().map(|d| Box::new(substitute(d, var, value))),
+                    body: body.clone(),
+                }
+            } else {
+                Expr::ForAll {
+                    var: *v,
+                    domain: domain.as_ref().map(|d| Box::new(substitute(d, var, value))),
+                    body: Box::new(substitute(body, var, value)),
+                }
+            }
+        }
+        Expr::Exists { var: v, domain, body } => {
+            if *v == var {
+                Expr::Exists {
+                    var: *v,
+                    domain: domain.as_ref().map(|d| Box::new(substitute(d, var, value))),
+                    body: body.clone(),
+                }
+            } else {
+                Expr::Exists {
+                    var: *v,
+                    domain: domain.as_ref().map(|d| Box::new(substitute(d, var, value))),
+                    body: Box::new(substitute(body, var, value)),
+                }
+            }
+        }
+        Expr::And(a, b) => Expr::And(
+            Box::new(substitute(a, var, value)),
+            Box::new(substitute(b, var, value)),
+        ),
+        Expr::Or(a, b) => Expr::Or(
+            Box::new(substitute(a, var, value)),
+            Box::new(substitute(b, var, value)),
+        ),
+        Expr::Not(e) => Expr::Not(Box::new(substitute(e, var, value))),
+        Expr::Implies(a, b) => Expr::Implies(
+            Box::new(substitute(a, var, value)),
+            Box::new(substitute(b, var, value)),
+        ),
     }
 }
 

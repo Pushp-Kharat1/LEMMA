@@ -255,6 +255,31 @@ impl Expr {
                 }
                 Some(prod)
             }
+
+            // Quantifiers - cannot be directly evaluated numerically
+            Expr::ForAll { .. } | Expr::Exists { .. } => None,
+
+            // Logical connectives - return 1.0 for true, 0.0 for false
+            Expr::And(a, b) => {
+                let va = a.evaluate(env)?;
+                let vb = b.evaluate(env)?;
+                Some(if va != 0.0 && vb != 0.0 { 1.0 } else { 0.0 })
+            }
+            Expr::Or(a, b) => {
+                let va = a.evaluate(env)?;
+                let vb = b.evaluate(env)?;
+                Some(if va != 0.0 || vb != 0.0 { 1.0 } else { 0.0 })
+            }
+            Expr::Not(e) => {
+                let v = e.evaluate(env)?;
+                Some(if v == 0.0 { 1.0 } else { 0.0 })
+            }
+            Expr::Implies(a, b) => {
+                let va = a.evaluate(env)?;
+                let vb = b.evaluate(env)?;
+                // P → Q is equivalent to ¬P ∨ Q
+                Some(if va == 0.0 || vb != 0.0 { 1.0 } else { 0.0 })
+            }
         }
     }
 
@@ -386,6 +411,21 @@ impl Expr {
                 body.collect_vars(vars);
                 // The bound variable is not free
                 vars.retain(|v| v != var);
+            }
+            Expr::ForAll { var, domain, body } | Expr::Exists { var, domain, body } => {
+                if let Some(d) = domain {
+                    d.collect_vars(vars);
+                }
+                body.collect_vars(vars);
+                // The bound variable is not free
+                vars.retain(|v| v != var);
+            }
+            Expr::And(a, b) | Expr::Or(a, b) | Expr::Implies(a, b) => {
+                a.collect_vars(vars);
+                b.collect_vars(vars);
+            }
+            Expr::Not(e) => {
+                e.collect_vars(vars);
             }
         }
     }

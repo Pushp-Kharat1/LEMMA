@@ -372,6 +372,47 @@ impl ExpressionEncoder {
                 self.tokenize_recursive(body, tokens);
                 tokens.push(")".to_string());
             }
+            // Quantifiers
+            Expr::ForAll { body, .. } => {
+                tokens.push("forall".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(body, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Exists { body, .. } => {
+                tokens.push("exists".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(body, tokens);
+                tokens.push(")".to_string());
+            }
+            // Logical connectives
+            Expr::And(a, b) => {
+                tokens.push("(".to_string());
+                self.tokenize_recursive(a, tokens);
+                tokens.push("and".to_string());
+                self.tokenize_recursive(b, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Or(a, b) => {
+                tokens.push("(".to_string());
+                self.tokenize_recursive(a, tokens);
+                tokens.push("or".to_string());
+                self.tokenize_recursive(b, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Not(e) => {
+                tokens.push("not".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(e, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Implies(a, b) => {
+                tokens.push("(".to_string());
+                self.tokenize_recursive(a, tokens);
+                tokens.push("=>".to_string());
+                self.tokenize_recursive(b, tokens);
+                tokens.push(")".to_string());
+            }
         }
     }
 
