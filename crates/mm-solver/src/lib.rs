@@ -31,6 +31,7 @@
 //! ```
 
 pub mod imo_solver;
+pub mod orchestrator;
 
 use mm_core::{Expr, MathError, SymbolTable};
 use mm_rules::{rule::standard_rules, RuleSet};

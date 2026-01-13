@@ -405,7 +405,11 @@ fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
                 }
             }
         }
-        Expr::ForAll { var: v, domain, body } => {
+        Expr::ForAll {
+            var: v,
+            domain,
+            body,
+        } => {
             if *v == var {
                 Expr::ForAll {
                     var: *v,
@@ -420,7 +424,11 @@ fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
                 }
             }
         }
-        Expr::Exists { var: v, domain, body } => {
+        Expr::Exists {
+            var: v,
+            domain,
+            body,
+        } => {
             if *v == var {
                 Expr::Exists {
                     var: *v,

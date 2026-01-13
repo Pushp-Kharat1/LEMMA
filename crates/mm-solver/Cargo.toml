@@ -68,3 +68,11 @@ path = "examples/bidirectional_demo.rs"
 [[example]]
 name = "comprehensive_proof_demo"
 path = "examples/comprehensive_proof_demo.rs"
+
+[[example]]
+name = "proof_solver_demo"
+path = "examples/proof_solver_demo.rs"
+
+[[example]]
+name = "honest_capability_test"
+path = "examples/honest_capability_test.rs"

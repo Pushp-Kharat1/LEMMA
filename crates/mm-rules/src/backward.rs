@@ -34,6 +34,12 @@ pub enum BackwardStrategy {
 
     /// Existential witness: To prove ∃x.P(x), find witness w and prove P(w)
     ExistentialWitness,
+
+    /// Use mathematical induction: base case + inductive step
+    Induction,
+
+    /// Split into exhaustive cases (e.g., x > 0, x = 0, x < 0)
+    CaseSplit,
 }
 
 /// Result of backward reasoning
@@ -85,6 +91,16 @@ pub fn find_proof_of(goal: &Expr) -> Vec<BackwardStep> {
 
     // Strategy 5: Existential quantifier ← find witness
     if let Some(step) = exists_witness(goal) {
+        steps.push(step);
+    }
+
+    // Strategy 6: Mathematical induction for ∀n.P(n)
+    if let Some(step) = induction_strategy(goal) {
+        steps.push(step);
+    }
+
+    // Strategy 7: Case split (sign trichotomy)
+    if let Some(step) = case_split_strategy(goal) {
         steps.push(step);
     }
 
@@ -355,6 +371,93 @@ fn substitute_var(body: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
 
         // For other complex expressions, just clone (simplified)
         _ => body.clone(),
+    }
+}
+
+/// Strategy: ∀n.P(n) ← use mathematical induction
+///
+/// For universally quantified statements over naturals/integers,
+/// suggests induction: prove base case P(0) and step P(k)→P(k+1)
+fn induction_strategy(goal: &Expr) -> Option<BackwardStep> {
+    match goal {
+        Expr::ForAll { var, body, .. } => {
+            // Create base case P(0) and inductive step P(k+1)
+            let base_case = substitute_var(body, *var, &Expr::int(0));
+
+            // For the step, we'd need P(k) → P(k+1)
+            // Simplified: just return the base case and step goal
+            let step_goal = substitute_var(
+                body,
+                *var,
+                &Expr::Add(Box::new(Expr::Var(*var)), Box::new(Expr::int(1))),
+            );
+
+            Some(BackwardStep {
+                subgoals: vec![base_case, step_goal],
+                strategy: BackwardStrategy::Induction,
+                justification: format!("By induction on {:?}: prove P(0), then P(k)→P(k+1)", var),
+            })
+        }
+        _ => None,
+    }
+}
+
+/// Strategy: Split goal by sign of a variable
+///
+/// For goals involving a variable, consider cases: x > 0, x = 0, x < 0
+fn case_split_strategy(goal: &Expr) -> Option<BackwardStep> {
+    // Only suggest case split for inequalities or equations with variables
+    match goal {
+        Expr::Gte(_, _) | Expr::Gt(_, _) | Expr::Lte(_, _) | Expr::Lt(_, _) => {
+            // Find a variable in the goal
+            if let Some(var) = find_first_variable(goal) {
+                // Generate three cases: x > 0, x = 0, x < 0
+                // But the goal itself stays the same - we just get context
+                Some(BackwardStep {
+                    subgoals: vec![
+                        // The goal needs to be proven in each case
+                        // In practice, case analysis would add the condition as hypothesis
+                        goal.clone(), // positive case
+                        goal.clone(), // zero case
+                        goal.clone(), // negative case
+                    ],
+                    strategy: BackwardStrategy::CaseSplit,
+                    justification: format!(
+                        "Case analysis on {:?}: consider {:?} > 0, {:?} = 0, {:?} < 0",
+                        var, var, var, var
+                    ),
+                })
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
+/// Find the first variable in an expression
+fn find_first_variable(expr: &Expr) -> Option<mm_core::Symbol> {
+    match expr {
+        Expr::Var(v) => Some(*v),
+        Expr::Const(_) | Expr::Pi | Expr::E => None,
+        Expr::Neg(e)
+        | Expr::Sqrt(e)
+        | Expr::Sin(e)
+        | Expr::Cos(e)
+        | Expr::Tan(e)
+        | Expr::Ln(e)
+        | Expr::Exp(e)
+        | Expr::Abs(e) => find_first_variable(e),
+        Expr::Add(a, b)
+        | Expr::Sub(a, b)
+        | Expr::Mul(a, b)
+        | Expr::Div(a, b)
+        | Expr::Pow(a, b)
+        | Expr::Gte(a, b)
+        | Expr::Gt(a, b)
+        | Expr::Lte(a, b)
+        | Expr::Lt(a, b) => find_first_variable(a).or_else(|| find_first_variable(b)),
+        _ => None,
     }
 }
 

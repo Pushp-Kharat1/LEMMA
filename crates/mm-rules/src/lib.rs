@@ -22,11 +22,15 @@
 pub mod algebra;
 pub mod backward;
 pub mod calculus;
+pub mod case_analysis;
 pub mod combinatorics;
 pub mod equations;
+pub mod induction;
 pub mod inequalities;
+pub mod inequality_chain;
 pub mod integration;
 pub mod number_theory;
+pub mod polynomial;
 pub mod polynomials;
 pub mod quantifier;
 pub mod rule;
