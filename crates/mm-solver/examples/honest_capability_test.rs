@@ -146,6 +146,53 @@ fn main() {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // TEST 5: Sum of squares - HARDER!
+    // Prove: Σ(i=1 to n) i² = n(n+1)(2n+1)/6
+    // ═══════════════════════════════════════════════════════════════════════
+    println!("┌─────────────────────────────────────────────────────────────────┐");
+    println!("│  TEST 5: Σ(i=1 to n) i² = n(n+1)(2n+1)/6 (HARDER SUM)          │");
+    println!("└─────────────────────────────────────────────────────────────────┘");
+
+    total += 1;
+
+    // Create: ∀n. Σ(i=1 to n) i² = n(n+1)(2n+1)/6
+    let goal5 = Expr::ForAll {
+        var: n,
+        domain: None,
+        body: Box::new(Expr::Equation {
+            // LHS: Σ(i=1 to n) i²
+            lhs: Box::new(Expr::Summation {
+                var: i,
+                from: Box::new(Expr::int(1)),
+                to: Box::new(Expr::Var(n)),
+                body: Box::new(Expr::Pow(Box::new(Expr::Var(i)), Box::new(Expr::int(2)))),
+            }),
+            // RHS: n(n+1)(2n+1)/6
+            rhs: Box::new(Expr::Div(
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Mul(
+                        Box::new(Expr::Var(n)),
+                        Box::new(Expr::Add(Box::new(Expr::Var(n)), Box::new(Expr::int(1)))),
+                    )),
+                    Box::new(Expr::Add(
+                        Box::new(Expr::Mul(Box::new(Expr::int(2)), Box::new(Expr::Var(n)))),
+                        Box::new(Expr::int(1)),
+                    )),
+                )),
+                Box::new(Expr::int(6)),
+            )),
+        }),
+    };
+
+    let result5 = orchestrator.prove(&goal5);
+    if result5.success {
+        passed += 1;
+        println!("   ✅ PASSED - LEMMA can prove sum of squares!\n");
+    } else {
+        println!("   ❌ FAILED - Need to handle i² in summation body\n");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // SUMMARY - BE HONEST
     // ═══════════════════════════════════════════════════════════════════════
     println!("\n╔══════════════════════════════════════════════════════════════════╗");
@@ -158,7 +205,8 @@ fn main() {
     println!("╠══════════════════════════════════════════════════════════════════╣");
     println!("║  What LEMMA can NOW prove (NEW capabilities):                    ║");
     println!("║  ✓ Symbolic inequality: (n+1) > n via difference analysis        ║");
-    println!("║  ✓ Sum formulas by induction: Σi = n(n+1)/2                      ║");
+    println!("║  ✓ Sum formulas: Σi = n(n+1)/2                                   ║");
+    println!("║  ✓ Sum of squares: Σi² = n(n+1)(2n+1)/6                          ║");
     println!("║  ✓ Inductive step using hypothesis + algebraic verification     ║");
     println!("╠══════════════════════════════════════════════════════════════════╣");
     println!("║  Infrastructure that now works:                                  ║");

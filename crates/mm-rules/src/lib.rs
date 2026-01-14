@@ -21,6 +21,7 @@
 
 pub mod algebra;
 pub mod backward;
+pub mod board_exam;
 pub mod calculus;
 pub mod case_analysis;
 pub mod combinatorics;

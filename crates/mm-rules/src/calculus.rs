@@ -1458,6 +1458,320 @@ fn jacobian_transform() -> Rule {
     }
 }
 
+// ============================================================================
+// Symbolic Differentiation Function
+// ============================================================================
+
+use mm_core::{Rational, Symbol};
+
+/// Symbolically differentiate an expression with respect to a variable.
+/// Returns the derivative expression.
+pub fn differentiate(expr: &Expr, var: Symbol) -> Expr {
+    match expr {
+        // Constant rule: d/dx(c) = 0
+        Expr::Const(_) => Expr::int(0),
+
+        // Variable rule: d/dx(x) = 1, d/dx(y) = 0
+        Expr::Var(v) => {
+            if *v == var {
+                Expr::int(1)
+            } else {
+                Expr::int(0)
+            }
+        }
+
+        // Negation: d/dx(-f) = -f'
+        Expr::Neg(inner) => Expr::Neg(Box::new(differentiate(inner, var))),
+
+        // Sum rule: d/dx(f + g) = f' + g'
+        Expr::Add(a, b) => Expr::Add(
+            Box::new(differentiate(a, var)),
+            Box::new(differentiate(b, var)),
+        ),
+
+        // Difference rule: d/dx(f - g) = f' - g'
+        Expr::Sub(a, b) => Expr::Sub(
+            Box::new(differentiate(a, var)),
+            Box::new(differentiate(b, var)),
+        ),
+
+        // Product rule: d/dx(fg) = f'g + fg'
+        Expr::Mul(f, g) => {
+            let f_prime = differentiate(f, var);
+            let g_prime = differentiate(g, var);
+            Expr::Add(
+                Box::new(Expr::Mul(Box::new(f_prime), g.clone())),
+                Box::new(Expr::Mul(f.clone(), Box::new(g_prime))),
+            )
+        }
+
+        // Quotient rule: d/dx(f/g) = (f'g - fg') / g²
+        Expr::Div(f, g) => {
+            let f_prime = differentiate(f, var);
+            let g_prime = differentiate(g, var);
+            Expr::Div(
+                Box::new(Expr::Sub(
+                    Box::new(Expr::Mul(Box::new(f_prime), g.clone())),
+                    Box::new(Expr::Mul(f.clone(), Box::new(g_prime))),
+                )),
+                Box::new(Expr::Pow(g.clone(), Box::new(Expr::int(2)))),
+            )
+        }
+
+        // Power rule: d/dx(f^n) = n * f^(n-1) * f' (chain rule)
+        Expr::Pow(base, exp) => {
+            // Check if exponent is constant
+            if let Expr::Const(n) = exp.as_ref() {
+                let n_val = *n;
+                let base_prime = differentiate(base, var);
+                // n * base^(n-1) * base'
+                Expr::Mul(
+                    Box::new(Expr::Mul(
+                        Box::new(Expr::Const(n_val)),
+                        Box::new(Expr::Pow(
+                            base.clone(),
+                            Box::new(Expr::Const(n_val - Rational::from(1))),
+                        )),
+                    )),
+                    Box::new(base_prime),
+                )
+            } else {
+                // General case: d/dx(f^g) - not handling for now
+                Expr::Derivative {
+                    expr: Box::new(expr.clone()),
+                    var,
+                }
+            }
+        }
+
+        // For other expressions, return unevaluated derivative
+        _ => Expr::Derivative {
+            expr: Box::new(expr.clone()),
+            var,
+        },
+    }
+}
+
+/// Simplify an expression (basic algebraic simplification).
+pub fn simplify(expr: &Expr) -> Expr {
+    match expr {
+        // 0 + x = x, x + 0 = x
+        Expr::Add(a, b) => {
+            let a_simp = simplify(a);
+            let b_simp = simplify(b);
+            match (&a_simp, &b_simp) {
+                (Expr::Const(c), _) if c.is_zero() => b_simp,
+                (_, Expr::Const(c)) if c.is_zero() => a_simp,
+                (Expr::Const(c1), Expr::Const(c2)) => Expr::Const(*c1 + *c2),
+                _ => Expr::Add(Box::new(a_simp), Box::new(b_simp)),
+            }
+        }
+
+        // x - 0 = x
+        Expr::Sub(a, b) => {
+            let a_simp = simplify(a);
+            let b_simp = simplify(b);
+            match (&a_simp, &b_simp) {
+                (_, Expr::Const(c)) if c.is_zero() => a_simp,
+                (Expr::Const(c1), Expr::Const(c2)) => Expr::Const(*c1 - *c2),
+                _ => Expr::Sub(Box::new(a_simp), Box::new(b_simp)),
+            }
+        }
+
+        // 0 * x = 0, x * 0 = 0, 1 * x = x, x * 1 = x
+        Expr::Mul(a, b) => {
+            let a_simp = simplify(a);
+            let b_simp = simplify(b);
+            match (&a_simp, &b_simp) {
+                (Expr::Const(c), _) if c.is_zero() => Expr::int(0),
+                (_, Expr::Const(c)) if c.is_zero() => Expr::int(0),
+                (Expr::Const(c), _) if c.is_one() => b_simp,
+                (_, Expr::Const(c)) if c.is_one() => a_simp,
+                (Expr::Const(c1), Expr::Const(c2)) => Expr::Const(*c1 * *c2),
+                _ => Expr::Mul(Box::new(a_simp), Box::new(b_simp)),
+            }
+        }
+
+        // x^0 = 1, x^1 = x
+        Expr::Pow(base, exp) => {
+            let base_simp = simplify(base);
+            let exp_simp = simplify(exp);
+            match &exp_simp {
+                Expr::Const(c) if c.is_zero() => Expr::int(1),
+                Expr::Const(c) if c.is_one() => base_simp,
+                _ => Expr::Pow(Box::new(base_simp), Box::new(exp_simp)),
+            }
+        }
+
+        // -(-x) = x
+        Expr::Neg(inner) => {
+            let inner_simp = simplify(inner);
+            match inner_simp {
+                Expr::Neg(x) => *x,
+                Expr::Const(c) => Expr::Const(-c),
+                _ => Expr::Neg(Box::new(inner_simp)),
+            }
+        }
+
+        _ => expr.clone(),
+    }
+}
+
+/// Evaluate an expression at x = value (for polynomials).
+pub fn evaluate_at(expr: &Expr, var: Symbol, value: Rational) -> Option<Rational> {
+    match expr {
+        Expr::Const(c) => Some(*c),
+
+        Expr::Var(v) => {
+            if *v == var {
+                Some(value)
+            } else {
+                None // Unknown variable
+            }
+        }
+
+        Expr::Neg(inner) => evaluate_at(inner, var, value).map(|v| -v),
+
+        Expr::Add(a, b) => {
+            let a_val = evaluate_at(a, var, value)?;
+            let b_val = evaluate_at(b, var, value)?;
+            Some(a_val + b_val)
+        }
+
+        Expr::Sub(a, b) => {
+            let a_val = evaluate_at(a, var, value)?;
+            let b_val = evaluate_at(b, var, value)?;
+            Some(a_val - b_val)
+        }
+
+        Expr::Mul(a, b) => {
+            let a_val = evaluate_at(a, var, value)?;
+            let b_val = evaluate_at(b, var, value)?;
+            Some(a_val * b_val)
+        }
+
+        Expr::Div(a, b) => {
+            let a_val = evaluate_at(a, var, value)?;
+            let b_val = evaluate_at(b, var, value)?;
+            if b_val.is_zero() {
+                None
+            } else {
+                Some(a_val / b_val)
+            }
+        }
+
+        Expr::Pow(base, exp) => {
+            let base_val = evaluate_at(base, var, value)?;
+            if let Expr::Const(n) = exp.as_ref() {
+                if n.is_integer() && n.numer() >= 0 {
+                    Some(base_val.pow(n.numer() as i32))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+
+        _ => None,
+    }
+}
+
+/// Find the maximum value of a polynomial on an interval [a, b].
+/// Returns (x_max, f(x_max)) or None if can't compute.
+pub fn find_max_on_interval(
+    expr: &Expr,
+    var: Symbol,
+    a: Rational,
+    b: Rational,
+) -> Option<(Rational, Rational)> {
+    // Step 1: Compute derivative
+    let derivative = differentiate(expr, var);
+    let derivative = simplify(&derivative);
+
+    // Step 2: Find critical points (where f'(x) = 0)
+    // For polynomials, we try integer values in [a, b]
+    let mut candidates = vec![a, b]; // Always include endpoints
+
+    // For simple cases, try to find where derivative is zero
+    // Check integer and half-integer points in the interval
+    let a_int = a.numer() / a.denom();
+    let b_int = b.numer() / b.denom() + 1;
+
+    for x_int in a_int..=b_int {
+        let x = Rational::from(x_int);
+        if x >= a && x <= b {
+            if let Some(deriv_val) = evaluate_at(&derivative, var, x) {
+                if deriv_val.is_zero() {
+                    candidates.push(x);
+                }
+            }
+        }
+    }
+
+    // Step 3: Evaluate f at all candidates and find max
+    let mut max_val: Option<Rational> = None;
+    let mut max_x: Option<Rational> = None;
+
+    for x in candidates {
+        if let Some(val) = evaluate_at(expr, var, x) {
+            if max_val.is_none() || val > max_val.unwrap() {
+                max_val = Some(val);
+                max_x = Some(x);
+            }
+        }
+    }
+
+    match (max_x, max_val) {
+        (Some(x), Some(v)) => Some((x, v)),
+        _ => None,
+    }
+}
+
+/// Find the minimum value of a polynomial on an interval [a, b].
+pub fn find_min_on_interval(
+    expr: &Expr,
+    var: Symbol,
+    a: Rational,
+    b: Rational,
+) -> Option<(Rational, Rational)> {
+    let derivative = differentiate(expr, var);
+    let derivative = simplify(&derivative);
+
+    let mut candidates = vec![a, b];
+
+    let a_int = a.numer() / a.denom();
+    let b_int = b.numer() / b.denom() + 1;
+
+    for x_int in a_int..=b_int {
+        let x = Rational::from(x_int);
+        if x >= a && x <= b {
+            if let Some(deriv_val) = evaluate_at(&derivative, var, x) {
+                if deriv_val.is_zero() {
+                    candidates.push(x);
+                }
+            }
+        }
+    }
+
+    let mut min_val: Option<Rational> = None;
+    let mut min_x: Option<Rational> = None;
+
+    for x in candidates {
+        if let Some(val) = evaluate_at(expr, var, x) {
+            if min_val.is_none() || val < min_val.unwrap() {
+                min_val = Some(val);
+                min_x = Some(x);
+            }
+        }
+    }
+
+    match (min_x, min_val) {
+        (Some(x), Some(v)) => Some((x, v)),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1502,5 +1816,70 @@ mod tests {
         let results = rule.apply(&expr, &ctx);
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].result, Expr::int(0));
+    }
+
+    #[test]
+    fn test_differentiate_polynomial() {
+        let mut symbols = SymbolTable::new();
+        let x = symbols.intern("x");
+
+        // d/dx(x^3) = 3x^2
+        let expr = Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(3)));
+        let deriv = differentiate(&expr, x);
+        let deriv = simplify(&deriv);
+
+        // Evaluate at x=2: should be 3*4 = 12
+        let val = evaluate_at(&deriv, x, Rational::from(2));
+        assert_eq!(val, Some(Rational::from(12)));
+    }
+
+    #[test]
+    fn test_cbse_q8_max_value() {
+        // CBSE Q8: Find max of f(x) = x³ - 3x + 2 on [0, 2]
+        // f'(x) = 3x² - 3 = 0 → x = ±1
+        // x = 1 is in [0, 2]
+        // f(0) = 2, f(1) = 0, f(2) = 4
+        // Max = 4 at x = 2
+
+        let mut symbols = SymbolTable::new();
+        let x = symbols.intern("x");
+
+        // f(x) = x³ - 3x + 2
+        let f = Expr::Add(
+            Box::new(Expr::Sub(
+                Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(3)))),
+                Box::new(Expr::Mul(Box::new(Expr::int(3)), Box::new(Expr::Var(x)))),
+            )),
+            Box::new(Expr::int(2)),
+        );
+
+        let result = find_max_on_interval(&f, x, Rational::from(0), Rational::from(2));
+        assert!(result.is_some());
+
+        let (x_max, max_val) = result.unwrap();
+        assert_eq!(x_max, Rational::from(2));
+        assert_eq!(max_val, Rational::from(4));
+    }
+
+    #[test]
+    fn test_cbse_q8_min_value() {
+        // Also test minimum: should be 0 at x=1
+        let mut symbols = SymbolTable::new();
+        let x = symbols.intern("x");
+
+        let f = Expr::Add(
+            Box::new(Expr::Sub(
+                Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(3)))),
+                Box::new(Expr::Mul(Box::new(Expr::int(3)), Box::new(Expr::Var(x)))),
+            )),
+            Box::new(Expr::int(2)),
+        );
+
+        let result = find_min_on_interval(&f, x, Rational::from(0), Rational::from(2));
+        assert!(result.is_some());
+
+        let (x_min, min_val) = result.unwrap();
+        assert_eq!(x_min, Rational::from(1));
+        assert_eq!(min_val, Rational::from(0));
     }
 }

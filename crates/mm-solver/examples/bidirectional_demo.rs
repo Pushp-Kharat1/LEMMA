@@ -4,7 +4,7 @@
 //!
 //! Usage: cargo run --example bidirectional_demo -p mm-solver
 
-use mm_core::{Expr, Rational, SymbolTable};
+use mm_core::{Expr, SymbolTable};
 use mm_rules::backward::backward_search;
 use mm_rules::rule::standard_rules;
 use mm_rules::RuleContext;
@@ -151,6 +151,10 @@ impl StrategyDisplay for mm_rules::backward::BackwardStep {
             BackwardStrategy::EquivalentForm => "Equivalent form transformation",
             BackwardStrategy::TheoremApplication => "Theorem application",
             BackwardStrategy::Substitution => "Substitution",
+            BackwardStrategy::UniversalIntro => "Universal introduction",
+            BackwardStrategy::ExistentialWitness => "Existential witness",
+            BackwardStrategy::Induction => "Induction",
+            BackwardStrategy::CaseSplit => "Case split",
         }
     }
 }
