@@ -465,6 +465,12 @@ pub fn advanced_calculus_rules() -> Vec<Rule> {
         // inverse_trig_deriv_arctan(), - STUB: need Arctan type
         diff_rule(),
         constant_multiple_rule(),
+        constant_base_exp_simple(),  // Rule 408
+        constant_base_exp_chain(),   // Rule 409
+        sqrt_chain_rule(),           // Rule 476
+        general_power_rule(),        // Rule 475
+        log_base_simple(),           // Rule 411
+        log_base_chain(),            // Rule 412
     ]
 }
 
@@ -713,6 +719,304 @@ fn constant_multiple_rule() -> Rule {
         },
         reversible: false,
         cost: 1,
+    }
+}
+
+// ============================================================================
+// Rule 408: d/dx(a^x) = a^x·ln(a) for constant base a
+// ============================================================================
+
+fn constant_base_exp_simple() -> Rule {
+    Rule {
+        id: RuleId(408),
+        name: "constant_base_exp_simple",
+        category: RuleCategory::Derivative,
+        description: "d/dx(a^x) = a^x·ln(a) where a is constant",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    // Base must be constant (not contain var), exponent must be var
+                    if !contains_var(base, *var) {
+                        if let Expr::Var(v) = exp.as_ref() {
+                            return v == var;
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Pow(base, _) = inner.as_ref() {
+                    // d/dx(a^x) = a^x * ln(a)
+                    let a_pow_x = inner.as_ref().clone();
+                    let ln_a = Expr::Ln(base.clone());
+                    
+                    return vec![RuleApplication {
+                        result: Expr::Mul(
+                            Box::new(a_pow_x),
+                            Box::new(ln_a),
+                        ),
+                        justification: "d/dx(a^x) = a^x·ln(a)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// ============================================================================
+// Rule 409: d/dx(a^f(x)) = a^f(x)·ln(a)·f'(x) for constant base a
+// ============================================================================
+
+fn constant_base_exp_chain() -> Rule {
+    Rule {
+        id: RuleId(409),
+        name: "constant_base_exp_chain",
+        category: RuleCategory::Derivative,
+        description: "d/dx(a^f(x)) = a^f(x)·ln(a)·f'(x) where a is constant",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    // Base must be constant, exponent must contain var but not be just var
+                    if !contains_var(base, *var) && contains_var(exp, *var) {
+                        // Not just Var (that's handled by rule 408)
+                        return !matches!(exp.as_ref(), Expr::Var(_));
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    // d/dx(a^f) = a^f * ln(a) * f'
+                    let a_pow_f = inner.as_ref().clone();
+                    let ln_a = Expr::Ln(base.clone());
+                    let f_prime = Expr::Derivative {
+                        expr: exp.clone(),
+                        var: *var,
+                    };
+                    
+                    // a^f * ln(a) * f'
+                    let result = Expr::Mul(
+                        Box::new(Expr::Mul(
+                            Box::new(a_pow_f),
+                            Box::new(ln_a),
+                        )),
+                        Box::new(f_prime),
+                    );
+                    
+                    return vec![RuleApplication {
+                        result,
+                        justification: "d/dx(a^f) = a^f·ln(a)·f'".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// ============================================================================
+// Rule 476: d/dx(√f(x)) = f'(x)/(2√f(x))
+// ============================================================================
+
+fn sqrt_chain_rule() -> Rule {
+    Rule {
+        id: RuleId(476),
+        name: "sqrt_chain_rule",
+        category: RuleCategory::Derivative,
+        description: "d/dx(√f) = f'/(2√f)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Sqrt(arg) = inner.as_ref() {
+                    return contains_var(arg, *var);
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Sqrt(f) = inner.as_ref() {
+                    // d/dx(√f) = f' / (2√f)
+                    let f_prime = Expr::Derivative {
+                        expr: f.clone(),
+                        var: *var,
+                    };
+                    let two = Expr::int(2);
+                    let sqrt_f = Expr::Sqrt(f.clone());
+                    let denominator = Expr::Mul(Box::new(two), Box::new(sqrt_f));
+                    
+                    return vec![RuleApplication {
+                        result: Expr::Div(Box::new(f_prime), Box::new(denominator)),
+                        justification: "d/dx(√f) = f'/(2√f)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// ============================================================================
+// Rule 475: d/dx(f(x)^n) = n·f(x)^(n-1)·f'(x) - General power rule
+// ============================================================================
+
+fn general_power_rule() -> Rule {
+    Rule {
+        id: RuleId(475),
+        name: "general_power_rule",
+        category: RuleCategory::Derivative,
+        description: "d/dx(f^n) = n·f^(n-1)·f' where n is constant",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    // Base must contain var, exponent must be constant
+                    if contains_var(base, *var) && !contains_var(exp, *var) {
+                        // Not just Var (that's handled by basic power_rule)
+                        return !matches!(base.as_ref(), Expr::Var(_));
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Pow(f, n) = inner.as_ref() {
+                    if let Expr::Const(n_val) = n.as_ref() {
+                        // d/dx(f^n) = n * f^(n-1) * f'
+                        let n_minus_1 = *n_val - mm_core::Rational::from_integer(1);
+                        let f_prime = Expr::Derivative {
+                            expr: f.clone(),
+                            var: *var,
+                        };
+                        
+                        // n * f^(n-1)
+                        let n_times_f_pow = Expr::Mul(
+                            n.clone(),
+                            Box::new(Expr::Pow(f.clone(), Box::new(Expr::Const(n_minus_1)))),
+                        );
+                        
+                        // (n * f^(n-1)) * f'
+                        let result = Expr::Mul(Box::new(n_times_f_pow), Box::new(f_prime));
+                        
+                        return vec![RuleApplication {
+                            result,
+                            justification: "d/dx(f^n) = n·f^(n-1)·f'".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// ============================================================================
+// Rule 411: d/dx(log_a(x)) = 1/(x·ln(a))
+// ============================================================================
+
+fn log_base_simple() -> Rule {
+    Rule {
+        id: RuleId(411),
+        name: "log_base_simple",
+        category: RuleCategory::Derivative,
+        description: "d/dx(log_a(x)) = 1/(x·ln(a))",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                // Check for Log(base, arg) where arg is the variable
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    // log_a(x) is represented as ln(x)/ln(a)
+                    if let (Expr::Ln(arg), Expr::Ln(base)) = (num.as_ref(), denom.as_ref()) {
+                        if let Expr::Var(v) = arg.as_ref() {
+                            if v == var && !contains_var(base, *var) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if let (Expr::Ln(arg), Expr::Ln(base)) = (num.as_ref(), denom.as_ref()) {
+                        if let Expr::Var(_) = arg.as_ref() {
+                            // d/dx(log_a(x)) = 1/(x·ln(a))
+                            let x_ln_a = Expr::Mul(arg.clone(), denom.clone());
+                            return vec![RuleApplication {
+                                result: Expr::Div(Box::new(Expr::int(1)), Box::new(x_ln_a)),
+                                justification: "d/dx(log_a(x)) = 1/(x·ln(a))".to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// ============================================================================
+// Rule 412: d/dx(log_a(f(x))) = f'(x)/(f(x)·ln(a))
+// ============================================================================
+
+fn log_base_chain() -> Rule {
+    Rule {
+        id: RuleId(412),
+        name: "log_base_chain",
+        category: RuleCategory::Derivative,
+        description: "d/dx(log_a(f)) = f'/(f·ln(a))",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                // log_a(f) is represented as ln(f)/ln(a)
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if let (Expr::Ln(arg), Expr::Ln(base)) = (num.as_ref(), denom.as_ref()) {
+                        // arg must contain var, base must not contain var
+                        if contains_var(arg, *var) && !contains_var(base, *var) {
+                            // Not just Var (that's handled by rule 411)
+                            return !matches!(arg.as_ref(), Expr::Var(_));
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if let (Expr::Ln(f), Expr::Ln(_)) = (num.as_ref(), denom.as_ref()) {
+                        // d/dx(log_a(f)) = f' / (f·ln(a))
+                        let f_prime = Expr::Derivative {
+                            expr: f.clone(),
+                            var: *var,
+                        };
+                        let f_ln_a = Expr::Mul(f.clone(), denom.clone());
+                        
+                        return vec![RuleApplication {
+                            result: Expr::Div(Box::new(f_prime), Box::new(f_ln_a)),
+                            justification: "d/dx(log_a(f)) = f'/(f·ln(a))".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 3,
     }
 }
 

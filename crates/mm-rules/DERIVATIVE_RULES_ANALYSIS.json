@@ -1,0 +1,561 @@
+{
+  "analysis_date": "2026-01-14",
+  "scope": "Derivative rules in calculus.rs for CBSE/JEE Advanced",
+  "current_state": {
+    "total_derivative_rules": 13,
+    "working_rules": 13,
+    "stub_rules": 0,
+    "rule_ids_used": [11, 12, 13, 14, 19, 15, 16, 17, 18, 400, 401, 402, 403, 406, 407],
+    "next_available_id": 408
+  },
+  
+  "existing_rules_breakdown": {
+    "basic_rules": [
+      {
+        "id": 11,
+        "name": "power_rule",
+        "formula": "d/dx(x^n) = n·x^(n-1)",
+        "handles": "Simple powers of x",
+        "limitation": "Only handles base=x, not general f(x)^n",
+        "cost": 2
+      },
+      {
+        "id": 12,
+        "name": "constant_rule",
+        "formula": "d/dx(c) = 0",
+        "handles": "Constants",
+        "limitation": "None",
+        "cost": 1
+      },
+      {
+        "id": 13,
+        "name": "sum_rule",
+        "formula": "d/dx(f + g) = f' + g'",
+        "handles": "Addition",
+        "limitation": "None",
+        "cost": 2
+      },
+      {
+        "id": 406,
+        "name": "diff_rule",
+        "formula": "d/dx(f - g) = f' - g'",
+        "handles": "Subtraction",
+        "limitation": "None",
+        "cost": 1
+      },
+      {
+        "id": 14,
+        "name": "product_rule",
+        "formula": "d/dx(fg) = f'g + fg'",
+        "handles": "Multiplication",
+        "limitation": "None",
+        "cost": 3
+      },
+      {
+        "id": 19,
+        "name": "quotient_rule",
+        "formula": "d/dx(f/g) = (f'g - fg')/g²",
+        "handles": "Division",
+        "limitation": "None",
+        "cost": 4
+      },
+      {
+        "id": 407,
+        "name": "constant_multiple_rule",
+        "formula": "d/dx(c·f) = c·f'",
+        "handles": "Constant multiplication",
+        "limitation": "Only checks left operand is constant",
+        "cost": 1
+      }
+    ],
+    
+    "trigonometric_rules": [
+      {
+        "id": 15,
+        "name": "chain_rule_sin",
+        "formula": "d/dx(sin(g)) = cos(g)·g'",
+        "handles": "Sine with chain rule",
+        "limitation": "None",
+        "cost": 2
+      },
+      {
+        "id": 16,
+        "name": "chain_rule_cos",
+        "formula": "d/dx(cos(g)) = -sin(g)·g'",
+        "handles": "Cosine with chain rule",
+        "limitation": "None",
+        "cost": 2
+      },
+      {
+        "id": 400,
+        "name": "chain_rule_tan",
+        "formula": "d/dx(tan(g)) = g'/cos²(g)",
+        "handles": "Tangent with chain rule",
+        "limitation": "None",
+        "cost": 2
+      }
+    ],
+    
+    "exponential_logarithm_rules": [
+      {
+        "id": 17,
+        "name": "exp_derivative",
+        "formula": "d/dx(e^x) = e^x",
+        "handles": "Natural exponential, simple argument",
+        "limitation": "Only handles e^x, not e^g(x)",
+        "cost": 2
+      },
+      {
+        "id": 401,
+        "name": "chain_rule_exp",
+        "formula": "d/dx(e^g) = e^g·g'",
+        "handles": "Natural exponential with chain rule",
+        "limitation": "None",
+        "cost": 2
+      },
+      {
+        "id": 18,
+        "name": "ln_derivative",
+        "formula": "d/dx(ln(x)) = 1/x",
+        "handles": "Natural log, simple argument",
+        "limitation": "Only handles ln(x), not ln(g(x))",
+        "cost": 2
+      },
+      {
+        "id": 402,
+        "name": "chain_rule_ln",
+        "formula": "d/dx(ln(g)) = g'/g",
+        "handles": "Natural log with chain rule",
+        "limitation": "None",
+        "cost": 2
+      }
+    ],
+    
+    "inverse_trig_rules": [
+      {
+        "id": 403,
+        "name": "inverse_trig_deriv_arcsin",
+        "formula": "d/dx(arcsin(x)) = 1/√(1-x²)",
+        "handles": "Arcsin of x only",
+        "limitation": "Only simple variable, no chain rule version",
+        "cost": 2,
+        "note": "Needs Arcsin type in Expr enum first"
+      }
+    ]
+  },
+  
+  "cbse_jee_requirements": {
+    "missing_critical_rules": [
+      {
+        "priority": "CRITICAL",
+        "category": "Exponential derivatives",
+        "rules_needed": [
+          {
+            "formula": "d/dx(a^x) = a^x·ln(a)",
+            "description": "General exponential with constant base",
+            "cbse_q": "Q21 - differentiate 2^(cos²x)",
+            "jee_frequency": "Very High",
+            "estimated_id": 408
+          },
+          {
+            "formula": "d/dx(a^f(x)) = a^f(x)·ln(a)·f'(x)",
+            "description": "General exponential with chain rule",
+            "cbse_q": "Q21 - differentiate 2^(cos²x)",
+            "jee_frequency": "Very High",
+            "estimated_id": 409
+          },
+          {
+            "formula": "d/dx(f(x)^g(x)) = f^g·(g'·ln(f) + g·f'/f)",
+            "description": "Power rule with variable base and exponent",
+            "cbse_q": "None directly, but JEE essential",
+            "jee_frequency": "High",
+            "estimated_id": 410,
+            "note": "Complex, may need logarithmic differentiation"
+          }
+        ]
+      },
+      {
+        "priority": "CRITICAL",
+        "category": "Logarithmic derivatives",
+        "rules_needed": [
+          {
+            "formula": "d/dx(log_a(x)) = 1/(x·ln(a))",
+            "description": "Logarithm with arbitrary base",
+            "cbse_q": "Not in current test but CBSE Chapter 5",
+            "jee_frequency": "High",
+            "estimated_id": 411
+          },
+          {
+            "formula": "d/dx(log_a(f(x))) = f'(x)/(f(x)·ln(a))",
+            "description": "Logarithm with chain rule",
+            "cbse_q": "Not in current test but CBSE Chapter 5",
+            "jee_frequency": "High",
+            "estimated_id": 412
+          }
+        ]
+      },
+      {
+        "priority": "HIGH",
+        "category": "Inverse trigonometric with chain rule",
+        "rules_needed": [
+          {
+            "formula": "d/dx(arcsin(f)) = f'/√(1-f²)",
+            "description": "Arcsin with chain rule",
+            "cbse_q": "CBSE Chapter 5.3",
+            "jee_frequency": "Very High",
+            "estimated_id": 413,
+            "prerequisite": "Need Arcsin in Expr enum"
+          },
+          {
+            "formula": "d/dx(arccos(f)) = -f'/√(1-f²)",
+            "description": "Arccos with chain rule",
+            "cbse_q": "CBSE Chapter 5.3",
+            "jee_frequency": "Very High",
+            "estimated_id": 414,
+            "prerequisite": "Need Arccos in Expr enum"
+          },
+          {
+            "formula": "d/dx(arctan(f)) = f'/(1+f²)",
+            "description": "Arctan with chain rule",
+            "cbse_q": "CBSE Chapter 5.3",
+            "jee_frequency": "Very High",
+            "estimated_id": 415,
+            "prerequisite": "Need Arctan in Expr enum"
+          },
+          {
+            "formula": "d/dx(arccot(f)) = -f'/(1+f²)",
+            "description": "Arccot with chain rule",
+            "cbse_q": "CBSE Chapter 5.3",
+            "jee_frequency": "Medium",
+            "estimated_id": 416,
+            "prerequisite": "Need Arccot in Expr enum"
+          },
+          {
+            "formula": "d/dx(arcsec(f)) = f'/(|f|√(f²-1))",
+            "description": "Arcsec with chain rule",
+            "cbse_q": "CBSE Chapter 5.3",
+            "jee_frequency": "Low",
+            "estimated_id": 417,
+            "prerequisite": "Need Arcsec in Expr enum"
+          },
+          {
+            "formula": "d/dx(arccsc(f)) = -f'/(|f|√(f²-1))",
+            "description": "Arccsc with chain rule",
+            "cbse_q": "CBSE Chapter 5.3",
+            "jee_frequency": "Low",
+            "estimated_id": 418,
+            "prerequisite": "Need Arccsc in Expr enum"
+          }
+        ]
+      },
+      {
+        "priority": "HIGH",
+        "category": "Hyperbolic trig derivatives",
+        "rules_needed": [
+          {
+            "formula": "d/dx(sinh(f)) = f'·cosh(f)",
+            "description": "Sinh with chain rule",
+            "cbse_q": "Not in basic CBSE, JEE Advanced",
+            "jee_frequency": "Medium",
+            "estimated_id": 419
+          },
+          {
+            "formula": "d/dx(cosh(f)) = f'·sinh(f)",
+            "description": "Cosh with chain rule",
+            "cbse_q": "Not in basic CBSE, JEE Advanced",
+            "jee_frequency": "Medium",
+            "estimated_id": 470
+          },
+          {
+            "formula": "d/dx(tanh(f)) = f'/cosh²(f)",
+            "description": "Tanh with chain rule",
+            "cbse_q": "Not in basic CBSE, JEE Advanced",
+            "jee_frequency": "Low",
+            "estimated_id": 471
+          }
+        ]
+      },
+      {
+        "priority": "MEDIUM",
+        "category": "Reciprocal trig derivatives",
+        "rules_needed": [
+          {
+            "formula": "d/dx(sec(f)) = f'·sec(f)·tan(f)",
+            "description": "Secant with chain rule",
+            "cbse_q": "CBSE Chapter 5",
+            "jee_frequency": "Medium",
+            "estimated_id": 472
+          },
+          {
+            "formula": "d/dx(csc(f)) = -f'·csc(f)·cot(f)",
+            "description": "Cosecant with chain rule",
+            "cbse_q": "CBSE Chapter 5",
+            "jee_frequency": "Medium",
+            "estimated_id": 473
+          },
+          {
+            "formula": "d/dx(cot(f)) = -f'/sin²(f)",
+            "description": "Cotangent with chain rule",
+            "cbse_q": "CBSE Chapter 5",
+            "jee_frequency": "Medium",
+            "estimated_id": 474
+          }
+        ]
+      },
+      {
+        "priority": "MEDIUM",
+        "category": "Power rule extensions",
+        "rules_needed": [
+          {
+            "formula": "d/dx(f^n) = n·f^(n-1)·f'",
+            "description": "Power rule with function base (chain rule)",
+            "cbse_q": "Common in CBSE problems",
+            "jee_frequency": "Very High",
+            "estimated_id": 475,
+            "note": "Critical for composite functions"
+          },
+          {
+            "formula": "d/dx(√f) = f'/(2√f)",
+            "description": "Square root with chain rule",
+            "cbse_q": "CBSE Chapter 5",
+            "jee_frequency": "Very High",
+            "estimated_id": 476
+          }
+        ]
+      },
+      {
+        "priority": "LOW",
+        "category": "Special techniques",
+        "rules_needed": [
+          {
+            "formula": "Logarithmic differentiation",
+            "description": "For f(x)^g(x) or products/quotients",
+            "cbse_q": "CBSE Chapter 5.4",
+            "jee_frequency": "High",
+            "estimated_id": 477,
+            "note": "May be a meta-rule that applies log then differentiates"
+          },
+          {
+            "formula": "Implicit differentiation",
+            "description": "For F(x,y)=0, find dy/dx",
+            "cbse_q": "CBSE Chapter 5.5",
+            "jee_frequency": "Very High",
+            "estimated_id": 478,
+            "note": "Requires special handling, differentiate both sides"
+          },
+          {
+            "formula": "Parametric differentiation",
+            "description": "For x=f(t), y=g(t), find dy/dx",
+            "cbse_q": "CBSE Chapter 5.6",
+            "jee_frequency": "High",
+            "estimated_id": 479,
+            "note": "dy/dx = (dy/dt)/(dx/dt)"
+          }
+        ]
+      }
+    ]
+  },
+  
+  "implementation_guidelines": {
+    "critical_points": [
+      "ALWAYS use Box::new() for nested Expr structures",
+      "ALWAYS clone expressions when reusing: expr.clone()",
+      "Check contains_var() to determine if derivative applies",
+      "Set appropriate cost: 1=simple, 2=standard, 3=complex, 4=very complex",
+      "Provide clear justification strings for debugging",
+      "Handle both simple (x) and general (g(x)) cases",
+      "Use consistent ID numbering (next: 408+)",
+      "Test with both simple and nested expressions"
+    ],
+    
+    "pattern_to_follow": {
+      "rule_structure": "See power_rule() or chain_rule_sin() as templates",
+      "is_applicable": "Use pattern matching on Expr, check contains_var",
+      "apply": "Build result expression with Box::new and clones",
+      "categories": "Use RuleCategory::Derivative for all derivative rules",
+      "reversible": "Always false for derivatives (can't reverse differentiation uniquely)"
+    },
+    
+    "testing_requirements": [
+      "Test with simple variable: d/dx(sin(x))",
+      "Test with composite: d/dx(sin(x²))",
+      "Test with constant: d/dx(sin(3))",
+      "Test nested: d/dx(sin(cos(x)))",
+      "Verify against known results",
+      "Check rule doesn't create infinite loops",
+      "Verify cost is appropriate (profile if needed)"
+    ],
+    
+    "common_pitfalls": [
+      {
+        "mistake": "Forgetting Box::new()",
+        "example": "Expr::Add(a, b) ❌",
+        "correct": "Expr::Add(Box::new(a), Box::new(b)) ✅"
+      },
+      {
+        "mistake": "Not cloning expressions",
+        "example": "result: base ❌",
+        "correct": "result: base.clone() ✅"
+      },
+      {
+        "mistake": "Creating infinite loops",
+        "example": "Rule A produces output that Rule B converts back",
+        "solution": "Set appropriate costs, prefer simpler forms"
+      },
+      {
+        "mistake": "Wrong RuleCategory",
+        "example": "Using Simplification for derivatives",
+        "correct": "Use RuleCategory::Derivative"
+      },
+      {
+        "mistake": "Not handling chain rule",
+        "example": "d/dx(sin(x²)) = cos(x²) ❌",
+        "correct": "d/dx(sin(x²)) = cos(x²)·2x ✅"
+      }
+    ]
+  },
+  
+  "priority_implementation_order": [
+    {
+      "phase": 1,
+      "priority": "CRITICAL - Fixes CBSE Q21",
+      "rules": [
+        "d/dx(a^x) = a^x·ln(a)",
+        "d/dx(a^f(x)) = a^f(x)·ln(a)·f'(x)"
+      ],
+      "estimated_ids": "408-409",
+      "difficulty": "Medium",
+      "impact": "Solves Q21 from CBSE test",
+      "testing": "Test with 2^x, 2^(x²), 2^(cos²x)"
+    },
+    {
+      "phase": 2,
+      "priority": "HIGH - Common CBSE patterns",
+      "rules": [
+        "d/dx(f^n) = n·f^(n-1)·f' (general power rule)",
+        "d/dx(√f) = f'/(2√f)",
+        "d/dx(log_a(x)) = 1/(x·ln(a))",
+        "d/dx(log_a(f)) = f'/(f·ln(a))"
+      ],
+      "estimated_ids": "475-476, 411-412",
+      "difficulty": "Medium",
+      "impact": "Covers most CBSE derivative questions",
+      "testing": "Test with (x²+1)³, √(x²+1), log₂(x), log₁₀(sin(x))"
+    },
+    {
+      "phase": 3,
+      "priority": "HIGH - Inverse trig (after Expr enum update)",
+      "rules": [
+        "d/dx(arcsin(f)) = f'/√(1-f²)",
+        "d/dx(arccos(f)) = -f'/√(1-f²)",
+        "d/dx(arctan(f)) = f'/(1+f²)"
+      ],
+      "estimated_ids": "413-415",
+      "difficulty": "Hard (requires Expr enum changes)",
+      "prerequisite": "Add Arcsin, Arccos, Arctan to Expr enum first",
+      "impact": "Completes basic inverse trig coverage",
+      "testing": "Test with arcsin(x), arctan(x²), arccos(sin(x))"
+    },
+    {
+      "phase": 4,
+      "priority": "MEDIUM - Reciprocal trig",
+      "rules": [
+        "d/dx(sec(f)) = f'·sec(f)·tan(f)",
+        "d/dx(csc(f)) = -f'·csc(f)·cot(f)",
+        "d/dx(cot(f)) = -f'/sin²(f)"
+      ],
+      "estimated_ids": "472-474",
+      "difficulty": "Medium",
+      "prerequisite": "May need Sec, Csc, Cot in Expr enum",
+      "impact": "Completes trig derivative coverage",
+      "testing": "Test with sec(x), csc(2x), cot(x²)"
+    },
+    {
+      "phase": 5,
+      "priority": "LOW - Advanced techniques",
+      "rules": [
+        "Logarithmic differentiation",
+        "Implicit differentiation",
+        "Parametric differentiation"
+      ],
+      "estimated_ids": "477-479",
+      "difficulty": "Very Hard",
+      "note": "These are meta-techniques, not single rules",
+      "impact": "Advanced JEE problems",
+      "testing": "Test with x^x, x²+y²=1, x=cos(t), y=sin(t)"
+    }
+  ],
+  
+  "expr_enum_changes_needed": [
+    {
+      "change": "Add inverse trig functions",
+      "variants": [
+        "Arcsin(Box<Expr>)",
+        "Arccos(Box<Expr>)",
+        "Arctan(Box<Expr>)",
+        "Arccot(Box<Expr>)",
+        "Arcsec(Box<Expr>)",
+        "Arccsc(Box<Expr>)"
+      ],
+      "location": "mm-core/src/lib.rs or mm-core/src/expr.rs",
+      "priority": "HIGH",
+      "blocks": "Phase 3 derivative rules"
+    },
+    {
+      "change": "Add reciprocal trig functions",
+      "variants": [
+        "Sec(Box<Expr>)",
+        "Csc(Box<Expr>)",
+        "Cot(Box<Expr>)"
+      ],
+      "location": "mm-core/src/lib.rs or mm-core/src/expr.rs",
+      "priority": "MEDIUM",
+      "blocks": "Phase 4 derivative rules",
+      "note": "Or use identities: sec(x) = 1/cos(x)"
+    },
+    {
+      "change": "Add hyperbolic functions (if not present)",
+      "variants": [
+        "Sinh(Box<Expr>)",
+        "Cosh(Box<Expr>)",
+        "Tanh(Box<Expr>)"
+      ],
+      "location": "mm-core/src/lib.rs or mm-core/src/expr.rs",
+      "priority": "LOW",
+      "note": "Check if already exists in Expr enum"
+    },
+    {
+      "change": "Add general log with base",
+      "variants": [
+        "Log already exists: Log(Box<Expr>, Box<Expr>)"
+      ],
+      "status": "ALREADY EXISTS",
+      "note": "Check if Log(base, arg) or Log(arg, base)"
+    }
+  ],
+  
+  "quality_checklist": [
+    "✓ Rule ID is unique and documented",
+    "✓ is_applicable checks correct pattern",
+    "✓ is_applicable checks contains_var properly",
+    "✓ apply uses Box::new for all nested Expr",
+    "✓ apply clones expressions when reused",
+    "✓ Justification string is clear and accurate",
+    "✓ Cost is set appropriately (1-4)",
+    "✓ Category is RuleCategory::Derivative",
+    "✓ reversible is set to false",
+    "✓ Handles both simple (x) and complex (f(x)) cases",
+    "✓ Tested with at least 3 examples",
+    "✓ No infinite loops with other rules",
+    "✓ Follows existing code style",
+    "✓ Added to appropriate vec in calculus_rules() or advanced_calculus_rules()"
+  ],
+  
+  "notes": {
+    "stub_rules": "Most integration/limit/multivariable rules (420-469) are STUBS with is_applicable returning false",
+    "integration": "Integration rules are mostly placeholders, focus on derivatives first",
+    "multivariable": "Partial derivatives, gradients (439+) are stubs, low priority for CBSE",
+    "file_size": "File is 1886 lines, getting large. Consider splitting if adding many rules",
+    "testing_location": "Add tests to examples/benchmark.rs or examples/stress_test.rs"
+  }
+}
