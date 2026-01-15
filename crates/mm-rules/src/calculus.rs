@@ -471,6 +471,12 @@ pub fn advanced_calculus_rules() -> Vec<Rule> {
         general_power_rule(),        // Rule 475
         log_base_simple(),           // Rule 411
         log_base_chain(),            // Rule 412
+        sec_derivative(),            // Rule 472
+        csc_derivative(),            // Rule 473
+        cot_derivative(),            // Rule 474
+        arcsin_derivative(),         // Rule 413
+        arccos_derivative(),         // Rule 414
+        arctan_derivative(),         // Rule 415
     ]
 }
 
@@ -1020,6 +1026,324 @@ fn log_base_chain() -> Rule {
     }
 }
 
+// ============================================================================
+// Rule 472: d/dx(sec(f)) = d/dx(1/cos(f)) = f'·sec(f)·tan(f)
+// ============================================================================
+
+fn sec_derivative() -> Rule {
+    Rule {
+        id: RuleId(472),
+        name: "sec_derivative",
+        category: RuleCategory::Derivative,
+        description: "d/dx(sec(f)) = f'·sec(f)·tan(f) where sec(f) = 1/cos(f)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                // Match pattern 1/cos(f)
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if let (Expr::Const(n), Expr::Cos(arg)) = (num.as_ref(), denom.as_ref()) {
+                        if n.is_one() && contains_var(arg, *var) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Div(_, denom) = inner.as_ref() {
+                    if let Expr::Cos(f) = denom.as_ref() {
+                        // d/dx(sec(f)) = f' * sec(f) * tan(f)
+                        // = f' * (1/cos(f)) * (sin(f)/cos(f))
+                        // = f' * sin(f) / cos²(f)
+                        let f_prime = Expr::Derivative {
+                            expr: f.clone(),
+                            var: *var,
+                        };
+                        let sin_f = Expr::Sin(f.clone());
+                        let cos_sq_f = Expr::Pow(Box::new(Expr::Cos(f.clone())), Box::new(Expr::int(2)));
+                        
+                        // f' * sin(f) / cos²(f)
+                        let numerator = Expr::Mul(Box::new(f_prime), Box::new(sin_f));
+                        let result = Expr::Div(Box::new(numerator), Box::new(cos_sq_f));
+                        
+                        return vec![RuleApplication {
+                            result,
+                            justification: "d/dx(sec(f)) = f'·sec(f)·tan(f)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// ============================================================================
+// Rule 473: d/dx(csc(f)) = d/dx(1/sin(f)) = -f'·csc(f)·cot(f)
+// ============================================================================
+
+fn csc_derivative() -> Rule {
+    Rule {
+        id: RuleId(473),
+        name: "csc_derivative",
+        category: RuleCategory::Derivative,
+        description: "d/dx(csc(f)) = -f'·csc(f)·cot(f) where csc(f) = 1/sin(f)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                // Match pattern 1/sin(f)
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if let (Expr::Const(n), Expr::Sin(arg)) = (num.as_ref(), denom.as_ref()) {
+                        if n.is_one() && contains_var(arg, *var) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Div(_, denom) = inner.as_ref() {
+                    if let Expr::Sin(f) = denom.as_ref() {
+                        // d/dx(csc(f)) = -f' * csc(f) * cot(f)
+                        // = -f' * (1/sin(f)) * (cos(f)/sin(f))
+                        // = -f' * cos(f) / sin²(f)
+                        let f_prime = Expr::Derivative {
+                            expr: f.clone(),
+                            var: *var,
+                        };
+                        let cos_f = Expr::Cos(f.clone());
+                        let sin_sq_f = Expr::Pow(Box::new(Expr::Sin(f.clone())), Box::new(Expr::int(2)));
+                        
+                        // -f' * cos(f) / sin²(f)
+                        let numerator = Expr::Mul(Box::new(f_prime), Box::new(cos_f));
+                        let result = Expr::Neg(Box::new(Expr::Div(Box::new(numerator), Box::new(sin_sq_f))));
+                        
+                        return vec![RuleApplication {
+                            result,
+                            justification: "d/dx(csc(f)) = -f'·csc(f)·cot(f)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// ============================================================================
+// Rule 474: d/dx(cot(f)) = d/dx(cos(f)/sin(f)) = -f'/sin²(f)
+// ============================================================================
+
+fn cot_derivative() -> Rule {
+    Rule {
+        id: RuleId(474),
+        name: "cot_derivative",
+        category: RuleCategory::Derivative,
+        description: "d/dx(cot(f)) = -f'/sin²(f) where cot(f) = cos(f)/sin(f)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                // Match pattern cos(f)/sin(f)
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if let (Expr::Cos(arg1), Expr::Sin(arg2)) = (num.as_ref(), denom.as_ref()) {
+                        // Check if both args are the same and contain var
+                        if arg1 == arg2 && contains_var(arg1, *var) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Div(num, _) = inner.as_ref() {
+                    if let Expr::Cos(f) = num.as_ref() {
+                        // d/dx(cot(f)) = -f'/sin²(f)
+                        let f_prime = Expr::Derivative {
+                            expr: f.clone(),
+                            var: *var,
+                        };
+                        let sin_sq_f = Expr::Pow(Box::new(Expr::Sin(f.clone())), Box::new(Expr::int(2)));
+                        
+                        // -f' / sin²(f)
+                        let result = Expr::Neg(Box::new(Expr::Div(Box::new(f_prime), Box::new(sin_sq_f))));
+                        
+                        return vec![RuleApplication {
+                            result,
+                            justification: "d/dx(cot(f)) = -f'/sin²(f)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// ============================================================================
+// Rule 413: d/dx(arcsin(f)) = f'/√(1-f²)
+// ============================================================================
+
+fn arcsin_derivative() -> Rule {
+    Rule {
+        id: RuleId(413),
+        name: "arcsin_derivative",
+        category: RuleCategory::Derivative,
+        description: "d/dx(arcsin(f)) = f'/√(1-f²)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Arcsin(arg) = inner.as_ref() {
+                    return contains_var(arg, *var);
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Arcsin(f) = inner.as_ref() {
+                    // d/dx(arcsin(f)) = f' / √(1-f²)
+                    let f_prime = Expr::Derivative {
+                        expr: f.clone(),
+                        var: *var,
+                    };
+                    
+                    // 1 - f²
+                    let one_minus_f_squared = Expr::Sub(
+                        Box::new(Expr::int(1)),
+                        Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2))))
+                    );
+                    
+                    // √(1-f²)
+                    let sqrt_denom = Expr::Sqrt(Box::new(one_minus_f_squared));
+                    
+                    // f' / √(1-f²)
+                    let result = Expr::Div(Box::new(f_prime), Box::new(sqrt_denom));
+                    
+                    return vec![RuleApplication {
+                        result,
+                        justification: "d/dx(arcsin(f)) = f'/√(1-f²)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// ============================================================================
+// Rule 414: d/dx(arccos(f)) = -f'/√(1-f²)
+// ============================================================================
+
+fn arccos_derivative() -> Rule {
+    Rule {
+        id: RuleId(414),
+        name: "arccos_derivative",
+        category: RuleCategory::Derivative,
+        description: "d/dx(arccos(f)) = -f'/√(1-f²)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Arccos(arg) = inner.as_ref() {
+                    return contains_var(arg, *var);
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Arccos(f) = inner.as_ref() {
+                    // d/dx(arccos(f)) = -f' / √(1-f²)
+                    let f_prime = Expr::Derivative {
+                        expr: f.clone(),
+                        var: *var,
+                    };
+                    
+                    // 1 - f²
+                    let one_minus_f_squared = Expr::Sub(
+                        Box::new(Expr::int(1)),
+                        Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2))))
+                    );
+                    
+                    // √(1-f²)
+                    let sqrt_denom = Expr::Sqrt(Box::new(one_minus_f_squared));
+                    
+                    // f' / √(1-f²)
+                    let fraction = Expr::Div(Box::new(f_prime), Box::new(sqrt_denom));
+                    
+                    // -f' / √(1-f²)
+                    let result = Expr::Neg(Box::new(fraction));
+                    
+                    return vec![RuleApplication {
+                        result,
+                        justification: "d/dx(arccos(f)) = -f'/√(1-f²)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// ============================================================================
+// Rule 415: d/dx(arctan(f)) = f'/(1+f²)
+// ============================================================================
+
+fn arctan_derivative() -> Rule {
+    Rule {
+        id: RuleId(415),
+        name: "arctan_derivative",
+        category: RuleCategory::Derivative,
+        description: "d/dx(arctan(f)) = f'/(1+f²)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Arctan(arg) = inner.as_ref() {
+                    return contains_var(arg, *var);
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Derivative { expr: inner, var } = expr {
+                if let Expr::Arctan(f) = inner.as_ref() {
+                    // d/dx(arctan(f)) = f' / (1+f²)
+                    let f_prime = Expr::Derivative {
+                        expr: f.clone(),
+                        var: *var,
+                    };
+                    
+                    // 1 + f²
+                    let one_plus_f_squared = Expr::Add(
+                        Box::new(Expr::int(1)),
+                        Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2))))
+                    );
+                    
+                    // f' / (1+f²)
+                    let result = Expr::Div(Box::new(f_prime), Box::new(one_plus_f_squared));
+                    
+                    return vec![RuleApplication {
+                        result,
+                        justification: "d/dx(arctan(f)) = f'/(1+f²)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
 /// Check if an expression contains a specific variable.
 fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
     match expr {
@@ -1030,6 +1354,9 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
         | Expr::Sin(e)
         | Expr::Cos(e)
         | Expr::Tan(e)
+        | Expr::Arcsin(e)
+        | Expr::Arccos(e)
+        | Expr::Arctan(e)
         | Expr::Ln(e)
         | Expr::Exp(e)
         | Expr::Abs(e) => contains_var(e, var),

@@ -52,6 +52,15 @@ pub enum Expr {
     /// Tangent: tan(a)
     Tan(Box<Expr>),
 
+    /// Inverse sine: arcsin(a)
+    Arcsin(Box<Expr>),
+
+    /// Inverse cosine: arccos(a)
+    Arccos(Box<Expr>),
+
+    /// Inverse tangent: arctan(a)
+    Arctan(Box<Expr>),
+
     /// Natural logarithm: ln(a)
     Ln(Box<Expr>),
 
@@ -228,6 +237,9 @@ impl PartialEq for Expr {
             (Expr::Sin(a), Expr::Sin(b)) => a == b,
             (Expr::Cos(a), Expr::Cos(b)) => a == b,
             (Expr::Tan(a), Expr::Tan(b)) => a == b,
+            (Expr::Arcsin(a), Expr::Arcsin(b)) => a == b,
+            (Expr::Arccos(a), Expr::Arccos(b)) => a == b,
+            (Expr::Arctan(a), Expr::Arctan(b)) => a == b,
             (Expr::Ln(a), Expr::Ln(b)) => a == b,
             (Expr::Exp(a), Expr::Exp(b)) => a == b,
             (Expr::Abs(a), Expr::Abs(b)) => a == b,
@@ -270,6 +282,9 @@ impl Hash for Expr {
             | Expr::Sin(e)
             | Expr::Cos(e)
             | Expr::Tan(e)
+            | Expr::Arcsin(e)
+            | Expr::Arccos(e)
+            | Expr::Arctan(e)
             | Expr::Ln(e)
             | Expr::Exp(e)
             | Expr::Abs(e) => e.hash(state),
@@ -392,6 +407,9 @@ impl Ord for Expr {
             (Expr::Sin(a), Expr::Sin(b)) => a.cmp(b),
             (Expr::Cos(a), Expr::Cos(b)) => a.cmp(b),
             (Expr::Tan(a), Expr::Tan(b)) => a.cmp(b),
+            (Expr::Arcsin(a), Expr::Arcsin(b)) => a.cmp(b),
+            (Expr::Arccos(a), Expr::Arccos(b)) => a.cmp(b),
+            (Expr::Arctan(a), Expr::Arctan(b)) => a.cmp(b),
             (Expr::Ln(a), Expr::Ln(b)) => a.cmp(b),
             (Expr::Exp(a), Expr::Exp(b)) => a.cmp(b),
             (Expr::Abs(a), Expr::Abs(b)) => a.cmp(b),
@@ -479,6 +497,9 @@ impl Expr {
             | Expr::Sin(e)
             | Expr::Cos(e)
             | Expr::Tan(e)
+            | Expr::Arcsin(e)
+            | Expr::Arccos(e)
+            | Expr::Arctan(e)
             | Expr::Ln(e)
             | Expr::Exp(e)
             | Expr::Abs(e) => 1 + e.complexity(),

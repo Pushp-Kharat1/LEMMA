@@ -66,6 +66,9 @@ fn is_calculus_expr(expr: &Expr) -> bool {
         | Expr::Sin(e)
         | Expr::Cos(e)
         | Expr::Tan(e)
+        | Expr::Arcsin(e)
+        | Expr::Arccos(e)
+        | Expr::Arctan(e)
         | Expr::Ln(e)
         | Expr::Exp(e)
         | Expr::Abs(e) => is_calculus_expr(e),
@@ -271,6 +274,9 @@ fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
         Expr::Sin(e) => Expr::Sin(Box::new(substitute(e, var, value))),
         Expr::Cos(e) => Expr::Cos(Box::new(substitute(e, var, value))),
         Expr::Tan(e) => Expr::Tan(Box::new(substitute(e, var, value))),
+        Expr::Arcsin(e) => Expr::Arcsin(Box::new(substitute(e, var, value))),
+        Expr::Arccos(e) => Expr::Arccos(Box::new(substitute(e, var, value))),
+        Expr::Arctan(e) => Expr::Arctan(Box::new(substitute(e, var, value))),
         Expr::Ln(e) => Expr::Ln(Box::new(substitute(e, var, value))),
         Expr::Exp(e) => Expr::Exp(Box::new(substitute(e, var, value))),
         Expr::Abs(e) => Expr::Abs(Box::new(substitute(e, var, value))),
