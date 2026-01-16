@@ -97,17 +97,70 @@
 **Example:** `d/dx(arctan(x²)) = 2x/(1+x⁴)`  
 **Note:** Requires mm-core Expr enum update (Arctan variant added)
 
+## Integration Rules
+
+### Rule 420: `integral_power`
+**Formula:** `∫x^n dx = x^(n+1)/(n+1) + C` (n ≠ -1)  
+**Added:** 2026-01-16  
+**File:** `crates/mm-rules/src/calculus.rs:1491-1550`  
+**Purpose:** Power rule for integration  
+**Example:** `∫x² dx = x³/3`, `∫x dx = x²/2`  
+**Note:** Excludes n=-1 (handled by integral_ln)
+
+### Rule 421: `integral_constant`
+**Formula:** `∫k dx = kx + C`  
+**Added:** 2026-01-16  
+**File:** `crates/mm-rules/src/calculus.rs:1551-1582`  
+**Purpose:** Integration of constants  
+**Example:** `∫5 dx = 5x`  
+
+### Rule 422: `integral_sum`
+**Formula:** `∫(f+g) dx = ∫f dx + ∫g dx`  
+**Added:** 2026-01-16  
+**File:** `crates/mm-rules/src/calculus.rs:1583-1621`  
+**Purpose:** Sum rule for integration  
+**Example:** `∫(x²+3x) dx = ∫x² dx + ∫3x dx`  
+
+### Rule 423: `integral_exp`
+**Formula:** `∫e^x dx = e^x + C`  
+**Added:** 2026-01-16  
+**File:** `crates/mm-rules/src/calculus.rs:1622-1650`  
+**Purpose:** Exponential integration  
+**Example:** `∫e^x dx = e^x`  
+
+### Rule 424: `integral_ln`
+**Formula:** `∫1/x dx = ln|x| + C`  
+**Added:** 2026-01-16  
+**File:** `crates/mm-rules/src/calculus.rs:1651-1683`  
+**Purpose:** Reciprocal integration  
+**Example:** `∫1/x dx = ln|x|`  
+
+### Rule 425: `integral_sin`
+**Formula:** `∫sin(x) dx = -cos(x) + C`  
+**Added:** 2026-01-16  
+**File:** `crates/mm-rules/src/calculus.rs:1684-1714`  
+**Purpose:** Sine integration  
+**Example:** `∫sin(x) dx = -cos(x)`  
+
+### Rule 426: `integral_cos`
+**Formula:** `∫cos(x) dx = sin(x) + C`  
+**Added:** 2026-01-16  
+**File:** `crates/mm-rules/src/calculus.rs:1715-1745`  
+**Purpose:** Cosine integration  
+**Example:** `∫cos(x) dx = sin(x)`  
+
 ---
 
-**Total Rules Added:** 12  
-**Total Derivative Rules:** 25 (was 13)  
-**Next Available ID:** 416  
+**Total Rules Added:** 19 (12 derivatives + 7 integrals)  
+**Total Derivative Rules:** 25  
+**Total Integration Rules:** 7 (basic rules now functional)  
+**Next Available ID:** 427  
 **Build Status:** ✅ Compiles successfully  
 **Tests:** ✅ All mm-rules tests pass (5/5)  
-**Coverage:** ~95% of CBSE/JEE derivative problems  
+**Coverage:** ~95% derivative, ~40% basic integration  
 **Core Changes:** ✅ Added Arcsin, Arccos, Arctan to mm-core Expr enum
 
-## Files Updated Today (2026-01-15)
+## Files Updated (2026-01-15)
 **For inverse trig derivative implementation:**
 - `mm-core/src/expr.rs` - Added Arcsin/Arccos/Arctan enum variants + trait implementations
 - `mm-core/src/eval.rs` - Added asin/acos/atan evaluation support
@@ -119,3 +172,8 @@
 - `mm-verifier/src/lib.rs` - Updated is_calculus_expr and substitute functions
 - `mm-brain/src/encoder.rs` - Added arcsin/arccos/arctan tokenization
 - `RulesDoc.md` - Documented new rules and file changes
+
+## Files Updated (2026-01-16)
+**For basic integration rules implementation:**
+- `mm-rules/src/calculus.rs` - Implemented 7 integration rules (420-426)
+- `RulesDoc.md` - Documented integration rules

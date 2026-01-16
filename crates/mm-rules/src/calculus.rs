@@ -1494,8 +1494,58 @@ fn integral_power() -> Rule {
         name: "integral_power",
         category: RuleCategory::Integral,
         description: "∫x^n dx = x^(n+1)/(n+1) + C",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match x^n where n is a constant and n ≠ -1
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    if let (Expr::Var(v), Expr::Const(n)) = (base.as_ref(), exp.as_ref()) {
+                        // Check that it's not x^(-1) since that would give ln
+                        let is_neg_one = n.is_integer() && n.numer() == -1;
+                        return *v == *var && !is_neg_one;
+                    }
+                }
+                // Also match just x (which is x^1)
+                if let Expr::Var(v) = inner.as_ref() {
+                    return *v == *var;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    if let Expr::Const(n) = exp.as_ref() {
+                        // ∫x^n dx = x^(n+1)/(n+1)
+                        let n_plus_1 = *n + mm_core::Rational::from_integer(1);
+                        let new_power = Expr::Pow(
+                            base.clone(),
+                            Box::new(Expr::Const(n_plus_1))
+                        );
+                        let result = Expr::Div(
+                            Box::new(new_power),
+                            Box::new(Expr::Const(n_plus_1))
+                        );
+                        
+                        return vec![RuleApplication {
+                            result,
+                            justification: format!("∫x^{} dx = x^{}/({})", n, n_plus_1, n_plus_1),
+                        }];
+                    }
+                } else if let Expr::Var(_) = inner.as_ref() {
+                    // ∫x dx = x²/2
+                    let result = Expr::Div(
+                        Box::new(Expr::Pow(inner.clone(), Box::new(Expr::int(2)))),
+                        Box::new(Expr::int(2))
+                    );
+                    
+                    return vec![RuleApplication {
+                        result,
+                        justification: "∫x dx = x²/2".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1506,8 +1556,28 @@ fn integral_constant() -> Rule {
         name: "integral_constant",
         category: RuleCategory::Integral,
         description: "∫k dx = kx + C",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match constant (doesn't contain the variable)
+                return !contains_var(inner, *var);
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // ∫k dx = k*x
+                let result = Expr::Mul(
+                    inner.clone(),
+                    Box::new(Expr::Var(*var))
+                );
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫k dx = kx".to_string(),
+                }];
+            }
+            vec![]
+        },
         reversible: true,
         cost: 1,
     }
@@ -1518,8 +1588,35 @@ fn integral_sum() -> Rule {
         name: "integral_sum",
         category: RuleCategory::Integral,
         description: "∫(f+g) dx = ∫f dx + ∫g dx",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, .. } = expr {
+                // Match f + g
+                return matches!(inner.as_ref(), Expr::Add(_, _));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                if let Expr::Add(f, g) = inner.as_ref() {
+                    // ∫(f+g) dx = ∫f dx + ∫g dx
+                    let integral_f = Expr::Integral {
+                        expr: f.clone(),
+                        var: *var,
+                    };
+                    let integral_g = Expr::Integral {
+                        expr: g.clone(),
+                        var: *var,
+                    };
+                    let result = Expr::Add(Box::new(integral_f), Box::new(integral_g));
+                    
+                    return vec![RuleApplication {
+                        result,
+                        justification: "∫(f+g) dx = ∫f dx + ∫g dx".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1530,8 +1627,25 @@ fn integral_exp() -> Rule {
         name: "integral_exp",
         category: RuleCategory::Integral,
         description: "∫e^x dx = e^x + C",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match e^x
+                if let Expr::Exp(arg) = inner.as_ref() {
+                    return matches!(arg.as_ref(), Expr::Var(v) if *v == *var);
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, .. } = expr {
+                // ∫e^x dx = e^x
+                return vec![RuleApplication {
+                    result: inner.as_ref().clone(),
+                    justification: "∫e^x dx = e^x".to_string(),
+                }];
+            }
+            vec![]
+        },
         reversible: true,
         cost: 1,
     }
@@ -1542,8 +1656,29 @@ fn integral_ln() -> Rule {
         name: "integral_ln",
         category: RuleCategory::Integral,
         description: "∫1/x dx = ln|x| + C",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match 1/x
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if let (Expr::Const(n), Expr::Var(v)) = (num.as_ref(), denom.as_ref()) {
+                        return n.is_one() && *v == *var;
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫1/x dx = ln|x| (we use Abs for |x|)
+                let result = Expr::Ln(Box::new(Expr::Abs(Box::new(Expr::Var(*var)))));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫1/x dx = ln|x|".to_string(),
+                }];
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1554,8 +1689,27 @@ fn integral_sin() -> Rule {
         name: "integral_sin",
         category: RuleCategory::Integral,
         description: "∫sin(x) dx = -cos(x) + C",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match sin(x)
+                if let Expr::Sin(arg) = inner.as_ref() {
+                    return matches!(arg.as_ref(), Expr::Var(v) if *v == *var);
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫sin(x) dx = -cos(x)
+                let result = Expr::Neg(Box::new(Expr::Cos(Box::new(Expr::Var(*var)))));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫sin(x) dx = -cos(x)".to_string(),
+                }];
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1566,8 +1720,27 @@ fn integral_cos() -> Rule {
         name: "integral_cos",
         category: RuleCategory::Integral,
         description: "∫cos(x) dx = sin(x) + C",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match cos(x)
+                if let Expr::Cos(arg) = inner.as_ref() {
+                    return matches!(arg.as_ref(), Expr::Var(v) if *v == *var);
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫cos(x) dx = sin(x)
+                let result = Expr::Sin(Box::new(Expr::Var(*var)));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫cos(x) dx = sin(x)".to_string(),
+                }];
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
