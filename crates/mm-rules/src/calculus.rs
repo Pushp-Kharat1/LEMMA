@@ -1435,6 +1435,7 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
 /// Phase 4 calculus rules for 450+ rules milestone
 pub fn phase4_calculus_rules() -> Vec<Rule> {
     vec![
+        integral_constant_multiple(),  // Rule 419
         integral_power(),
         integral_constant(),
         integral_sum(),
@@ -1486,6 +1487,48 @@ pub fn phase4_calculus_rules() -> Vec<Rule> {
         divergence_theorem(),
         jacobian_transform(),
     ]
+}
+
+// ============================================================================
+// Rule 419: ∫k·f(x) dx = k·∫f(x) dx (constant multiple rule)
+// ============================================================================
+
+fn integral_constant_multiple() -> Rule {
+    Rule {
+        id: RuleId(419),
+        name: "integral_constant_multiple",
+        category: RuleCategory::Integral,
+        description: "∫k·f(x) dx = k·∫f(x) dx",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match k * f where k doesn't contain the variable
+                if let Expr::Mul(k, f) = inner.as_ref() {
+                    return !contains_var(k, *var) && contains_var(f, *var);
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                if let Expr::Mul(k, f) = inner.as_ref() {
+                    // ∫k·f dx = k·∫f dx
+                    let integral_f = Expr::Integral {
+                        expr: f.clone(),
+                        var: *var,
+                    };
+                    let result = Expr::Mul(k.clone(), Box::new(integral_f));
+                    
+                    return vec![RuleApplication {
+                        result,
+                        justification: "∫k·f(x) dx = k·∫f(x) dx".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 1,
+    }
 }
 
 fn integral_power() -> Rule {
@@ -2685,5 +2728,152 @@ mod tests {
         let (x_min, min_val) = result.unwrap();
         assert_eq!(x_min, Rational::from(1));
         assert_eq!(min_val, Rational::from(0));
+    }
+
+    #[test]
+    fn test_integral_power_rule() {
+        let mut symbols = SymbolTable::new();
+        let x = symbols.intern("x");
+        
+        // ∫x² dx should give x³/3
+        let expr = Expr::Integral {
+            expr: Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)))),
+            var: x,
+        };
+        
+        let rule = integral_power();
+        let ctx = RuleContext::default();
+        
+        assert!((rule.is_applicable)(&expr, &ctx));
+        let results = (rule.apply)(&expr, &ctx);
+        assert!(!results.is_empty());
+        // Result should be x³/3
+    }
+
+    #[test]
+    fn test_integral_constant() {
+        let mut symbols = SymbolTable::new();
+        let x = symbols.intern("x");
+        
+        // ∫5 dx should give 5x
+        let expr = Expr::Integral {
+            expr: Box::new(Expr::int(5)),
+            var: x,
+        };
+        
+        let rule = integral_constant();
+        let ctx = RuleContext::default();
+        
+        assert!((rule.is_applicable)(&expr, &ctx));
+        let results = (rule.apply)(&expr, &ctx);
+        assert!(!results.is_empty());
+        assert_eq!(results[0].result, Expr::Mul(Box::new(Expr::int(5)), Box::new(Expr::Var(x))));
+    }
+
+    #[test]
+    fn test_integral_constant_multiple() {
+        let mut symbols = SymbolTable::new();
+        let x = symbols.intern("x");
+        
+        // ∫3x² dx should give 3·∫x² dx
+        let expr = Expr::Integral {
+            expr: Box::new(Expr::Mul(
+                Box::new(Expr::int(3)),
+                Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2))))
+            )),
+            var: x,
+        };
+        
+        let rule = integral_constant_multiple();
+        let ctx = RuleContext::default();
+        
+        assert!((rule.is_applicable)(&expr, &ctx));
+        let results = (rule.apply)(&expr, &ctx);
+        assert!(!results.is_empty());
+        // Result should be 3·∫x² dx
+        assert!(matches!(results[0].result, Expr::Mul(_, _)));
+    }
+
+    #[test]
+    fn test_integral_sum() {
+        let mut symbols = SymbolTable::new();
+        let x = symbols.intern("x");
+        
+        // ∫(x² + x) dx should split into ∫x² dx + ∫x dx
+        let expr = Expr::Integral {
+            expr: Box::new(Expr::Add(
+                Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)))),
+                Box::new(Expr::Var(x))
+            )),
+            var: x,
+        };
+        
+        let rule = integral_sum();
+        let ctx = RuleContext::default();
+        
+        assert!((rule.is_applicable)(&expr, &ctx));
+        let results = (rule.apply)(&expr, &ctx);
+        assert!(!results.is_empty());
+        assert!(matches!(results[0].result, Expr::Add(_, _)));
+    }
+
+    #[test]
+    fn test_integral_exp() {
+        let mut symbols = SymbolTable::new();
+        let x = symbols.intern("x");
+        
+        // ∫e^x dx should give e^x
+        let expr = Expr::Integral {
+            expr: Box::new(Expr::Exp(Box::new(Expr::Var(x)))),
+            var: x,
+        };
+        
+        let rule = integral_exp();
+        let ctx = RuleContext::default();
+        
+        assert!((rule.is_applicable)(&expr, &ctx));
+        let results = (rule.apply)(&expr, &ctx);
+        assert!(!results.is_empty());
+        assert_eq!(results[0].result, Expr::Exp(Box::new(Expr::Var(x))));
+    }
+
+    #[test]
+    fn test_integral_sin() {
+        let mut symbols = SymbolTable::new();
+        let x = symbols.intern("x");
+        
+        // ∫sin(x) dx should give -cos(x)
+        let expr = Expr::Integral {
+            expr: Box::new(Expr::Sin(Box::new(Expr::Var(x)))),
+            var: x,
+        };
+        
+        let rule = integral_sin();
+        let ctx = RuleContext::default();
+        
+        assert!((rule.is_applicable)(&expr, &ctx));
+        let results = (rule.apply)(&expr, &ctx);
+        assert!(!results.is_empty());
+        assert!(matches!(results[0].result, Expr::Neg(_)));
+    }
+
+    #[test]
+    fn test_integral_cos() {
+        let mut symbols = SymbolTable::new();
+        let x = symbols.intern("x");
+        
+        // ∫cos(x) dx should give sin(x)
+        let expr = Expr::Integral {
+            expr: Box::new(Expr::Cos(Box::new(Expr::Var(x)))),
+            var: x,
+        };
+        
+        let rule = integral_cos();
+        let ctx = RuleContext::default();
+        
+        assert!((rule.is_applicable)(&expr, &ctx));
+        let results = (rule.apply)(&expr, &ctx);
+        assert!(!results.is_empty());
+        assert_eq!(results[0].result, Expr::Sin(Box::new(Expr::Var(x))));
     }
 }
