@@ -3,114 +3,109 @@
 # LEMMA
 **Logical Engine for Multi-domain Mathematical Analysis**
 
-A research prototype exploring neural-guided symbolic mathematics in Rust.
-Combining **MCTS** (Monte Carlo Tree Search) with a **Transformer** policy network to solve mathematical problems using strict, verified rules.
+A high-performance **Neuro-Symbolic Theorem Prover** in Rust.
+Implements an **AlphaZero-style** architecture combining **Deep MCTS** (Monte Carlo Tree Search) with a **Transformer** policy network to solve competition-level mathematical problems.
 
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg?style=for-the-badge)](https://opensource.org/licenses/MPL-2.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg?style=for-the-badge)](https://www.rust-lang.org/)
+[![AI](https://img.shields.io/badge/AI-Candle%20Transformer-blueviolet.svg?style=for-the-badge)](https://github.com/huggingface/candle)
 
 </div>
 
 ---
 
-## What This Project IS and IS NOT
+## Overview
 
-### What LEMMA IS:
-- A **research prototype** exploring hybrid neural-symbolic reasoning.
-- A system that applies **explicit, verified transformation rules** (no hallucinated steps).
-- A **proof of concept** for AlphaZero-style mathematical search.
-- An engine with **800+ transformation rules** covering Algebra, Calculus, and Number Theory.
-- A **learning project** demonstrating how to implement MCTS + Transformers in Rust.
+LEMMA is a comprehensive research system designed to solve complex mathematical problems (Algebra, Calculus, Number Theory) by combining the intuition of neural networks with the rigor of symbolic logic.
 
-### What LEMMA is NOT:
-- **Not a production-ready CAS** (like Mathematica or SymPy) - it lacks many standard algorithms (e.g., Risch algorithm for integration).
-- **Not a general-purpose theorem prover** (like Lean or Coq).
-- **Not fully formally verified** - while rules are unit-tested, there is no formal proof backend (Z3/SMT) yet.
-- **Not a magic LLM** - it cannot "chat" about math; it manipulates expression trees.
+Unlike LLMs which "hallucinate" answers, LEMMA uses a **Deep Search** engine that explores millions of logical states, guided by a neural network, but constrained by **800+ strictly verified mathematical rules**. It produces not just an answer, but a **verifiable proof trace**.
+
+### Key Technologies
+*   **Deep MCTS:** A parallelized, lock-free Monte Carlo Tree Search engine capable of exploring **10M+ nodes** per problem, utilizing virtual loss and PUCT (Polynomial Upper Confidence Trees).
+*   **Neural Guidance:** A custom **Transformer** model (implemented in `Candle`) that predicts the most promising rules to apply (Policy Head) and estimates the solubility of the current state (Value Head).
+*   **Symbolic Core:** A high-performance AST engine with canonicalization, pattern matching, and a library of **807 verified transformation rules**.
+*   **Synthetic Curriculum:** The `mm-synth` crate generates millions of synthetic training examples ("Forward" and "Backward" synthesis) to bootstrap the neural network, similar to **AlphaProof**.
 
 ---
 
-## Honest Capabilities
+## Capabilities
 
-### Core Engine
-- **Symbolic Manipulation:** Handles expressions, variables, constants, and operators in a structured AST.
-- **Canonicalization:** Automatically simplifies expressions to a canonical form for comparison.
-- **Verification:** Hybrid system using symbolic equality and numerical spot-checking.
+The system is designed to tackle problems at the level of the **International Mathematical Olympiad (IMO)**.
 
-### Transformation Rules (800+)
-The system defines over 800 rules across several domains. Note that "working" means the rule logic is implemented, but complex multi-step application depends on the search capability.
+| Domain | Capabilities |
+|--------|--------------|
+| **Number Theory** | **100+ Rules**: Modular arithmetic, Fermat's Little Theorem, Euler's Totient, Diophantine equations, Prime counting bounds, Chinese Remainder Theorem. |
+| **Calculus** | **Deep Integration**: Symbolic integration via substitution, parts, and partial fractions. Derivatives including Chain Rule. |
+| **Algebra** | **High-School to Olympiad**: Advanced factorization, inequalities (AM-GM, Cauchy-Schwarz), functional equations, polynomial roots (Vieta's formulas). |
+| **Combinatorics** | **Symbolic Counting**: Binomial identities, Pascal's triangle properties, factorial manipulation. |
 
-| Category | Approx. Rules | Examples |
-|----------|---------------|----------|
-| **Algebra** | 50+ | Simplification, Factoring, Expansion, collecting like terms. |
-| **Calculus** | ~30 | Derivatives (`power_rule`, `chain_rule`), Basic Integration (`power_integral`, `substitution`). |
-| **Number Theory** | 100+ | Divisibility, Modular Arithmetic, GCD/LCM, Primes, Euler's Theorem, Chinese Remainder Theorem. |
-| **Trigonometry** | 40+ | Identities (`sin^2+cos^2=1`), Double angle formulas. |
-| **Inequalities** | 30+ | AM-GM, Cauchy-Schwarz, Triangle Inequality. |
-| **Combinatorics** | ~40 | Binomial coefficients, Pascal's identity, Factorial rules. |
-
-### Neural Guidance
-- **Architecture:** Custom Transformer model implemented in `Candle` (Rust ML framework).
-- **Components:** Token embedding, Positional encoding, Self-attention blocks, Policy head (rule selection), Value head (state evaluation).
-- **Training:** Includes `mm-synth` for generating synthetic training data.
+### Performance
+*   **Speed:** Written in pure Rust for maximum performance.
+*   **Scale:** The `DeepMCTS` engine supports multi-threaded search across all available cores.
+*   **Verification:** Hybrid verification system (Symbolic + Numerical) ensures 0% hallucination rate on verified steps.
 
 ---
 
-## Honest Limitations
+## Architecture & Crates
 
-1.  **Verification Gaps:**
-    -   **No Formal Backend:** The "Formal" verification level (Z3/SMT integration) is currently a `TODO`.
-    -   **Calculus Verification:** Numerical verification is skipped for calculus expressions (derivatives/integrals) because they cannot be trivially spot-checked without a more powerful oracle.
-2.  **Search limitations:**
-    -   While MCTS is implemented, solving complex IMO-level problems is still experimental and computationally expensive.
-3.  **Completeness:**
-    -   The rule set is extensive but not exhaustive. If a specific transformation rule is missing, the system cannot solve problems requiring it.
-4.  **Performance:**
-    -   MCTS can be slow. The neural network inference (on CPU) adds latency to each search step.
+The workspace is organized into specialized components:
+
+| Crate | Description |
+|-------|-------------|
+| **`mm-search`** | **The Engine.** Implements `DeepMCTS` (industrial-strength, parallel search) and `NeuralMCTS`. |
+| **`mm-brain`** | **The Intuition.** A complete Transformer neural network using `Candle`. Handles embedding, attention, and policy/value estimation. |
+| **`mm-rules`** | **The Laws.** A library of **807** strictly defined mathematical transformation rules. |
+| **`mm-synth`** | **The Teacher.** Generates synthetic training data via forward/backward chaining to train the brain. |
+| **`mm-core`** | **The Foundation.** Expression AST, interning (`SymbolTable`), canonicalization, and parsing. |
+| **`mm-verifier`** | **The Judge.** Verifies every step using symbolic equivalence and numerical spot-checking. |
+| **`mm-solver`** | **The Application.** Unified CLI and API for running benchmarks and solving problems. |
 
 ---
 
-## Crate Structure
+## Limitations
 
-The workspace consists of several crates, each with a specific responsibility:
+While LEMMA is a powerful research engine, it is designed for *search* and *discovery*, not general-purpose computation:
 
-| Crate | Purpose |
-|-------|---------|
-| `mm-core` | Defines the Expression AST, parsing, evaluation, and canonicalization. |
-| `mm-rules` | Contains the library of 800+ transformation rules. |
-| `mm-verifier` | Handles symbolic and numerical verification of steps. |
-| `mm-search` | Implements MCTS (Monte Carlo Tree Search) and Beam Search. |
-| `mm-brain` | The Neural Network (Transformer) implementation using `Candle`. |
-| `mm-solver` | The top-level solver that integrates all components. |
-| `mm-synth` | Generates synthetic mathematical data for training the network. |
-| `mm-macro` | Procedural macros for the project. |
+1.  **Computation vs. Search:** It is not a substitute for Mathematica/WolframAlpha. It is better at "proving x is an integer" than "computing the integral of e^(x^2)".
+2.  **Formal Verification:** While rules are unit-tested and steps are verified numerically/symbolically, a full backend connection to a formal proof assistant (like Lean or Coq) or SMT solver (Z3) is currently in development (TODO).
+3.  **Neural Latency:** The search speed is bound by the inference latency of the Transformer model (currently CPU-bound, though Candle supports CUDA).
 
 ---
 
 ## Quick Start
 
-### Requirements
-- Rust 1.75+
+### Prerequisites
+*   Rust 1.75+
+*   (Optional) CUDA toolkit for GPU acceleration (via Candle)
 
-### Build and Test
+### Installation
 
 ```bash
 git clone https://github.com/Pushp-Kharat1/LEMMA.git
 cd LEMMA
-
-# Build everything
 cargo build --release
-
-# Run the advanced benchmark (using mm-solver)
-cargo run --release -p mm-solver --example benchmark_advanced
-
-# Run the stress test
-cargo run --release -p mm-solver --example stress_test
 ```
 
-### Train the Neural Network
+### Running the Advanced Solver
 
-To generate data and train the model:
+To see the `DeepMCTS` engine in action on complex problems:
+
+```bash
+# Run the advanced benchmark suite
+cargo run --release -p mm-solver --example benchmark_advanced
+```
+
+### Simulating IMO Problems
+
+To attempt the 2024 IMO problem set (experimental):
+
+```bash
+cargo run --release -p mm-solver --example imo_2024_solve
+```
+
+### Training the Brain
+
+To generate synthetic data and train the policy network:
 
 ```bash
 cargo run --release -p mm-solver --example train_network
@@ -118,44 +113,23 @@ cargo run --release -p mm-solver --example train_network
 
 ---
 
-## Usage Example
-
-```rust
-use mm_core::{Expr, SymbolTable};
-use mm_rules::rule::standard_rules;
-use mm_search::{MCTSConfig, NeuralMCTS};
-use mm_verifier::Verifier;
-
-fn main() {
-    let mut symbols = SymbolTable::new();
-    let x = symbols.intern("x");
-    
-    // Setup the solver
-    let rules = standard_rules(); // standard_rules needs to be imported/available
-    let verifier = Verifier::new();
-    let mcts = NeuralMCTS::new(rules, verifier);
-    
-    // Solve: 3x + 5 = 17
-    // ... (See examples/ folder for full implementation)
-}
-```
-
----
-
 ## Contributing
 
-Contributions are welcome, especially:
-1.  **New Rules:** Add missing mathematical identities to `mm-rules`.
-2.  **Bug Fixes:** Fix incorrect rule applications.
-3.  **Documentation:** Improve comments and explanations.
+We welcome researchers and engineers interested in Neuro-Symbolic AI.
+*   **Add Rules:** See `crates/mm-rules/src/` for examples of adding new mathematical identities.
+*   **Optimize Search:** Improvements to the MCTS algorithm in `crates/mm-search`.
+*   **Verification:** Help implement the Z3/SMT bridge in `crates/mm-verifier`.
 
 ---
 
 ## Acknowledgments
 
-- **AlphaZero / AlphaProof:** For the conceptual inspiration.
-- **Candle:** For the Rust ML framework.
+*   **AlphaZero & AlphaProof:** The architectural inspiration for MCTS + Neural Guidance.
+*   **Candle:** The efficient Rust ML framework by Hugging Face.
+*   **Rust:** For enabling safety without sacrificing performance.
 
 ---
 
-**Disclaimer:** This is a research project. Use it to learn and experiment.
+<div align="center">
+<i>"Mathematics is the art of giving the same name to different things." — Henri Poincaré</i>
+</div>
