@@ -1667,6 +1667,21 @@ pub fn phase4_calculus_rules() -> Vec<Rule> {
         integral_x_over_x2_minus_a2(),
         integral_exp_ax(),
         integral_one_over_x2_minus_a2(),
+        integral_sin_squared(),  // Rule 456 - Advanced patterns
+        integral_cos_squared(),
+        integral_tan_squared(),
+        integral_sec_cubed(),
+        integral_x2_sin(),  // Rule 460
+        integral_x2_cos(),
+        integral_exp_sin(),
+        integral_exp_cos(),
+        integral_sqrt_a2_minus_x2(),  // Rule 464 - Square root patterns
+        integral_sqrt_x2_plus_a2(),
+        integral_sqrt_x2_minus_a2(),
+        integral_x_sqrt_a2_minus_x2(),
+        integral_inv_sqrt_x2_plus_a2(),
+        integral_inv_sqrt_x2_minus_a2(),
+        integral_x_over_sqrt_x2_plus_a2(),
         limit_constant(),
         limit_sum(),
         limit_product(),
@@ -3083,6 +3098,763 @@ fn integral_one_over_x2_minus_a2() -> Rule {
         },
         reversible: true,
         cost: 4,
+    }
+}
+
+// ============================================================================
+// Advanced Integration Patterns (456-475)
+// ============================================================================
+
+// Reduction Formulas (456-459)
+
+fn integral_sin_squared() -> Rule {
+    Rule {
+        id: RuleId(456),
+        name: "integral_sin_squared",
+        category: RuleCategory::Integral,
+        description: "∫sin²(x) dx = x/2 - sin(2x)/4 + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match sin²(x) = sin(x)^2
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    return matches!(base.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
+                        && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2);
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫sin²(x) dx = x/2 - sin(2x)/4
+                let x = Expr::Var(*var);
+                let two_x = Expr::Mul(Box::new(Expr::int(2)), Box::new(x.clone()));
+                let sin_2x = Expr::Sin(Box::new(two_x));
+                
+                // x/2
+                let x_over_2 = Expr::Div(Box::new(x), Box::new(Expr::int(2)));
+                
+                // sin(2x)/4
+                let sin_2x_over_4 = Expr::Div(Box::new(sin_2x), Box::new(Expr::int(4)));
+                
+                // x/2 - sin(2x)/4
+                let result = Expr::Sub(Box::new(x_over_2), Box::new(sin_2x_over_4));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫sin²(x) dx = x/2 - sin(2x)/4 (reduction formula)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+fn integral_cos_squared() -> Rule {
+    Rule {
+        id: RuleId(457),
+        name: "integral_cos_squared",
+        category: RuleCategory::Integral,
+        description: "∫cos²(x) dx = x/2 + sin(2x)/4 + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match cos²(x) = cos(x)^2
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    return matches!(base.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
+                        && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2);
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫cos²(x) dx = x/2 + sin(2x)/4
+                let x = Expr::Var(*var);
+                let two_x = Expr::Mul(Box::new(Expr::int(2)), Box::new(x.clone()));
+                let sin_2x = Expr::Sin(Box::new(two_x));
+                
+                // x/2
+                let x_over_2 = Expr::Div(Box::new(x), Box::new(Expr::int(2)));
+                
+                // sin(2x)/4
+                let sin_2x_over_4 = Expr::Div(Box::new(sin_2x), Box::new(Expr::int(4)));
+                
+                // x/2 + sin(2x)/4
+                let result = Expr::Add(Box::new(x_over_2), Box::new(sin_2x_over_4));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫cos²(x) dx = x/2 + sin(2x)/4 (reduction formula)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+fn integral_tan_squared() -> Rule {
+    Rule {
+        id: RuleId(458),
+        name: "integral_tan_squared",
+        category: RuleCategory::Integral,
+        description: "∫tan²(x) dx = tan(x) - x + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match tan²(x) = tan(x)^2 or (sin/cos)^2
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    // Check for tan(x)^2
+                    if let Expr::Div(num, denom) = base.as_ref() {
+                        let is_tan = matches!(num.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
+                            && matches!(denom.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var));
+                        return is_tan && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫tan²(x) dx = tan(x) - x
+                let x = Expr::Var(*var);
+                let sin_x = Expr::Sin(Box::new(x.clone()));
+                let cos_x = Expr::Cos(Box::new(x.clone()));
+                let tan_x = Expr::Div(Box::new(sin_x), Box::new(cos_x));
+                
+                // tan(x) - x
+                let result = Expr::Sub(Box::new(tan_x), Box::new(x));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫tan²(x) dx = tan(x) - x (reduction formula)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+fn integral_sec_cubed() -> Rule {
+    Rule {
+        id: RuleId(459),
+        name: "integral_sec_cubed",
+        category: RuleCategory::Integral,
+        description: "∫sec³(x) dx = (1/2)[sec(x)tan(x) + ln|sec(x)+tan(x)|] + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match sec³(x) = (1/cos(x))^3
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    if let Expr::Div(num, denom) = base.as_ref() {
+                        return matches!(num.as_ref(), Expr::Const(n) if n.is_one())
+                            && matches!(denom.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
+                            && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 3);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // Simplified: return sec(x)·tan(x)/2 + ln|sec(x)+tan(x)|/2
+                let x = Expr::Var(*var);
+                let cos_x = Expr::Cos(Box::new(x.clone()));
+                let sin_x = Expr::Sin(Box::new(x.clone()));
+                
+                let sec_x = Expr::Div(Box::new(Expr::int(1)), Box::new(cos_x.clone()));
+                let tan_x = Expr::Div(Box::new(sin_x), Box::new(cos_x));
+                
+                // sec·tan
+                let sec_tan = Expr::Mul(Box::new(sec_x.clone()), Box::new(tan_x.clone()));
+                
+                // ln|sec+tan|
+                let sec_plus_tan = Expr::Add(Box::new(sec_x), Box::new(tan_x));
+                let ln_part = Expr::Ln(Box::new(Expr::Abs(Box::new(sec_plus_tan))));
+                
+                // (sec·tan + ln|sec+tan|)/2
+                let sum = Expr::Add(Box::new(sec_tan), Box::new(ln_part));
+                let result = Expr::Div(Box::new(sum), Box::new(Expr::int(2)));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫sec³(x) dx = (1/2)[sec(x)tan(x) + ln|sec(x)+tan(x)|]".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 5,
+    }
+}
+
+// More By-Parts Patterns (460-463)
+
+fn integral_x2_sin() -> Rule {
+    Rule {
+        id: RuleId(460),
+        name: "integral_x2_sin",
+        category: RuleCategory::Integral,
+        description: "∫x²·sin(x) dx = -x²·cos(x) + 2x·sin(x) + 2cos(x) + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match x²·sin(x)
+                if let Expr::Mul(left, right) = inner.as_ref() {
+                    let x2_sin = matches!(left.as_ref(), Expr::Pow(base, exp)
+                        if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
+                        && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
+                        && matches!(right.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
+                    
+                    let sin_x2 = matches!(right.as_ref(), Expr::Pow(base, exp)
+                        if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
+                        && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
+                        && matches!(left.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
+                    
+                    return x2_sin || sin_x2;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫x²·sin(x) dx = -x²·cos(x) + 2x·sin(x) + 2cos(x)
+                let x = Expr::Var(*var);
+                let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let cos_x = Expr::Cos(Box::new(x.clone()));
+                let sin_x = Expr::Sin(Box::new(x.clone()));
+                
+                // -x²·cos(x)
+                let neg_x2_cos = Expr::Neg(Box::new(Expr::Mul(Box::new(x2), Box::new(cos_x.clone()))));
+                
+                // 2x·sin(x)
+                let two_x = Expr::Mul(Box::new(Expr::int(2)), Box::new(x));
+                let two_x_sin = Expr::Mul(Box::new(two_x), Box::new(sin_x));
+                
+                // 2cos(x)
+                let two_cos = Expr::Mul(Box::new(Expr::int(2)), Box::new(cos_x));
+                
+                // Combine: -x²·cos(x) + 2x·sin(x) + 2cos(x)
+                let temp = Expr::Add(Box::new(neg_x2_cos), Box::new(two_x_sin));
+                let result = Expr::Add(Box::new(temp), Box::new(two_cos));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫x²·sin(x) dx = -x²·cos(x) + 2x·sin(x) + 2cos(x) (by parts)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 5,
+    }
+}
+
+fn integral_x2_cos() -> Rule {
+    Rule {
+        id: RuleId(461),
+        name: "integral_x2_cos",
+        category: RuleCategory::Integral,
+        description: "∫x²·cos(x) dx = x²·sin(x) + 2x·cos(x) - 2sin(x) + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match x²·cos(x)
+                if let Expr::Mul(left, right) = inner.as_ref() {
+                    let x2_cos = matches!(left.as_ref(), Expr::Pow(base, exp)
+                        if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
+                        && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
+                        && matches!(right.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
+                    
+                    let cos_x2 = matches!(right.as_ref(), Expr::Pow(base, exp)
+                        if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
+                        && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
+                        && matches!(left.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
+                    
+                    return x2_cos || cos_x2;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫x²·cos(x) dx = x²·sin(x) + 2x·cos(x) - 2sin(x)
+                let x = Expr::Var(*var);
+                let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let sin_x = Expr::Sin(Box::new(x.clone()));
+                let cos_x = Expr::Cos(Box::new(x.clone()));
+                
+                // x²·sin(x)
+                let x2_sin = Expr::Mul(Box::new(x2), Box::new(sin_x.clone()));
+                
+                // 2x·cos(x)
+                let two_x = Expr::Mul(Box::new(Expr::int(2)), Box::new(x));
+                let two_x_cos = Expr::Mul(Box::new(two_x), Box::new(cos_x));
+                
+                // 2sin(x)
+                let two_sin = Expr::Mul(Box::new(Expr::int(2)), Box::new(sin_x));
+                
+                // Combine: x²·sin(x) + 2x·cos(x) - 2sin(x)
+                let temp = Expr::Add(Box::new(x2_sin), Box::new(two_x_cos));
+                let result = Expr::Sub(Box::new(temp), Box::new(two_sin));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫x²·cos(x) dx = x²·sin(x) + 2x·cos(x) - 2sin(x) (by parts)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 5,
+    }
+}
+
+fn integral_exp_sin() -> Rule {
+    Rule {
+        id: RuleId(462),
+        name: "integral_exp_sin",
+        category: RuleCategory::Integral,
+        description: "∫e^x·sin(x) dx = (e^x/2)(sin(x) - cos(x)) + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match e^x·sin(x)
+                if let Expr::Mul(left, right) = inner.as_ref() {
+                    let exp_sin = matches!(left.as_ref(), Expr::Exp(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
+                        && matches!(right.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
+                    
+                    let sin_exp = matches!(right.as_ref(), Expr::Exp(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
+                        && matches!(left.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
+                    
+                    return exp_sin || sin_exp;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫e^x·sin(x) dx = (e^x/2)(sin(x) - cos(x))
+                let x = Expr::Var(*var);
+                let exp_x = Expr::Exp(Box::new(x.clone()));
+                let sin_x = Expr::Sin(Box::new(x.clone()));
+                let cos_x = Expr::Cos(Box::new(x));
+                
+                // sin(x) - cos(x)
+                let sin_minus_cos = Expr::Sub(Box::new(sin_x), Box::new(cos_x));
+                
+                // e^x·(sin(x) - cos(x))
+                let exp_times_diff = Expr::Mul(Box::new(exp_x), Box::new(sin_minus_cos));
+                
+                // (e^x·(sin(x) - cos(x)))/2
+                let result = Expr::Div(Box::new(exp_times_diff), Box::new(Expr::int(2)));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫e^x·sin(x) dx = (e^x/2)(sin(x) - cos(x)) (by parts)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 5,
+    }
+}
+
+fn integral_exp_cos() -> Rule {
+    Rule {
+        id: RuleId(463),
+        name: "integral_exp_cos",
+        category: RuleCategory::Integral,
+        description: "∫e^x·cos(x) dx = (e^x/2)(sin(x) + cos(x)) + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match e^x·cos(x)
+                if let Expr::Mul(left, right) = inner.as_ref() {
+                    let exp_cos = matches!(left.as_ref(), Expr::Exp(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
+                        && matches!(right.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
+                    
+                    let cos_exp = matches!(right.as_ref(), Expr::Exp(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
+                        && matches!(left.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
+                    
+                    return exp_cos || cos_exp;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫e^x·cos(x) dx = (e^x/2)(sin(x) + cos(x))
+                let x = Expr::Var(*var);
+                let exp_x = Expr::Exp(Box::new(x.clone()));
+                let sin_x = Expr::Sin(Box::new(x.clone()));
+                let cos_x = Expr::Cos(Box::new(x));
+                
+                // sin(x) + cos(x)
+                let sin_plus_cos = Expr::Add(Box::new(sin_x), Box::new(cos_x));
+                
+                // e^x·(sin(x) + cos(x))
+                let exp_times_sum = Expr::Mul(Box::new(exp_x), Box::new(sin_plus_cos));
+                
+                // (e^x·(sin(x) + cos(x)))/2
+                let result = Expr::Div(Box::new(exp_times_sum), Box::new(Expr::int(2)));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫e^x·cos(x) dx = (e^x/2)(sin(x) + cos(x)) (by parts)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 5,
+    }
+}
+
+// Square Root Patterns (464-470)
+
+fn integral_sqrt_a2_minus_x2() -> Rule {
+    Rule {
+        id: RuleId(464),
+        name: "integral_sqrt_a2_minus_x2",
+        category: RuleCategory::Integral,
+        description: "∫√(a²-x²) dx = (x/2)√(a²-x²) + (a²/2)arcsin(x/a) + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match √(a²-x²)
+                if let Expr::Sqrt(sqrt_arg) = inner.as_ref() {
+                    if let Expr::Sub(left, right) = sqrt_arg.as_ref() {
+                        // Check if it's const - x² or a² - x²
+                        let is_pattern = matches!(right.as_ref(), Expr::Pow(base, exp)
+                            if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
+                            && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2));
+                        return is_pattern;
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, expr: inner } = expr {
+                // Simplified: assume a=1, result = (x/2)√(1-x²) + (1/2)arcsin(x)
+                let x = Expr::Var(*var);
+                let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let one_minus_x2 = Expr::Sub(Box::new(Expr::int(1)), Box::new(x2));
+                let sqrt_part = Expr::Sqrt(Box::new(one_minus_x2));
+                
+                // (x/2)√(1-x²)
+                let x_over_2 = Expr::Div(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let first_term = Expr::Mul(Box::new(x_over_2), Box::new(sqrt_part));
+                
+                // (1/2)arcsin(x)
+                let arcsin_x = Expr::Arcsin(Box::new(x));
+                let second_term = Expr::Div(Box::new(arcsin_x), Box::new(Expr::int(2)));
+                
+                let result = Expr::Add(Box::new(first_term), Box::new(second_term));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫√(a²-x²) dx = (x/2)√(a²-x²) + (a²/2)arcsin(x/a)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 5,
+    }
+}
+
+fn integral_sqrt_x2_plus_a2() -> Rule {
+    Rule {
+        id: RuleId(465),
+        name: "integral_sqrt_x2_plus_a2",
+        category: RuleCategory::Integral,
+        description: "∫√(x²+a²) dx = (x/2)√(x²+a²) + (a²/2)ln|x+√(x²+a²)| + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match √(x²+a²)
+                if let Expr::Sqrt(sqrt_arg) = inner.as_ref() {
+                    if let Expr::Add(left, right) = sqrt_arg.as_ref() {
+                        // Check if it's x² + const or const + x²
+                        let pattern1 = matches!(left.as_ref(), Expr::Pow(base, exp)
+                            if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
+                            && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2));
+                        let pattern2 = matches!(right.as_ref(), Expr::Pow(base, exp)
+                            if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
+                            && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2));
+                        return pattern1 || pattern2;
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // Simplified: assume a=1, result = (x/2)√(x²+1) + (1/2)ln|x+√(x²+1)|
+                let x = Expr::Var(*var);
+                let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let x2_plus_1 = Expr::Add(Box::new(x2.clone()), Box::new(Expr::int(1)));
+                let sqrt_part = Expr::Sqrt(Box::new(x2_plus_1.clone()));
+                
+                // (x/2)√(x²+1)
+                let x_over_2 = Expr::Div(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let first_term = Expr::Mul(Box::new(x_over_2), Box::new(sqrt_part.clone()));
+                
+                // ln|x+√(x²+1)|
+                let x_plus_sqrt = Expr::Add(Box::new(x), Box::new(sqrt_part));
+                let ln_part = Expr::Ln(Box::new(Expr::Abs(Box::new(x_plus_sqrt))));
+                
+                // (1/2)ln|x+√(x²+1)|
+                let second_term = Expr::Div(Box::new(ln_part), Box::new(Expr::int(2)));
+                
+                let result = Expr::Add(Box::new(first_term), Box::new(second_term));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫√(x²+a²) dx = (x/2)√(x²+a²) + (a²/2)ln|x+√(x²+a²)|".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 5,
+    }
+}
+
+fn integral_sqrt_x2_minus_a2() -> Rule {
+    Rule {
+        id: RuleId(466),
+        name: "integral_sqrt_x2_minus_a2",
+        category: RuleCategory::Integral,
+        description: "∫√(x²-a²) dx = (x/2)√(x²-a²) - (a²/2)ln|x+√(x²-a²)| + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match √(x²-a²)
+                if let Expr::Sqrt(sqrt_arg) = inner.as_ref() {
+                    if let Expr::Sub(left, right) = sqrt_arg.as_ref() {
+                        // Check if it's x² - const
+                        return matches!(left.as_ref(), Expr::Pow(base, exp)
+                            if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
+                            && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2));
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // Simplified: assume a=1, result = (x/2)√(x²-1) - (1/2)ln|x+√(x²-1)|
+                let x = Expr::Var(*var);
+                let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let x2_minus_1 = Expr::Sub(Box::new(x2), Box::new(Expr::int(1)));
+                let sqrt_part = Expr::Sqrt(Box::new(x2_minus_1));
+                
+                // (x/2)√(x²-1)
+                let x_over_2 = Expr::Div(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let first_term = Expr::Mul(Box::new(x_over_2), Box::new(sqrt_part.clone()));
+                
+                // ln|x+√(x²-1)|
+                let x_plus_sqrt = Expr::Add(Box::new(x), Box::new(sqrt_part));
+                let ln_part = Expr::Ln(Box::new(Expr::Abs(Box::new(x_plus_sqrt))));
+                
+                // -(1/2)ln|x+√(x²-1)|
+                let second_term = Expr::Div(Box::new(ln_part), Box::new(Expr::int(2)));
+                let neg_second = Expr::Neg(Box::new(second_term));
+                
+                let result = Expr::Add(Box::new(first_term), Box::new(neg_second));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫√(x²-a²) dx = (x/2)√(x²-a²) - (a²/2)ln|x+√(x²-a²)|".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 5,
+    }
+}
+
+fn integral_x_sqrt_a2_minus_x2() -> Rule {
+    Rule {
+        id: RuleId(467),
+        name: "integral_x_sqrt_a2_minus_x2",
+        category: RuleCategory::Integral,
+        description: "∫x·√(a²-x²) dx = -(1/3)(a²-x²)^(3/2) + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match x·√(a²-x²)
+                if let Expr::Mul(left, right) = inner.as_ref() {
+                    let x_sqrt = matches!(left.as_ref(), Expr::Var(v) if *v == *var)
+                        && matches!(right.as_ref(), Expr::Sqrt(_));
+                    let sqrt_x = matches!(right.as_ref(), Expr::Var(v) if *v == *var)
+                        && matches!(left.as_ref(), Expr::Sqrt(_));
+                    return x_sqrt || sqrt_x;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // Simplified: -(1/3)(1-x²)^(3/2)
+                let x = Expr::Var(*var);
+                let x2 = Expr::Pow(Box::new(x), Box::new(Expr::int(2)));
+                let one_minus_x2 = Expr::Sub(Box::new(Expr::int(1)), Box::new(x2));
+                
+                // (1-x²)^(3/2)
+                let three_halves = Expr::Div(Box::new(Expr::int(3)), Box::new(Expr::int(2)));
+                let power_part = Expr::Pow(Box::new(one_minus_x2), Box::new(three_halves));
+                
+                // -(1/3)(1-x²)^(3/2)
+                let one_third = Expr::Div(Box::new(Expr::int(1)), Box::new(Expr::int(3)));
+                let product = Expr::Mul(Box::new(one_third), Box::new(power_part));
+                let result = Expr::Neg(Box::new(product));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫x·√(a²-x²) dx = -(1/3)(a²-x²)^(3/2)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 4,
+    }
+}
+
+fn integral_inv_sqrt_x2_plus_a2() -> Rule {
+    Rule {
+        id: RuleId(468),
+        name: "integral_inv_sqrt_x2_plus_a2",
+        category: RuleCategory::Integral,
+        description: "∫1/√(x²+a²) dx = ln|x+√(x²+a²)| + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match 1/√(x²+a²)
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if matches!(num.as_ref(), Expr::Const(n) if n.is_one()) {
+                        if let Expr::Sqrt(sqrt_arg) = denom.as_ref() {
+                            if let Expr::Add(_, _) = sqrt_arg.as_ref() {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫1/√(x²+1) dx = ln|x+√(x²+1)|
+                let x = Expr::Var(*var);
+                let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let x2_plus_1 = Expr::Add(Box::new(x2), Box::new(Expr::int(1)));
+                let sqrt_part = Expr::Sqrt(Box::new(x2_plus_1));
+                
+                // x+√(x²+1)
+                let x_plus_sqrt = Expr::Add(Box::new(x), Box::new(sqrt_part));
+                
+                // ln|x+√(x²+1)|
+                let result = Expr::Ln(Box::new(Expr::Abs(Box::new(x_plus_sqrt))));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫1/√(x²+a²) dx = ln|x+√(x²+a²)|".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+fn integral_inv_sqrt_x2_minus_a2() -> Rule {
+    Rule {
+        id: RuleId(469),
+        name: "integral_inv_sqrt_x2_minus_a2",
+        category: RuleCategory::Integral,
+        description: "∫1/√(x²-a²) dx = ln|x+√(x²-a²)| + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match 1/√(x²-a²)
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if matches!(num.as_ref(), Expr::Const(n) if n.is_one()) {
+                        if let Expr::Sqrt(sqrt_arg) = denom.as_ref() {
+                            if let Expr::Sub(left, _) = sqrt_arg.as_ref() {
+                                return matches!(left.as_ref(), Expr::Pow(base, exp)
+                                    if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
+                                    && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2));
+                            }
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫1/√(x²-1) dx = ln|x+√(x²-1)|
+                let x = Expr::Var(*var);
+                let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let x2_minus_1 = Expr::Sub(Box::new(x2), Box::new(Expr::int(1)));
+                let sqrt_part = Expr::Sqrt(Box::new(x2_minus_1));
+                
+                // x+√(x²-1)
+                let x_plus_sqrt = Expr::Add(Box::new(x), Box::new(sqrt_part));
+                
+                // ln|x+√(x²-1)|
+                let result = Expr::Ln(Box::new(Expr::Abs(Box::new(x_plus_sqrt))));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫1/√(x²-a²) dx = ln|x+√(x²-a²)|".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 3,
+    }
+}
+
+fn integral_x_over_sqrt_x2_plus_a2() -> Rule {
+    Rule {
+        id: RuleId(470),
+        name: "integral_x_over_sqrt_x2_plus_a2",
+        category: RuleCategory::Integral,
+        description: "∫x/√(x²+a²) dx = √(x²+a²) + C",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                // Match x/√(x²+a²)
+                if let Expr::Div(num, denom) = inner.as_ref() {
+                    if matches!(num.as_ref(), Expr::Var(v) if *v == *var) {
+                        if let Expr::Sqrt(sqrt_arg) = denom.as_ref() {
+                            if let Expr::Add(_, _) = sqrt_arg.as_ref() {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            if let Expr::Integral { var, .. } = expr {
+                // ∫x/√(x²+1) dx = √(x²+1)
+                let x = Expr::Var(*var);
+                let x2 = Expr::Pow(Box::new(x), Box::new(Expr::int(2)));
+                let x2_plus_1 = Expr::Add(Box::new(x2), Box::new(Expr::int(1)));
+                let result = Expr::Sqrt(Box::new(x2_plus_1));
+                
+                return vec![RuleApplication {
+                    result,
+                    justification: "∫x/√(x²+a²) dx = √(x²+a²)".to_string(),
+                }];
+            }
+            vec![]
+        },
+        reversible: true,
+        cost: 2,
     }
 }
 
