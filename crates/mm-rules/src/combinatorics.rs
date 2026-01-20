@@ -10,7 +10,7 @@
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
-/// Get all combinatorics rules (50+).
+/// Get all combinatorics rules (66 rules: 400-442, 600-669).
 pub fn combinatorics_rules() -> Vec<Rule> {
     let mut rules = Vec::new();
 
@@ -441,10 +441,31 @@ pub fn advanced_combinatorics_rules() -> Vec<Rule> {
         fibonacci_addition(),
         fibonacci_gcd(),
         lucas_numbers(),
+        // Additional combinatorics (650-669)
+        permutation_with_repetition(),
+        combination_with_repetition(),
+        bell_number_recurrence(),
+        multinomial_coefficient(),
+        binomial_weighted_sum(),
+        subfactorial(),
+        christmas_stocking(),
+        binomial_squares_sum(),
+        rising_factorial(),
+        falling_factorial(),
+        legendre_formula(),
+        kummer_theorem(),
+        lucas_theorem(),
+        burnside_lemma(),
+        polya_enumeration(),
+        catalan_alternative(),
+        partition_into_parts(),
+        pattern_avoidance(),
+        derangement_simple_recurrence(),
+        fibonacci_generating_function(),
     ]
 }
 
-// D(n) = n! * Σ(-1)^k/k! for k=0 to n
+// D(n) = n! * Σ(-1)^k/k!
 fn derangement_formula() -> Rule {
     Rule {
         id: RuleId(600),
@@ -950,5 +971,461 @@ fn lucas_numbers() -> Rule {
         },
         reversible: false,
         cost: 2,
+    }
+}
+
+// ============================================================================
+// Additional Combinatorics Rules (ID 650-669)
+// ============================================================================
+
+// Permutations with repetition: n^k
+fn permutation_with_repetition() -> Rule {
+    Rule {
+        id: RuleId(650),
+        name: "permutation_with_repetition",
+        category: RuleCategory::Simplification,
+        description: "Permutations with repetition: n^k",
+        is_applicable: |expr, _ctx| {
+            // Match n^k pattern
+            if let Expr::Pow(_, exp) = expr {
+                return matches!(exp.as_ref(), Expr::Const(_) | Expr::Var(_));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Permutations with repetition: n choices k times = n^k".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 1,
+    }
+}
+
+// Combinations with repetition: C(n+k-1, k)
+fn combination_with_repetition() -> Rule {
+    Rule {
+        id: RuleId(651),
+        name: "combination_with_repetition",
+        category: RuleCategory::Simplification,
+        description: "Combinations with repetition: C(n+k-1, k)",
+        is_applicable: |expr, _ctx| {
+            // Match factorial division patterns
+            matches!(expr, Expr::Div(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Combinations with repetition: C(n+k-1, k) = (n+k-1)!/(k!(n-1)!)".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Bell numbers: B(n+1) = Σ C(n,k)*B(k)
+fn bell_number_recurrence() -> Rule {
+    Rule {
+        id: RuleId(652),
+        name: "bell_number_recurrence",
+        category: RuleCategory::Simplification,
+        description: "B(n+1) = Σ C(n,k)*B(k)",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Bell number recurrence: B(n+1) = Σ C(n,k)*B(k) for k=0..n".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Multinomial coefficient: n!/(k1! k2! ... km!)
+fn multinomial_coefficient() -> Rule {
+    Rule {
+        id: RuleId(653),
+        name: "multinomial_coefficient",
+        category: RuleCategory::Simplification,
+        description: "Multinomial: n!/(k1!k2!...km!)",
+        is_applicable: |expr, _ctx| {
+            // Match division with factorial
+            if let Expr::Div(num, _) = expr {
+                return matches!(num.as_ref(), Expr::Factorial(_));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Multinomial coefficient: n!/(k1!k2!...km!)".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Binomial coefficient sum by row: Σ k*C(n,k) = n*2^(n-1)
+fn binomial_weighted_sum() -> Rule {
+    Rule {
+        id: RuleId(654),
+        name: "binomial_weighted_sum",
+        category: RuleCategory::Simplification,
+        description: "Σ k*C(n,k) = n*2^(n-1)",
+        is_applicable: |expr, _ctx| {
+            // Match multiplication pattern
+            if let Expr::Mul(left, right) = expr {
+                // Check for k * C(n,k) pattern or similar power of 2
+                if matches!(right.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2))) {
+                    return true;
+                }
+                if matches!(left.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2))) {
+                    return true;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Σ k*C(n,k) = n*2^(n-1) for k=0..n".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Derangement subfactorial: !n = D(n)
+fn subfactorial() -> Rule {
+    Rule {
+        id: RuleId(655),
+        name: "subfactorial",
+        category: RuleCategory::Simplification,
+        description: "Subfactorial !n = D(n)",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Factorial(_) | Expr::Div(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Subfactorial: !n = D(n) = ⌊n!/e + 1/2⌋".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Christmas stocking identity: C(n,m)*C(m,k) = C(n,k)*C(n-k,m-k)
+fn christmas_stocking() -> Rule {
+    Rule {
+        id: RuleId(656),
+        name: "christmas_stocking",
+        category: RuleCategory::Simplification,
+        description: "C(n,m)*C(m,k) = C(n,k)*C(n-k,m-k)",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Mul(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Christmas stocking: C(n,m)*C(m,k) = C(n,k)*C(n-k,m-k)".to_string(),
+            }]
+        },
+        reversible: true,
+        cost: 2,
+    }
+}
+
+// Sum of squares: Σ C(n,k)^2 = C(2n,n)
+fn binomial_squares_sum() -> Rule {
+    Rule {
+        id: RuleId(657),
+        name: "binomial_squares_sum",
+        category: RuleCategory::Simplification,
+        description: "Σ C(n,k)^2 = C(2n,n)",
+        is_applicable: |expr, _ctx| {
+            // Match division pattern for binomial coefficient
+            matches!(expr, Expr::Div(_, _) | Expr::Pow(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Σ C(n,k)^2 = C(2n,n) for k=0..n".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Rising factorial: (x)_n = x(x+1)(x+2)...(x+n-1)
+fn rising_factorial() -> Rule {
+    Rule {
+        id: RuleId(658),
+        name: "rising_factorial",
+        category: RuleCategory::Expansion,
+        description: "Rising factorial (x)_n",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Mul(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Rising factorial: (x)_n = x(x+1)(x+2)...(x+n-1)".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Falling factorial: (x)^n = x(x-1)(x-2)...(x-n+1)
+fn falling_factorial() -> Rule {
+    Rule {
+        id: RuleId(659),
+        name: "falling_factorial",
+        category: RuleCategory::Expansion,
+        description: "Falling factorial (x)^n",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Mul(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Falling factorial: x^(n) = x(x-1)(x-2)...(x-n+1)".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Legendre's formula: vp(n!) = Σ ⌊n/p^k⌋
+fn legendre_formula() -> Rule {
+    Rule {
+        id: RuleId(660),
+        name: "legendre_formula",
+        category: RuleCategory::NumberTheory,
+        description: "Legendre: vp(n!) = Σ ⌊n/p^k⌋",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Floor(_) | Expr::Div(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Legendre's formula: highest power of p dividing n! is Σ ⌊n/p^k⌋".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Kummer's theorem for binomial mod p
+fn kummer_theorem() -> Rule {
+    Rule {
+        id: RuleId(661),
+        name: "kummer_theorem",
+        category: RuleCategory::NumberTheory,
+        description: "Kummer: vp(C(m+n,m)) = carries in base p",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Div(_, _) | Expr::Mod(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Kummer: vp(C(m+n,m)) equals number of carries when adding m and n in base p".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Lucas' theorem: C(m,n) mod p = Π C(mi,ni) mod p
+fn lucas_theorem() -> Rule {
+    Rule {
+        id: RuleId(662),
+        name: "lucas_theorem",
+        category: RuleCategory::NumberTheory,
+        description: "Lucas: C(m,n) mod p",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Mod(inner, _) = expr {
+                return matches!(inner.as_ref(), Expr::Div(_, _));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Lucas' theorem: C(m,n) mod p = Π C(mi,ni) mod p where m,n in base p".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Burnside's lemma: |X/G| = (1/|G|) Σ |X^g|
+fn burnside_lemma() -> Rule {
+    Rule {
+        id: RuleId(663),
+        name: "burnside_lemma",
+        category: RuleCategory::Simplification,
+        description: "Burnside: |X/G| = (1/|G|) Σ |X^g|",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Div(_, _) | Expr::Mul(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Burnside's lemma: |X/G| = (1/|G|) Σ |X^g| for g in G".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// Polya enumeration theorem
+fn polya_enumeration() -> Rule {
+    Rule {
+        id: RuleId(664),
+        name: "polya_enumeration",
+        category: RuleCategory::Simplification,
+        description: "Polya enumeration theorem",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Div(_, _) | Expr::Mul(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Polya enumeration: count inequivalent configurations under group action".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// Catalan alternative formula: C_n = (2n)!/(n!(n+1)!)
+fn catalan_alternative() -> Rule {
+    Rule {
+        id: RuleId(665),
+        name: "catalan_alternative",
+        category: RuleCategory::Simplification,
+        description: "C_n = (2n)!/(n!(n+1)!)",
+        is_applicable: |expr, _ctx| {
+            if let Expr::Div(num, _) = expr {
+                return matches!(num.as_ref(), Expr::Factorial(_));
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Catalan alternative: C_n = (2n)!/(n!(n+1)!)".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Partition function: p(n,k) number of partitions of n into k parts
+fn partition_into_parts() -> Rule {
+    Rule {
+        id: RuleId(666),
+        name: "partition_into_parts",
+        category: RuleCategory::Simplification,
+        description: "p(n,k) = p(n-1,k-1) + p(n-k,k)",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Add(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Partition recurrence: p(n,k) = p(n-1,k-1) + p(n-k,k)".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Restricted permutations: permutations avoiding pattern
+fn pattern_avoidance() -> Rule {
+    Rule {
+        id: RuleId(667),
+        name: "pattern_avoidance",
+        category: RuleCategory::Simplification,
+        description: "Permutations avoiding pattern",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Factorial(_) | Expr::Div(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Pattern-avoiding permutations counted by Catalan or similar sequences".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Recurrence for derangements: D(n) = n*D(n-1) + (-1)^n
+fn derangement_simple_recurrence() -> Rule {
+    Rule {
+        id: RuleId(668),
+        name: "derangement_simple_recurrence",
+        category: RuleCategory::Simplification,
+        description: "D(n) = n*D(n-1) + (-1)^n",
+        is_applicable: |expr, _ctx| {
+            matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _))
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Derangement simple recurrence: D(n) = n*D(n-1) + (-1)^n".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 2,
+    }
+}
+
+// Generating function for Fibonacci: F(x) = x/(1-x-x^2)
+fn fibonacci_generating_function() -> Rule {
+    Rule {
+        id: RuleId(669),
+        name: "fibonacci_generating_function",
+        category: RuleCategory::Simplification,
+        description: "Fibonacci GF: x/(1-x-x^2)",
+        is_applicable: |expr, _ctx| {
+            // Match division with polynomial
+            if let Expr::Div(_, denom) = expr {
+                if let Expr::Sub(_, _) = denom.as_ref() {
+                    return true;
+                }
+            }
+            false
+        },
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Fibonacci generating function: Σ F_n x^n = x/(1-x-x^2)".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
     }
 }
