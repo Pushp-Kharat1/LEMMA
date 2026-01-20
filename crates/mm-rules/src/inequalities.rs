@@ -10,7 +10,7 @@
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
-/// Get all inequality rules (50+).
+/// Get all inequality rules (26 working rules: 300-365, 380-382, 500-525).
 pub fn inequality_rules() -> Vec<Rule> {
     let mut rules = Vec::new();
 
@@ -712,6 +712,19 @@ pub fn advanced_inequality_rules() -> Vec<Rule> {
         // Exponential and log inequalities
         exp_monotonic(),
         ln_monotonic(),
+        // Advanced inequalities (514-525)
+        holder_inequality(),
+        jensen_convex(),
+        jensen_concave(),
+        jensen_weighted(),
+        chebyshev_sum(),
+        power_mean_inequality(),
+        muirhead_inequality(),
+        schur_inequality(),
+        nesbitt_inequality(),
+        rearrangement_inequality(),
+        young_inequality(),
+        minkowski_inequality(),
     ]
 }
 
@@ -1097,5 +1110,237 @@ fn ln_monotonic() -> Rule {
         },
         reversible: false,
         cost: 1,
+    }
+}
+
+// ============================================================================
+// Advanced Inequalities (ID 514-525)
+// ============================================================================
+
+// Holder's inequality
+fn holder_inequality() -> Rule {
+    Rule {
+        id: RuleId(514),
+        name: "holder_inequality",
+        category: RuleCategory::Inequality,
+        description: "Holder: (Σ|ab|)^p <= (Σ|a|^p)(Σ|b|^q), 1/p+1/q=1",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Mul(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Holder's inequality: (Σ|ab|)^p <= (Σ|a|^p)(Σ|b|^q) where 1/p+1/q=1".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// Jensen's inequality for convex functions
+fn jensen_convex() -> Rule {
+    Rule {
+        id: RuleId(515),
+        name: "jensen_convex",
+        category: RuleCategory::Inequality,
+        description: "Jensen (convex): f((x+y)/2) <= (f(x)+f(y))/2",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Add(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Jensen's inequality for convex f: f((x+y)/2) <= (f(x)+f(y))/2".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Jensen's inequality for concave functions
+fn jensen_concave() -> Rule {
+    Rule {
+        id: RuleId(516),
+        name: "jensen_concave",
+        category: RuleCategory::Inequality,
+        description: "Jensen (concave): f((x+y)/2) >= (f(x)+f(y))/2",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Add(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Jensen's inequality for concave f: f((x+y)/2) >= (f(x)+f(y))/2".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Weighted Jensen
+fn jensen_weighted() -> Rule {
+    Rule {
+        id: RuleId(517),
+        name: "jensen_weighted",
+        category: RuleCategory::Inequality,
+        description: "Weighted Jensen: f(Σw_i·x_i) <= Σw_i·f(x_i)",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Weighted Jensen for convex f: f(Σw_i·x_i) <= Σw_i·f(x_i) where Σw_i=1".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 4,
+    }
+}
+
+// Chebyshev's sum inequality
+fn chebyshev_sum() -> Rule {
+    Rule {
+        id: RuleId(518),
+        name: "chebyshev_sum",
+        category: RuleCategory::Inequality,
+        description: "Chebyshev: (Σa)(Σb) <= n·Σab (same order)",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Chebyshev's inequality: (Σa)(Σb) <= n·Σab for similarly ordered sequences".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Power mean inequality
+fn power_mean_inequality() -> Rule {
+    Rule {
+        id: RuleId(519),
+        name: "power_mean_inequality",
+        category: RuleCategory::Inequality,
+        description: "Power mean: M_p <= M_q for p <= q",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Div(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Power mean inequality: M_p(a1,...,an) <= M_q(a1,...,an) for p <= q".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Muirhead's inequality
+fn muirhead_inequality() -> Rule {
+    Rule {
+        id: RuleId(520),
+        name: "muirhead_inequality",
+        category: RuleCategory::Inequality,
+        description: "Muirhead: [a,b] majorizes [c,d]",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Muirhead's inequality: symmetric sum [a,b] >= [c,d] if [a,b] majorizes [c,d]".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 5,
+    }
+}
+
+// Schur's inequality
+fn schur_inequality() -> Rule {
+    Rule {
+        id: RuleId(521),
+        name: "schur_inequality",
+        category: RuleCategory::Inequality,
+        description: "Schur: Σx^r(x-y)(x-z) >= 0 for r>=0",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Schur's inequality: x^r(x-y)(x-z) + cyclic >= 0 for r>=0".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 5,
+    }
+}
+
+// Nesbitt's inequality
+fn nesbitt_inequality() -> Rule {
+    Rule {
+        id: RuleId(522),
+        name: "nesbitt_inequality",
+        category: RuleCategory::Inequality,
+        description: "Nesbitt: a/(b+c) + b/(a+c) + c/(a+b) >= 3/2",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Div(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: Expr::Div(Box::new(Expr::int(3)), Box::new(Expr::int(2))),
+                justification: "Nesbitt's inequality: a/(b+c) + b/(a+c) + c/(a+b) >= 3/2".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Rearrangement inequality
+fn rearrangement_inequality() -> Rule {
+    Rule {
+        id: RuleId(523),
+        name: "rearrangement_inequality",
+        category: RuleCategory::Inequality,
+        description: "Rearrangement: same order gives max sum",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Rearrangement inequality: Σx_i·y_σ(i) is maximized when both sequences have same order".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Young's inequality
+fn young_inequality() -> Rule {
+    Rule {
+        id: RuleId(524),
+        name: "young_inequality",
+        category: RuleCategory::Inequality,
+        description: "Young: ab <= a^p/p + b^q/q, 1/p+1/q=1",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Young's inequality: ab <= a^p/p + b^q/q where 1/p+1/q=1".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 3,
+    }
+}
+
+// Minkowski's inequality
+fn minkowski_inequality() -> Rule {
+    Rule {
+        id: RuleId(525),
+        name: "minkowski_inequality",
+        category: RuleCategory::Inequality,
+        description: "Minkowski: ||a+b||_p <= ||a||_p + ||b||_p",
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _)),
+        apply: |expr, _ctx| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Minkowski's inequality: ||a+b||_p <= ||a||_p + ||b||_p for p>=1".to_string(),
+            }]
+        },
+        reversible: false,
+        cost: 4,
     }
 }

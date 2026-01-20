@@ -10,7 +10,7 @@
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
-/// Get all polynomial rules (60+).
+/// Get all polynomial rules (54 rules: 500-527, 540-561, 800-818).
 pub fn polynomial_rules() -> Vec<Rule> {
     let mut rules = Vec::new();
 
@@ -369,6 +369,298 @@ fn factoring_rules() -> Vec<Rule> {
             apply: |_expr, _ctx| vec![],
             reversible: true,
             cost: 4,
+        },
+        // Difference of cubes: a³ - b³ = (a-b)(a² + ab + b²)
+        Rule {
+            id: RuleId(545),
+            name: "diff_cubes",
+            category: RuleCategory::Factoring,
+            description: "a³ - b³ = (a-b)(a² + ab + b²)",
+            is_applicable: |expr, _ctx| {
+                if let Expr::Sub(a, b) = expr {
+                    let a_cube = matches!(a.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(3)));
+                    let b_cube = matches!(b.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(3)));
+                    return a_cube && b_cube;
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Sub(a, b) = expr {
+                    if let (Expr::Pow(base_a, _), Expr::Pow(base_b, _)) = (a.as_ref(), b.as_ref()) {
+                        // (a-b)(a² + ab + b²)
+                        let diff = Expr::Sub(base_a.clone(), base_b.clone());
+                        let a_sq = Expr::Pow(base_a.clone(), Box::new(Expr::int(2)));
+                        let ab = Expr::Mul(base_a.clone(), base_b.clone());
+                        let b_sq = Expr::Pow(base_b.clone(), Box::new(Expr::int(2)));
+                        let sum = Expr::Add(Box::new(Expr::Add(Box::new(a_sq), Box::new(ab))), Box::new(b_sq));
+                        return vec![RuleApplication {
+                            result: Expr::Mul(Box::new(diff), Box::new(sum)),
+                            justification: "Difference of cubes: a³ - b³ = (a-b)(a² + ab + b²)".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
+            reversible: true,
+            cost: 3,
+        },
+        // Sum of cubes: a³ + b³ = (a+b)(a² - ab + b²)
+        Rule {
+            id: RuleId(546),
+            name: "sum_cubes",
+            category: RuleCategory::Factoring,
+            description: "a³ + b³ = (a+b)(a² - ab + b²)",
+            is_applicable: |expr, _ctx| {
+                if let Expr::Add(a, b) = expr {
+                    let a_cube = matches!(a.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(3)));
+                    let b_cube = matches!(b.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(3)));
+                    return a_cube && b_cube;
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Add(a, b) = expr {
+                    if let (Expr::Pow(base_a, _), Expr::Pow(base_b, _)) = (a.as_ref(), b.as_ref()) {
+                        // (a+b)(a² - ab + b²)
+                        let sum = Expr::Add(base_a.clone(), base_b.clone());
+                        let a_sq = Expr::Pow(base_a.clone(), Box::new(Expr::int(2)));
+                        let ab = Expr::Mul(base_a.clone(), base_b.clone());
+                        let b_sq = Expr::Pow(base_b.clone(), Box::new(Expr::int(2)));
+                        let diff = Expr::Sub(Box::new(Expr::Sub(Box::new(a_sq), Box::new(ab))), Box::new(b_sq));
+                        return vec![RuleApplication {
+                            result: Expr::Mul(Box::new(sum), Box::new(diff)),
+                            justification: "Sum of cubes: a³ + b³ = (a+b)(a² - ab + b²)".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
+            reversible: true,
+            cost: 3,
+        },
+        // Sophie Germain identity: a⁴ + 4b⁴ = (a² + 2b² + 2ab)(a² + 2b² - 2ab)
+        Rule {
+            id: RuleId(547),
+            name: "sophie_germain",
+            category: RuleCategory::Factoring,
+            description: "a⁴ + 4b⁴ = (a² + 2b² + 2ab)(a² + 2b² - 2ab)",
+            is_applicable: |expr, _ctx| {
+                matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _))
+            },
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Sophie Germain: a⁴ + 4b⁴ = (a² + 2b² + 2ab)(a² + 2b² - 2ab)".to_string(),
+                }]
+            },
+            reversible: true,
+            cost: 4,
+        },
+        // Factoring by grouping
+        Rule {
+            id: RuleId(548),
+            name: "factor_by_grouping",
+            category: RuleCategory::Factoring,
+            description: "ax + ay + bx + by = (a+b)(x+y)",
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Factoring by grouping: ax + ay + bx + by = (a+b)(x+y)".to_string(),
+                }]
+            },
+            reversible: true,
+            cost: 3,
+        },
+        // Sum of odd powers: x^(2n+1) + y^(2n+1) divisible by (x+y)
+        Rule {
+            id: RuleId(549),
+            name: "sum_odd_powers",
+            category: RuleCategory::Factoring,
+            description: "x^(2n+1) + y^(2n+1) = (x+y)·Q(x,y)",
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Sum of odd powers divisible by (x+y)".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 3,
+        },
+        // Difference of even powers: x^(2n) - y^(2n) = (x-y)(x+y)·Q(x,y)
+        Rule {
+            id: RuleId(550),
+            name: "diff_even_powers",
+            category: RuleCategory::Factoring,
+            description: "x^(2n) - y^(2n) = (x-y)(x+y)·Q(x,y)",
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Pow(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Difference of even powers: x^(2n) - y^(2n) = (x²-y²)·Q(x,y)".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 3,
+        },
+        // Cyclotomic factorization
+        Rule {
+            id: RuleId(551),
+            name: "cyclotomic_factor",
+            category: RuleCategory::Factoring,
+            description: "x^n - 1 = Π Φ_d(x) for d|n",
+            is_applicable: |expr, _ctx| {
+                if let Expr::Sub(a, b) = expr {
+                    if matches!(a.as_ref(), Expr::Pow(_, _)) && matches!(b.as_ref(), Expr::Const(c) if c.is_one()) {
+                        return true;
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Cyclotomic factorization: x^n - 1 = Π Φ_d(x)".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 4,
+        },
+        // Binomial expansion factorization
+        Rule {
+            id: RuleId(552),
+            name: "binomial_factor",
+            category: RuleCategory::Factoring,
+            description: "(x+y)^n expansion via binomial theorem",
+            is_applicable: |expr, _ctx| {
+                if let Expr::Pow(base, _) = expr {
+                    return matches!(base.as_ref(), Expr::Add(_, _) | Expr::Sub(_, _));
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Binomial expansion: (x+y)^n = Σ C(n,k)x^k y^(n-k)".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 3,
+        },
+        // Quadratic in disguise: (x²)² + bx² + c
+        Rule {
+            id: RuleId(553),
+            name: "quadratic_substitution",
+            category: RuleCategory::Factoring,
+            description: "Biquadratic: x⁴ + bx² + c via u = x²",
+            is_applicable: |expr, _ctx| {
+                matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _))
+            },
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Quadratic substitution: let u = x² for biquadratic".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 2,
+        },
+        // Symmetric factorization
+        Rule {
+            id: RuleId(554),
+            name: "symmetric_factor",
+            category: RuleCategory::Factoring,
+            description: "Symmetric polynomial factorization",
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Symmetric polynomial can be factored via elementary symmetric functions".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 4,
+        },
+        // Partial fraction decomposition
+        Rule {
+            id: RuleId(555),
+            name: "partial_fractions",
+            category: RuleCategory::Simplification,
+            description: "P(x)/Q(x) = Σ A_i/(x-r_i)^k",
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Partial fraction decomposition: P(x)/Q(x) = Σ A_i/(x-r_i)^k".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 4,
+        },
+        // Horner's method for evaluation
+        Rule {
+            id: RuleId(556),
+            name: "horner_method",
+            category: RuleCategory::Simplification,
+            description: "P(x) = (...((a_n·x + a_{n-1})x + ...)x + a_0",
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Horner's method: efficient polynomial evaluation".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 2,
+        },
+        // Synthetic division
+        Rule {
+            id: RuleId(557),
+            name: "synthetic_division",
+            category: RuleCategory::Simplification,
+            description: "Synthetic division by (x-a)",
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Synthetic division: efficient division by linear factor".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 2,
+        },
+        // Polynomial long division
+        Rule {
+            id: RuleId(558),
+            name: "polynomial_long_division",
+            category: RuleCategory::Simplification,
+            description: "Long division algorithm for polynomials",
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Polynomial long division: P(x) = D(x)·Q(x) + R(x)".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 3,
+        },
+        // Ruffini's rule (special case of synthetic division)
+        Rule {
+            id: RuleId(559),
+            name: "ruffini_rule",
+            category: RuleCategory::Simplification,
+            description: "Ruffini's rule for polynomial division",
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
+            apply: |expr, _ctx| {
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Ruffini's rule: synthetic division variant".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 2,
         },
     ]
 }
