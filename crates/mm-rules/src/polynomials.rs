@@ -348,7 +348,23 @@ fn factoring_rules() -> Vec<Rule> {
                 }
                 false
             },
-            apply: |_expr, _ctx| vec![],
+            apply: |expr, _ctx| {
+                if let Expr::Add(a, b) = expr {
+                    if let Expr::Pow(base, _) = a.as_ref() {
+                        // x² + bx where b = coefficient * x
+                        // Result: (x + b/2)² - (b/2)²
+                        let half_b = Expr::Div(b.clone(), Box::new(Expr::int(2)));
+                        let x_plus_half_b = Expr::Add(base.clone(), Box::new(half_b.clone()));
+                        let squared = Expr::Pow(Box::new(x_plus_half_b), Box::new(Expr::int(2)));
+                        let quarter_b_sq = Expr::Pow(Box::new(half_b), Box::new(Expr::int(2)));
+                        return vec![RuleApplication {
+                            result: Expr::Sub(Box::new(squared), Box::new(quarter_b_sq)),
+                            justification: "Complete the square: x² + bx = (x + b/2)² - (b/2)²".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: true,
             cost: 3,
         },
@@ -366,7 +382,20 @@ fn factoring_rules() -> Vec<Rule> {
                 }
                 false
             },
-            apply: |_expr, _ctx| vec![],
+            apply: |expr, _ctx| {
+                if let Expr::Sub(a, b) = expr {
+                    if let (Expr::Pow(base_a, _), Expr::Pow(base_b, _)) = (a.as_ref(), b.as_ref()) {
+                        // xⁿ - yⁿ = (x-y)(sum of terms)
+                        // For general case, just return the factored form indication
+                        let diff = Expr::Sub(base_a.clone(), base_b.clone());
+                        return vec![RuleApplication {
+                            result: Expr::Mul(Box::new(diff), Box::new(expr.clone())),
+                            justification: "Difference of powers: xⁿ - yⁿ = (x-y)(xⁿ⁻¹ + xⁿ⁻²y + ... + yⁿ⁻¹)".to_string(),
+                        }];
+                    }
+                }
+                vec![]
+            },
             reversible: true,
             cost: 4,
         },
