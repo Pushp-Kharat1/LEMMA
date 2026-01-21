@@ -2087,10 +2087,31 @@ fn sum_of_divisors() -> Rule {
         category: RuleCategory::Simplification,
         description: "σ(n) = Σ d for d|n",
         is_applicable: |expr, _ctx| {
-            // Match: Const or Pow (for computing divisor sums)
-            matches!(expr, Expr::Const(_) | Expr::Pow(_, _))
+            // Match: Const (for computing divisor sums)
+            if let Expr::Const(n) = expr {
+                return n.is_positive() && n.is_integer() && n.numer() < 1000;
+            }
+            false
         },
         apply: |expr, _ctx| {
+            if let Expr::Const(n) = expr {
+                if n.is_integer() {
+                    let num = n.numer();
+                    if num > 0 && num < 1000 {
+                        // Compute sum of divisors
+                        let mut sum = 0i64;
+                        for d in 1..=num {
+                            if num % d == 0 {
+                                sum += d;
+                            }
+                        }
+                        return vec![RuleApplication {
+                            result: Expr::Const(Rational::from_integer(sum)),
+                            justification: format!("Sum of divisors: σ({}) = {} (sum of all divisors)", num, sum),
+                        }];
+                    }
+                }
+            }
             vec![RuleApplication {
                 result: expr.clone(),
                 justification: "Sum of divisors: σ(n) = Σ d for all d | n".to_string(),
@@ -2109,9 +2130,30 @@ fn number_of_divisors() -> Rule {
         category: RuleCategory::Simplification,
         description: "τ(n) is number of divisors",
         is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Const(_) | Expr::Pow(_, _))
+            if let Expr::Const(n) = expr {
+                return n.is_positive() && n.is_integer() && n.numer() < 1000;
+            }
+            false
         },
         apply: |expr, _ctx| {
+            if let Expr::Const(n) = expr {
+                if n.is_integer() {
+                    let num = n.numer();
+                    if num > 0 && num < 1000 {
+                        // Count divisors
+                        let mut count = 0i64;
+                        for d in 1..=num {
+                            if num % d == 0 {
+                                count += 1;
+                            }
+                        }
+                        return vec![RuleApplication {
+                            result: Expr::Const(Rational::from_integer(count)),
+                            justification: format!("Number of divisors: τ({}) = {} (count of all divisors)", num, count),
+                        }];
+                    }
+                }
+            }
             vec![RuleApplication {
                 result: expr.clone(),
                 justification: "Number of divisors: τ(n) counts divisors of n".to_string(),
