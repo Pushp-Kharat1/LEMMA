@@ -492,6 +492,159 @@ fn modular_rules() -> Vec<Rule> {
             reversible: false,
             cost: 1,
         },
+        // Modular inverse: a⁻¹ mod m exists iff gcd(a,m) = 1
+        Rule {
+            id: RuleId(123),
+            name: "modular_inverse",
+            category: RuleCategory::EquationSolving,
+            description: "a⁻¹ mod m via extended Euclidean",
+            is_applicable: |expr, _ctx| {
+                // Match: Mod(Div(1, a), m) or inverse pattern
+                if let Expr::Mod(inner, modulus) = expr {
+                    if let Expr::Div(num, _) = inner.as_ref() {
+                        if matches!(num.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1)) {
+                            // Check modulus is small constant
+                            if let Expr::Const(m) = modulus.as_ref() {
+                                return m.is_integer() && m.numer() > 1 && m.numer() < 1000;
+                            }
+                        }
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Mod(inner, modulus) = expr {
+                    if let Expr::Div(_, a) = inner.as_ref() {
+                        if let Expr::Const(m) = modulus.as_ref() {
+                            if let Expr::Const(av) = a.as_ref() {
+                                let a_val = av.numer();
+                                let m_val = m.numer();
+                                
+                                // Extended Euclidean algorithm
+                                fn extended_gcd(a: i64, b: i64) -> (i64, i64, i64) {
+                                    if b == 0 {
+                                        return (a, 1, 0);
+                                    }
+                                    let (g, x1, y1) = extended_gcd(b, a % b);
+                                    (g, y1, x1 - (a / b) * y1)
+                                }
+                                
+                                let (g, x, _) = extended_gcd(a_val, m_val);
+                                if g == 1 {
+                                    let inv = ((x % m_val) + m_val) % m_val;
+                                    return vec![RuleApplication {
+                                        result: Expr::Const(Rational::from_integer(inv)),
+                                        justification: format!("Modular inverse: {}⁻¹ ≡ {} (mod {})", a_val, inv, m_val),
+                                    }];
+                                }
+                            }
+                        }
+                    }
+                }
+                vec![]
+            },
+            reversible: false,
+            cost: 3,
+        },
+        // Modular exponentiation: a^n mod m (fast)
+        Rule {
+            id: RuleId(124),
+            name: "modular_exponentiation",
+            category: RuleCategory::Simplification,
+            description: "a^n mod m via repeated squaring",
+            is_applicable: |expr, _ctx| {
+                // Match: Mod(Pow(a, n), m)
+                if let Expr::Mod(inner, modulus) = expr {
+                    if matches!(inner.as_ref(), Expr::Pow(_, _)) {
+                        if let Expr::Const(m) = modulus.as_ref() {
+                            return m.is_integer() && m.numer() > 1 && m.numer() < 1000;
+                        }
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Mod(inner, modulus) = expr {
+                    if let Expr::Pow(base, exp) = inner.as_ref() {
+                        if let (Expr::Const(a), Expr::Const(n), Expr::Const(m)) = 
+                            (base.as_ref(), exp.as_ref(), modulus.as_ref()) {
+                            let a_val = a.numer();
+                            let n_val = n.numer();
+                            let m_val = m.numer();
+                            
+                            if n_val >= 0 && m_val > 0 {
+                                // Fast modular exponentiation
+                                fn mod_pow(mut base: i64, mut exp: i64, modulus: i64) -> i64 {
+                                    let mut result = 1i64;
+                                    base %= modulus;
+                                    while exp > 0 {
+                                        if exp % 2 == 1 {
+                                            result = (result * base) % modulus;
+                                        }
+                                        base = (base * base) % modulus;
+                                        exp /= 2;
+                                    }
+                                    result
+                                }
+                                
+                                let result = mod_pow(a_val, n_val, m_val);
+                                return vec![RuleApplication {
+                                    result: Expr::Const(Rational::from_integer(result)),
+                                    justification: format!("Modular exponentiation: {}^{} ≡ {} (mod {})", a_val, n_val, result, m_val),
+                                }];
+                            }
+                        }
+                    }
+                }
+                vec![]
+            },
+            reversible: false,
+            cost: 3,
+        },
+        // Extended GCD: gcd(a,b) = ax + by (Bezout coefficients)
+        Rule {
+            id: RuleId(125),
+            name: "extended_gcd",
+            category: RuleCategory::EquationSolving,
+            description: "Extended GCD: gcd(a,b) = ax + by",
+            is_applicable: |expr, _ctx| {
+                // Match: GCD(a, b) where both are small constants
+                if let Expr::GCD(a, b) = expr {
+                    if let (Expr::Const(av), Expr::Const(bv)) = (a.as_ref(), b.as_ref()) {
+                        return av.is_integer() && bv.is_integer() && 
+                               av.numer().abs() < 1000 && bv.numer().abs() < 1000;
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::GCD(a, b) = expr {
+                    if let (Expr::Const(av), Expr::Const(bv)) = (a.as_ref(), b.as_ref()) {
+                        let a_val = av.numer();
+                        let b_val = bv.numer();
+                        
+                        // Extended Euclidean algorithm
+                        fn extended_gcd(a: i64, b: i64) -> (i64, i64, i64) {
+                            if b == 0 {
+                                return (a, 1, 0);
+                            }
+                            let (g, x1, y1) = extended_gcd(b, a % b);
+                            (g, y1, x1 - (a / b) * y1)
+                        }
+                        
+                        let (g, x, y) = extended_gcd(a_val, b_val);
+                        return vec![RuleApplication {
+                            result: Expr::Const(Rational::from_integer(g)),
+                            justification: format!("Extended GCD: gcd({}, {}) = {} = {}·{} + {}·{}", 
+                                a_val, b_val, g, a_val, x, b_val, y),
+                        }];
+                    }
+                }
+                vec![]
+            },
+            reversible: false,
+            cost: 2,
+        },
     ]
 }
 
@@ -1562,20 +1715,17 @@ fn chinese_remainder_theorem() -> Rule {
         category: RuleCategory::EquationSolving,
         description: "CRT: x ≡ a_i (mod m_i) has unique solution mod Π m_i",
         is_applicable: |expr, _ctx| {
-            // Match system of Mod equations
-            matches!(expr, Expr::Equation { .. })
+            // Match system of Mod equations - for now just detect pattern
+            matches!(expr, Expr::Equation { .. } | Expr::Mod(_, _))
         },
         apply: |expr, _ctx| {
-            if let Expr::Equation { lhs, rhs } = expr {
-                return vec![RuleApplication {
-                    result: Expr::Equation { 
-                        lhs: lhs.clone(), 
-                        rhs: rhs.clone() 
-                    },
-                    justification: "CRT: System x ≡ a_i (mod m_i) has unique solution mod Π m_i for coprime m_i".to_string(),
-                }];
-            }
-            vec![]
+            // CRT is complex to implement generically
+            // Provide theorem statement for now
+            // A full implementation would need to parse a system of congruences
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "CRT: System x ≡ a_i (mod m_i) has unique solution mod Π m_i for coprime m_i. Use extended GCD to compute.".to_string(),
+            }]
         },
         reversible: false,
         cost: 3,
