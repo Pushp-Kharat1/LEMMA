@@ -7,7 +7,7 @@
 //! Inequality rules for IMO-level problem solving.
 //! Includes AM-GM, Cauchy-Schwarz, Jensen's, triangle inequality, and more.
 
-use crate::{Rule, RuleApplication, RuleCategory, RuleId};
+use crate::{Domain, Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
 /// Get all inequality rules (50+).
@@ -38,6 +38,8 @@ fn am_gm_rules() -> Vec<Rule> {
             name: "am_gm_2",
             category: RuleCategory::AlgebraicSolving,
             description: "AM-GM: (a+b)/2 ≥ √(ab), so a+b ≥ 2√(ab)",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match a + b pattern where we might apply AM-GM
                 // BUT NOT for pure arithmetic (no variables)
@@ -96,6 +98,8 @@ fn am_gm_rules() -> Vec<Rule> {
             name: "sum_squares_ge_product",
             category: RuleCategory::AlgebraicSolving,
             description: "a² + b² ≥ 2ab (from (a-b)² ≥ 0)",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Add(a, b) = expr {
                     let a_is_sq = matches!(a.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)));
@@ -129,6 +133,8 @@ fn am_gm_rules() -> Vec<Rule> {
             name: "sum_three_squares",
             category: RuleCategory::AlgebraicSolving,
             description: "a² + b² + c² ≥ ab + bc + ca",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match (a² + b²) + c² or similar 3-term sum of squares
                 fn is_square(e: &Expr) -> bool {
@@ -192,6 +198,8 @@ fn am_gm_rules() -> Vec<Rule> {
             name: "reciprocal_sum_ge_2",
             category: RuleCategory::AlgebraicSolving,
             description: "a/b + b/a ≥ 2 for positive a,b",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Add(left, right) = expr {
                     if let (Expr::Div(a1, b1), Expr::Div(b2, a2)) = (left.as_ref(), right.as_ref())
@@ -224,6 +232,8 @@ fn am_gm_rules() -> Vec<Rule> {
             name: "am_gm_3",
             category: RuleCategory::AlgebraicSolving,
             description: "AM-GM for 3 terms: (a+b+c)/3 ≥ ∛(abc)",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match (a + b + c) / 3 or ((a + b) + c) / 3
                 if let Expr::Div(num, denom) = expr {
@@ -286,6 +296,8 @@ fn cauchy_schwarz_rules() -> Vec<Rule> {
             name: "cauchy_schwarz_2",
             category: RuleCategory::AlgebraicSolving,
             description: "Cauchy-Schwarz: (a²+b²)(c²+d²) ≥ (ac+bd)²",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match (a² + b²)(c² + d²) pattern
                 if let Expr::Mul(left, right) = expr {
@@ -309,6 +321,8 @@ fn cauchy_schwarz_rules() -> Vec<Rule> {
             name: "titus_lemma",
             category: RuleCategory::AlgebraicSolving,
             description: "Titu's Lemma: a²/x + b²/y ≥ (a+b)²/(x+y)",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match a²/x + b²/y pattern
                 fn is_sq_over_var(e: &Expr) -> bool {
@@ -364,6 +378,8 @@ fn triangle_inequality_rules() -> Vec<Rule> {
             name: "triangle_ineq",
             category: RuleCategory::AlgebraicSolving,
             description: "|a + b| ≤ |a| + |b|",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Abs(inner) = expr {
                     return matches!(inner.as_ref(), Expr::Add(_, _));
@@ -393,6 +409,8 @@ fn triangle_inequality_rules() -> Vec<Rule> {
             name: "reverse_triangle",
             category: RuleCategory::AlgebraicSolving,
             description: "|a - b| ≥ ||a| - |b||",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Abs(inner) = expr {
                     return matches!(inner.as_ref(), Expr::Sub(_, _));
@@ -431,6 +449,8 @@ fn absolute_value_rules() -> Vec<Rule> {
             name: "abs_nonneg",
             category: RuleCategory::Simplification,
             description: "|a| ≥ 0 for all a",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Abs(_)),
             apply: |expr, _ctx| {
                 if let Expr::Abs(_) = expr {
@@ -450,6 +470,8 @@ fn absolute_value_rules() -> Vec<Rule> {
             name: "abs_product",
             category: RuleCategory::Simplification,
             description: "|a·b| = |a|·|b|",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Abs(inner) = expr {
                     return matches!(inner.as_ref(), Expr::Mul(_, _));
@@ -479,6 +501,8 @@ fn absolute_value_rules() -> Vec<Rule> {
             name: "abs_quotient",
             category: RuleCategory::Simplification,
             description: "|a/b| = |a|/|b|",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Abs(inner) = expr {
                     return matches!(inner.as_ref(), Expr::Div(_, _));
@@ -508,6 +532,8 @@ fn absolute_value_rules() -> Vec<Rule> {
             name: "abs_neg",
             category: RuleCategory::Simplification,
             description: "|-a| = |a|",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Abs(inner) = expr {
                     return matches!(inner.as_ref(), Expr::Neg(_));
@@ -534,6 +560,8 @@ fn absolute_value_rules() -> Vec<Rule> {
             name: "abs_abs",
             category: RuleCategory::Simplification,
             description: "||a|| = |a|",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Abs(inner) = expr {
                     return matches!(inner.as_ref(), Expr::Abs(_));
@@ -560,6 +588,8 @@ fn absolute_value_rules() -> Vec<Rule> {
             name: "abs_squared",
             category: RuleCategory::Simplification,
             description: "|a|² = a²",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Pow(base, exp) = expr {
                     if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)) {
@@ -597,6 +627,8 @@ fn square_inequality_rules() -> Vec<Rule> {
             name: "square_nonneg",
             category: RuleCategory::AlgebraicSolving,
             description: "a² ≥ 0 for all real a",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Pow(_, exp) = expr {
                     return matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2));
@@ -622,6 +654,8 @@ fn square_inequality_rules() -> Vec<Rule> {
             name: "square_zero",
             category: RuleCategory::EquationSolving,
             description: "a² = 0 ⟺ a = 0",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Equation { lhs, rhs } = expr {
                     if matches!(rhs.as_ref(), Expr::Const(c) if c.is_zero()) {
@@ -655,6 +689,8 @@ fn square_inequality_rules() -> Vec<Rule> {
             name: "diff_squared_ge_zero",
             category: RuleCategory::AlgebraicSolving,
             description: "(a-b)² ≥ 0",
+            domains: &[Domain::Inequalities],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match (a-b)² pattern
                 if let Expr::Pow(base, exp) = expr {
@@ -722,6 +758,8 @@ fn bernoulli_inequality() -> Rule {
         name: "bernoulli_inequality",
         category: RuleCategory::AlgebraicSolving,
         description: "(1+x)^n >= 1 + nx for x >= -1, n >= 1",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match (1+x)^n pattern
             if let Expr::Pow(base, _) = expr {
@@ -759,6 +797,8 @@ fn qm_am_inequality() -> Rule {
         name: "qm_am_inequality",
         category: RuleCategory::AlgebraicSolving,
         description: "QM >= AM: √((a²+b²)/2) >= (a+b)/2",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match sqrt((a² + b²)/2) pattern
             if let Expr::Sqrt(inner) = expr {
@@ -815,6 +855,8 @@ fn hm_gm_inequality() -> Rule {
         name: "hm_gm_inequality",
         category: RuleCategory::AlgebraicSolving,
         description: "HM <= GM: 2ab/(a+b) <= √(ab)",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match 2ab/(a+b) pattern
             if let Expr::Div(num, denom) = expr {
@@ -856,6 +898,8 @@ fn positive_square_root() -> Rule {
         name: "positive_square_root",
         category: RuleCategory::Simplification,
         description: "√a >= 0 for a >= 0",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Sqrt(_)),
         apply: |_expr, _ctx| vec![],
         reversible: false,
@@ -870,6 +914,8 @@ fn exp_positivity() -> Rule {
         name: "exp_positivity",
         category: RuleCategory::Simplification,
         description: "e^x > 0 for all x",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Exp(_)),
         apply: |_expr, _ctx| vec![],
         reversible: false,
@@ -884,6 +930,8 @@ fn abs_product() -> Rule {
         name: "abs_product",
         category: RuleCategory::Simplification,
         description: "|ab| = |a||b|",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Abs(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Mul(_, _));
@@ -916,6 +964,8 @@ fn abs_quotient() -> Rule {
         name: "abs_quotient",
         category: RuleCategory::Simplification,
         description: "|a/b| = |a|/|b|",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Abs(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Div(_, _));
@@ -948,6 +998,8 @@ fn abs_power() -> Rule {
         name: "abs_power",
         category: RuleCategory::Simplification,
         description: "|a^n| = |a|^n",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Abs(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Pow(_, _));
@@ -977,6 +1029,8 @@ fn add_to_both_sides() -> Rule {
         name: "add_to_both_sides",
         category: RuleCategory::EquationSolving,
         description: "Add same expression to both sides of equation",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. }),
         apply: |_expr, _ctx| vec![], // Needs c from context
         reversible: true,
@@ -991,6 +1045,8 @@ fn mul_positive_both_sides() -> Rule {
         name: "mul_positive_both_sides",
         category: RuleCategory::EquationSolving,
         description: "Multiply both sides by positive expression",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. }),
         apply: |_expr, _ctx| vec![], // Needs c from context
         reversible: true,
@@ -1005,6 +1061,8 @@ fn sqrt_comparison() -> Rule {
         name: "sqrt_comparison",
         category: RuleCategory::AlgebraicSolving,
         description: "For a,b >= 0: a >= b => √a >= √b",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match a >= b where both could have sqrt
             matches!(expr, Expr::Gte(_, _) | Expr::Gt(_, _))
@@ -1033,6 +1091,8 @@ fn ln_comparison() -> Rule {
         name: "ln_comparison",
         category: RuleCategory::AlgebraicSolving,
         description: "For a,b > 0: a > b => ln(a) > ln(b)",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _)),
         apply: |expr, _ctx| {
             if let Expr::Gt(a, b) = expr {
@@ -1058,6 +1118,8 @@ fn exp_monotonic() -> Rule {
         name: "exp_monotonic",
         category: RuleCategory::AlgebraicSolving,
         description: "a > b => e^a > e^b (exp is increasing)",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _)),
         apply: |expr, _ctx| {
             if let Expr::Gt(a, b) = expr {
@@ -1082,6 +1144,8 @@ fn ln_monotonic() -> Rule {
         name: "ln_monotonic",
         category: RuleCategory::AlgebraicSolving,
         description: "a > b > 0 => ln(a) > ln(b) (ln is increasing)",
+        domains: &[Domain::Inequalities],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _)),
         apply: |expr, _ctx| {
             if let Expr::Gt(a, b) = expr {

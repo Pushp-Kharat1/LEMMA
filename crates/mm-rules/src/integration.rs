@@ -6,7 +6,7 @@
 
 //! Integration transformation rules.
 
-use crate::{Rule, RuleApplication, RuleCategory, RuleId};
+use crate::{Domain, Feature, Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
 /// Get all integration rules.
@@ -58,6 +58,8 @@ fn power_integral() -> Rule {
         name: "power_integral",
         category: RuleCategory::Integral,
         description: "Power rule: integral(x^n dx) = x^(n+1)/(n+1) for n != -1",
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
                 // Case 1: Just x
@@ -129,6 +131,8 @@ fn constant_integral() -> Rule {
         name: "constant_integral",
         category: RuleCategory::Integral,
         description: "Constant rule: integral(c dx) = cx",
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
                 return !contains_var(inner, *var);
@@ -161,6 +165,8 @@ fn sum_integral() -> Rule {
         name: "sum_integral",
         category: RuleCategory::Integral,
         description: "Sum rule: integral(f + g dx) = integral(f dx) + integral(g dx)",
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, .. } = expr {
                 return matches!(inner.as_ref(), Expr::Add(_, _));
@@ -201,6 +207,8 @@ fn difference_integral() -> Rule {
         name: "difference_integral",
         category: RuleCategory::Integral,
         description: "Difference rule: integral(f - g dx) = integral(f dx) - integral(g dx)",
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, .. } = expr {
                 return matches!(inner.as_ref(), Expr::Sub(_, _));
@@ -242,6 +250,8 @@ fn sin_integral() -> Rule {
         name: "sin_integral",
         category: RuleCategory::Integral,
         description: "Sine integral: integral(sin(x) dx) = -cos(x)",
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
                 if let Expr::Sin(arg) = inner.as_ref() {
@@ -282,6 +292,8 @@ fn cos_integral() -> Rule {
         name: "cos_integral",
         category: RuleCategory::Integral,
         description: "Cosine integral: integral(cos(x) dx) = sin(x)",
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
                 if let Expr::Cos(arg) = inner.as_ref() {
@@ -322,6 +334,8 @@ fn exp_integral() -> Rule {
         name: "exp_integral",
         category: RuleCategory::Integral,
         description: "Exponential integral: integral(e^x dx) = e^x",
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
                 if let Expr::Exp(arg) = inner.as_ref() {
@@ -362,6 +376,8 @@ fn one_over_x_integral() -> Rule {
         name: "one_over_x_integral",
         category: RuleCategory::Integral,
         description: "Reciprocal integral: integral(1/x dx) = ln(x)",
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
                 // Check for 1/x or x^(-1)
@@ -424,6 +440,8 @@ fn constant_multiple_integral() -> Rule {
         name: "constant_multiple_integral",
         category: RuleCategory::Integral,
         description: "Constant multiple: integral(c*f dx) = c * integral(f dx)",
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
                 if let Expr::Mul(a, b) = inner.as_ref() {

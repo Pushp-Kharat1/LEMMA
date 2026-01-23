@@ -6,7 +6,7 @@
 
 //! Algebraic transformation rules.
 
-use crate::{Rule, RuleApplication, RuleCategory, RuleId};
+use crate::{Domain, Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
 /// Get all algebra rules.
@@ -47,6 +47,8 @@ fn constant_fold() -> Rule {
         name: "const_fold",
         category: RuleCategory::Simplification,
         description: "Evaluate constant expressions: 2 + 3 → 5",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| match expr {
             Expr::Add(a, b) | Expr::Sub(a, b) | Expr::Mul(a, b) | Expr::Div(a, b) => {
                 matches!(a.as_ref(), Expr::Const(_)) && matches!(b.as_ref(), Expr::Const(_))
@@ -126,6 +128,8 @@ fn identity_add_zero() -> Rule {
         name: "identity_add_zero",
         category: RuleCategory::Simplification,
         description: "Remove additive identity: x + 0 → x",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Add(a, b) = expr {
                 return a.is_zero() || b.is_zero();
@@ -164,6 +168,8 @@ fn identity_mul_one() -> Rule {
         name: "identity_mul_one",
         category: RuleCategory::Simplification,
         description: "Remove multiplicative identity: x * 1 → x",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Mul(a, b) = expr {
                 return a.is_one() || b.is_one();
@@ -202,6 +208,8 @@ fn zero_mul() -> Rule {
         name: "zero_mul",
         category: RuleCategory::Simplification,
         description: "Multiply by zero: x * 0 → 0",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Mul(a, b) = expr {
                 return a.is_zero() || b.is_zero();
@@ -234,6 +242,8 @@ fn collect_like_terms() -> Rule {
         name: "collect_like_terms",
         category: RuleCategory::Simplification,
         description: "Collect like terms: ax + bx → (a+b)x",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Check for pattern: (c1 * x) + (c2 * x) or x + x
             if let Expr::Add(a, b) = expr {
@@ -324,6 +334,8 @@ fn distribute() -> Rule {
         name: "distribute",
         category: RuleCategory::Expansion,
         description: "Distribute: a(b + c) → ab + ac",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Mul(a, b) = expr {
                 // a * (b + c) or (a + b) * c
@@ -372,6 +384,8 @@ fn factor_common() -> Rule {
         name: "factor_common",
         category: RuleCategory::Factoring,
         description: "Factor common: ab + ac → a(b + c)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Check for ab + ac pattern
             if let Expr::Add(left, right) = expr {
@@ -412,6 +426,8 @@ fn difference_of_squares() -> Rule {
         name: "difference_of_squares",
         category: RuleCategory::Factoring,
         description: "Factor difference of squares: a² - b² → (a+b)(a-b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Check for a² - b² pattern
             if let Expr::Sub(left, right) = expr {
@@ -452,6 +468,8 @@ fn perfect_square_sum() -> Rule {
         name: "perfect_square_sum",
         category: RuleCategory::Factoring,
         description: "Factor perfect square: a² + 2ab + b² → (a + b)²",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match a² + 2ab + b² pattern
             if let Expr::Add(left, right) = expr {
@@ -511,6 +529,8 @@ fn perfect_square_diff() -> Rule {
         name: "perfect_square_diff",
         category: RuleCategory::Factoring,
         description: "Factor perfect square: a² - 2ab + b² → (a - b)²",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_expr, _ctx| {
             // This requires more complex pattern matching
             false
@@ -534,6 +554,8 @@ fn power_of_one() -> Rule {
         name: "power_of_one",
         category: RuleCategory::Simplification,
         description: "x^1 = x",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(r) if r.numer() == 1 && r.denom() == 1)),
         apply: |expr, _ctx| {
             if let Expr::Pow(base, _) = expr {
@@ -560,6 +582,8 @@ fn power_of_zero() -> Rule {
         name: "power_of_zero",
         category: RuleCategory::Simplification,
         description: "x^0 = 1 (where x ≠ 0)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(r) if r.is_zero())),
         apply: |expr, _ctx| {
             if let Expr::Pow(_, _) = expr {
@@ -586,6 +610,8 @@ fn power_add() -> Rule {
         name: "power_add",
         category: RuleCategory::Simplification,
         description: "x^a * x^b = x^(a+b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Mul(left, right) = expr {
                 // Check if both are powers with same base
@@ -630,6 +656,8 @@ fn power_mul() -> Rule {
         name: "power_mul",
         category: RuleCategory::Simplification,
         description: "(x^a)^b = x^(a*b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(inner, _) if matches!(inner.as_ref(), Expr::Pow(_, _))),
         apply: |expr, _ctx| {
             if let Expr::Pow(inner, outer_exp) = expr {
@@ -661,6 +689,8 @@ fn binomial_expand() -> Rule {
         name: "binomial_expand",
         category: RuleCategory::Expansion,
         description: "Expand (a + b)² → a² + 2ab + b²",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match (something)^2 where something is an Add
             if let Expr::Pow(base, exp) = expr {
@@ -715,6 +745,8 @@ fn binomial_expand_diff() -> Rule {
         name: "binomial_expand_diff",
         category: RuleCategory::Expansion,
         description: "Expand (a - b)² → a² - 2ab + b²",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Pow(base, exp) = expr {
                 if let Expr::Const(e) = exp.as_ref() {
@@ -768,6 +800,8 @@ fn sub_same() -> Rule {
         name: "sub_same",
         category: RuleCategory::Simplification,
         description: "x - x = 0",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sub(a, b) = expr {
                 return a == b;
@@ -825,6 +859,8 @@ fn sum_of_cubes() -> Rule {
         name: "sum_of_cubes",
         category: RuleCategory::Factoring,
         description: "a³ + b³ = (a+b)(a² - ab + b²)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Add(left, right) = expr {
                 if let (Expr::Pow(_, exp1), Expr::Pow(_, exp2)) = (left.as_ref(), right.as_ref()) {
@@ -868,6 +904,8 @@ fn diff_of_cubes() -> Rule {
         name: "diff_of_cubes",
         category: RuleCategory::Factoring,
         description: "a³ - b³ = (a-b)(a² + ab + b²)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sub(left, right) = expr {
                 if let (Expr::Pow(_, exp1), Expr::Pow(_, exp2)) = (left.as_ref(), right.as_ref()) {
@@ -911,6 +949,8 @@ fn sophie_germain() -> Rule {
         name: "sophie_germain",
         category: RuleCategory::Factoring,
         description: "a⁴ + 4b⁴ = (a² + 2b² + 2ab)(a² + 2b² - 2ab)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match a⁴ + 4b⁴
             if let Expr::Add(left, right) = expr {
@@ -978,6 +1018,8 @@ fn binomial_square_expand() -> Rule {
         name: "binomial_square_expand",
         category: RuleCategory::Expansion,
         description: "(a+b)² = a² + 2ab + b²",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Pow(base, exp) = expr {
                 if let Expr::Const(e) = exp.as_ref() {
@@ -1021,6 +1063,8 @@ fn binomial_cube_expand() -> Rule {
         name: "binomial_cube_expand",
         category: RuleCategory::Expansion,
         description: "(a+b)³ = a³ + 3a²b + 3ab² + b³",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Pow(base, exp) = expr {
                 if let Expr::Const(e) = exp.as_ref() {
@@ -1075,6 +1119,8 @@ fn power_subtract() -> Rule {
         name: "power_subtract",
         category: RuleCategory::Simplification,
         description: "x^a / x^b = x^(a-b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Div(num, den) = expr {
                 if let (Expr::Pow(base1, _), Expr::Pow(base2, _)) = (num.as_ref(), den.as_ref()) {
@@ -1107,6 +1153,8 @@ fn negative_exponent() -> Rule {
         name: "negative_exponent",
         category: RuleCategory::Simplification,
         description: "x^(-n) = 1/x^n",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Pow(_, exp) = expr {
                 if let Expr::Neg(_) = exp.as_ref() {
@@ -1153,6 +1201,8 @@ fn fractional_distribute() -> Rule {
         name: "fractional_distribute",
         category: RuleCategory::Simplification,
         description: "(a/b)^n = a^n / b^n",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Pow(base, _) = expr {
                 return matches!(base.as_ref(), Expr::Div(_, _));
@@ -1184,6 +1234,8 @@ fn double_negative() -> Rule {
         name: "double_negative",
         category: RuleCategory::Simplification,
         description: "--x = x",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Neg(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Neg(_));
@@ -1213,6 +1265,8 @@ fn sub_to_add() -> Rule {
         name: "sub_to_add",
         category: RuleCategory::Simplification,
         description: "a - b = a + (-b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _)),
         apply: |expr, _ctx| {
             if let Expr::Sub(a, b) = expr {
@@ -1235,6 +1289,8 @@ fn div_to_mul() -> Rule {
         name: "div_to_mul",
         category: RuleCategory::Simplification,
         description: "a / b = a * (1/b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
         apply: |expr, _ctx| {
             if let Expr::Div(a, b) = expr {
@@ -1318,6 +1374,8 @@ fn log_product() -> Rule {
         name: "log_product",
         category: RuleCategory::Simplification,
         description: "log(ab) = log(a) + log(b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1332,6 +1390,8 @@ fn log_quotient() -> Rule {
         name: "log_quotient",
         category: RuleCategory::Simplification,
         description: "log(a/b) = log(a) - log(b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1346,6 +1406,8 @@ fn log_power() -> Rule {
         name: "log_power",
         category: RuleCategory::Simplification,
         description: "log(a^n) = n*log(a)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _| {
             if let Expr::Ln(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Pow(_, _));
@@ -1375,6 +1437,8 @@ fn log_base_change() -> Rule {
         name: "log_base_change",
         category: RuleCategory::Simplification,
         description: "log_b(a) = ln(a)/ln(b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1389,6 +1453,8 @@ fn log_one() -> Rule {
         name: "log_one",
         category: RuleCategory::Simplification,
         description: "ln(1) = 0",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _| matches!(expr, Expr::Ln(inner) if matches!(inner.as_ref(), Expr::Const(r) if r.numer() == 1 && r.denom() == 1)),
         apply: |_, _| {
             vec![RuleApplication {
@@ -1408,6 +1474,8 @@ fn log_same_base() -> Rule {
         name: "log_same_base",
         category: RuleCategory::Simplification,
         description: "ln(e) = 1",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _| matches!(expr, Expr::Ln(inner) if matches!(inner.as_ref(), Expr::E)),
         apply: |_, _| {
             vec![RuleApplication {
@@ -1427,6 +1495,8 @@ fn exp_product() -> Rule {
         name: "exp_product",
         category: RuleCategory::Simplification,
         description: "e^a * e^b = e^(a+b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1441,6 +1511,8 @@ fn exp_quotient() -> Rule {
         name: "exp_quotient",
         category: RuleCategory::Simplification,
         description: "e^a / e^b = e^(a-b)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1455,6 +1527,8 @@ fn exp_power() -> Rule {
         name: "exp_power",
         category: RuleCategory::Simplification,
         description: "(e^a)^b = e^(ab)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1469,6 +1543,8 @@ fn exp_zero() -> Rule {
         name: "exp_zero",
         category: RuleCategory::Simplification,
         description: "e^0 = 1",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _| matches!(expr, Expr::Exp(inner) if matches!(inner.as_ref(), Expr::Const(r) if r.is_zero())),
         apply: |_, _| {
             vec![RuleApplication {
@@ -1488,6 +1564,8 @@ fn exp_one() -> Rule {
         name: "exp_one",
         category: RuleCategory::Simplification,
         description: "e^1 = e",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _| matches!(expr, Expr::Exp(inner) if matches!(inner.as_ref(), Expr::Const(r) if r.numer() == 1 && r.denom() == 1)),
         apply: |_, _| {
             vec![RuleApplication {
@@ -1507,6 +1585,8 @@ fn exp_ln() -> Rule {
         name: "exp_ln",
         category: RuleCategory::Simplification,
         description: "e^(ln(x)) = x",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _| matches!(expr, Expr::Exp(inner) if matches!(inner.as_ref(), Expr::Ln(_))),
         apply: |expr, _| {
             if let Expr::Exp(inner) = expr {
@@ -1531,6 +1611,8 @@ fn ln_exp() -> Rule {
         name: "ln_exp",
         category: RuleCategory::Simplification,
         description: "ln(e^x) = x",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _| matches!(expr, Expr::Ln(inner) if matches!(inner.as_ref(), Expr::Exp(_))),
         apply: |expr, _| {
             if let Expr::Ln(inner) = expr {
@@ -1555,6 +1637,8 @@ fn sqrt_product() -> Rule {
         name: "sqrt_product",
         category: RuleCategory::Simplification,
         description: "√(ab) = √a * √b",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _| matches!(expr, Expr::Sqrt(inner) if matches!(inner.as_ref(), Expr::Mul(_, _))),
         apply: |expr, _| {
             if let Expr::Sqrt(inner) = expr {
@@ -1582,6 +1666,8 @@ fn sqrt_quotient() -> Rule {
         name: "sqrt_quotient",
         category: RuleCategory::Simplification,
         description: "√(a/b) = √a / √b",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1596,6 +1682,8 @@ fn sqrt_square() -> Rule {
         name: "sqrt_square",
         category: RuleCategory::Simplification,
         description: "√(x²) = |x|",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |expr, _| {
             if let Expr::Sqrt(inner) = expr {
                 if let Expr::Pow(_, exp) = inner.as_ref() {
@@ -1627,6 +1715,8 @@ fn cube_root_cube() -> Rule {
         name: "cube_root_cube",
         category: RuleCategory::Simplification,
         description: "∛(x³) = x",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -1641,6 +1731,8 @@ fn nth_root_power() -> Rule {
         name: "nth_root_power",
         category: RuleCategory::Simplification,
         description: "ⁿ√(xⁿ) = |x| (even n) or x (odd n)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -1655,6 +1747,8 @@ fn rationalize_denominator() -> Rule {
         name: "rationalize_denominator",
         category: RuleCategory::Simplification,
         description: "Rationalize denominator with conjugate",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1669,6 +1763,8 @@ fn conjugate_multiply() -> Rule {
         name: "conjugate_multiply",
         category: RuleCategory::Simplification,
         description: "(a+b)(a-b) = a² - b²",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1683,6 +1779,8 @@ fn sum_of_cubes_factor() -> Rule {
         name: "sum_of_cubes_factor",
         category: RuleCategory::Factoring,
         description: "a³ + b³ = (a+b)(a² - ab + b²)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1697,6 +1795,8 @@ fn diff_of_cubes_factor() -> Rule {
         name: "diff_of_cubes_factor",
         category: RuleCategory::Factoring,
         description: "a³ - b³ = (a-b)(a² + ab + b²)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1711,6 +1811,8 @@ fn perfect_cube_sum() -> Rule {
         name: "perfect_cube_sum",
         category: RuleCategory::Expansion,
         description: "(a+b)³ = a³ + 3a²b + 3ab² + b³",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1725,6 +1827,8 @@ fn perfect_cube_diff() -> Rule {
         name: "perfect_cube_diff",
         category: RuleCategory::Expansion,
         description: "(a-b)³ = a³ - 3a²b + 3ab² - b³",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1739,6 +1843,8 @@ fn quadratic_complete_square() -> Rule {
         name: "quadratic_complete_square",
         category: RuleCategory::Simplification,
         description: "Complete the square for quadratic",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1753,6 +1859,8 @@ fn vieta_sum() -> Rule {
         name: "vieta_sum",
         category: RuleCategory::Simplification,
         description: "Sum of roots = -b/a",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1767,6 +1875,8 @@ fn vieta_product() -> Rule {
         name: "vieta_product",
         category: RuleCategory::Simplification,
         description: "Product of roots = c/a",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1781,6 +1891,8 @@ fn factor_quadratic() -> Rule {
         name: "factor_quadratic",
         category: RuleCategory::Factoring,
         description: "Factor quadratic using roots",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1795,6 +1907,8 @@ fn rational_root_test() -> Rule {
         name: "rational_root_test",
         category: RuleCategory::Simplification,
         description: "Rational root theorem",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -1809,6 +1923,8 @@ fn synthetic_division() -> Rule {
         name: "synthetic_division",
         category: RuleCategory::Simplification,
         description: "Synthetic division",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -1823,6 +1939,8 @@ fn polynomial_division() -> Rule {
         name: "polynomial_division",
         category: RuleCategory::Simplification,
         description: "Polynomial long division",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -1837,6 +1955,8 @@ fn remainder_theorem() -> Rule {
         name: "remainder_theorem",
         category: RuleCategory::Simplification,
         description: "Remainder theorem",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -1851,6 +1971,8 @@ fn factor_theorem() -> Rule {
         name: "factor_theorem",
         category: RuleCategory::Simplification,
         description: "Factor theorem",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -1865,6 +1987,8 @@ fn bezout_identity() -> Rule {
         name: "bezout_identity",
         category: RuleCategory::Simplification,
         description: "Bezout's identity: gcd(a,b) = ax + by",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -1879,6 +2003,8 @@ fn euclidean_division() -> Rule {
         name: "euclidean_division",
         category: RuleCategory::Simplification,
         description: "Euclidean division",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -1893,6 +2019,8 @@ fn fraction_add() -> Rule {
         name: "fraction_add",
         category: RuleCategory::Simplification,
         description: "a/b + c/d = (ad + bc)/bd",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1907,6 +2035,8 @@ fn fraction_mul() -> Rule {
         name: "fraction_mul",
         category: RuleCategory::Simplification,
         description: "(a/b) * (c/d) = (ac)/(bd)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1921,6 +2051,8 @@ fn fraction_div() -> Rule {
         name: "fraction_div",
         category: RuleCategory::Simplification,
         description: "(a/b) / (c/d) = (ad)/(bc)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1935,6 +2067,8 @@ fn cross_multiply() -> Rule {
         name: "cross_multiply",
         category: RuleCategory::Simplification,
         description: "Cross multiply: a/b = c/d → ad = bc",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1949,6 +2083,8 @@ fn lcd_combine() -> Rule {
         name: "lcd_combine",
         category: RuleCategory::Simplification,
         description: "Combine fractions using LCD",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1963,6 +2099,8 @@ fn abs_nonnegative() -> Rule {
         name: "abs_nonnegative",
         category: RuleCategory::Simplification,
         description: "|x| ≥ 0 always",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -1977,6 +2115,8 @@ fn abs_square() -> Rule {
         name: "abs_square",
         category: RuleCategory::Simplification,
         description: "|x|² = x²",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: true,
@@ -1991,6 +2131,8 @@ fn triangle_inequality() -> Rule {
         name: "triangle_inequality",
         category: RuleCategory::Simplification,
         description: "|a + b| ≤ |a| + |b|",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -2005,6 +2147,8 @@ fn reverse_triangle() -> Rule {
         name: "reverse_triangle",
         category: RuleCategory::Simplification,
         description: "||a| - |b|| ≤ |a - b|",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -2019,6 +2163,8 @@ fn am_gm_2() -> Rule {
         name: "am_gm_2",
         category: RuleCategory::Simplification,
         description: "(a+b)/2 ≥ √(ab) for a,b ≥ 0",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -2033,6 +2179,8 @@ fn am_gm_3() -> Rule {
         name: "am_gm_3",
         category: RuleCategory::Simplification,
         description: "(a+b+c)/3 ≥ ∛(abc) for a,b,c ≥ 0",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -2047,6 +2195,8 @@ fn qm_am() -> Rule {
         name: "qm_am",
         category: RuleCategory::Simplification,
         description: "√((a²+b²)/2) ≥ (a+b)/2",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -2061,6 +2211,8 @@ fn cauchy_schwarz_2() -> Rule {
         name: "cauchy_schwarz_2",
         category: RuleCategory::Simplification,
         description: "(ab + cd)² ≤ (a²+c²)(b²+d²)",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -2075,6 +2227,8 @@ fn holders_inequality() -> Rule {
         name: "holders_inequality",
         category: RuleCategory::Simplification,
         description: "Holder's inequality",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,
@@ -2089,6 +2243,8 @@ fn minkowski_inequality() -> Rule {
         name: "minkowski_inequality",
         category: RuleCategory::Simplification,
         description: "Minkowski inequality",
+        domains: &[Domain::Algebra],
+        requires: &[],
         is_applicable: |_, _| false,
         apply: |_, _| vec![],
         reversible: false,

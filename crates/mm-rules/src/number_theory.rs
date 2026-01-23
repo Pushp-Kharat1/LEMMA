@@ -6,7 +6,7 @@
 
 //! Number theory transformation rules for IMO-level problem solving.
 
-use crate::{Rule, RuleApplication, RuleCategory, RuleId};
+use crate::{Domain, Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
 /// Get all number theory rules (100+).
@@ -47,6 +47,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "divides_zero",
             category: RuleCategory::AlgebraicSolving,
             description: "n divides 0 for any n",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match: Divides(n, 0)
                 if let Expr::Div(_, b) = expr {
@@ -74,6 +76,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "divides_self",
             category: RuleCategory::Simplification,
             description: "n/n = 1 for any n ≠ 0",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Div(a, b) = expr {
                     return a == b && !matches!(b.as_ref(), Expr::Const(c) if c.is_zero());
@@ -100,6 +104,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "even_sum",
             category: RuleCategory::Simplification,
             description: "a + a = 2a (even)",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Add(a, b) = expr {
                     return a == b;
@@ -126,6 +132,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "div_by_2",
             category: RuleCategory::Simplification,
             description: "2n is divisible by 2",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Mul(a, _) = expr {
                     if let Expr::Const(c) = a.as_ref() {
@@ -152,6 +160,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "cancel_common_factor",
             category: RuleCategory::Simplification,
             description: "(a*b)/a = b",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Div(num, denom) = expr {
                     if let Expr::Mul(a, _) = num.as_ref() {
@@ -191,6 +201,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "mul_by_denom",
             category: RuleCategory::Simplification,
             description: "(a/b) * b = a",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Mul(a, b) = expr {
                     if let Expr::Div(_, denom) = a.as_ref() {
@@ -232,6 +244,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "diff_squares_factor",
             category: RuleCategory::Factoring,
             description: "a² - b² = (a+b)(a-b)",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Sub(a, b) = expr {
                     let a_is_sq = matches!(a.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)));
@@ -263,6 +277,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "diff_cubes_factor",
             category: RuleCategory::Factoring,
             description: "a³ - b³ = (a-b)(a² + ab + b²)",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Sub(a, b) = expr {
                     let a_is_cube = matches!(a.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(3)));
@@ -300,6 +316,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "sum_cubes_factor",
             category: RuleCategory::Factoring,
             description: "a³ + b³ = (a+b)(a² - ab + b²)",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Add(a, b) = expr {
                     let a_is_cube = matches!(a.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(3)));
@@ -337,6 +355,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "square_binomial_expand",
             category: RuleCategory::Expansion,
             description: "(a+b)² = a² + 2ab + b²",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Pow(base, exp) = expr {
                     if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)) {
@@ -374,6 +394,8 @@ fn divisibility_rules() -> Vec<Rule> {
             name: "square_binomial_sub_expand",
             category: RuleCategory::Expansion,
             description: "(a-b)² = a² - 2ab + b²",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Pow(base, exp) = expr {
                     if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)) {
@@ -420,6 +442,8 @@ fn modular_rules() -> Vec<Rule> {
             name: "mod_self",
             category: RuleCategory::Simplification,
             description: "a mod a = 0",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Mod(a, b) = expr {
                     return a == b;
@@ -446,6 +470,8 @@ fn modular_rules() -> Vec<Rule> {
             name: "zero_mod",
             category: RuleCategory::Simplification,
             description: "0 mod n = 0",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Mod(a, _) = expr {
                     return matches!(a.as_ref(), Expr::Const(c) if c.is_zero());
@@ -472,6 +498,8 @@ fn modular_rules() -> Vec<Rule> {
             name: "mod_one",
             category: RuleCategory::Simplification,
             description: "a mod 1 = 0",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Mod(_, b) = expr {
                     return matches!(b.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1));
@@ -507,6 +535,8 @@ fn gcd_lcm_rules() -> Vec<Rule> {
             name: "gcd_self",
             category: RuleCategory::Simplification,
             description: "gcd(a, a) = a",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::GCD(a, b) = expr {
                     return a == b;
@@ -533,6 +563,8 @@ fn gcd_lcm_rules() -> Vec<Rule> {
             name: "gcd_zero",
             category: RuleCategory::Simplification,
             description: "gcd(a, 0) = |a|",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::GCD(_, b) = expr {
                     return matches!(b.as_ref(), Expr::Const(c) if c.is_zero());
@@ -559,6 +591,8 @@ fn gcd_lcm_rules() -> Vec<Rule> {
             name: "gcd_one",
             category: RuleCategory::Simplification,
             description: "gcd(a, 1) = 1",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::GCD(_, b) = expr {
                     return matches!(b.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1));
@@ -585,6 +619,8 @@ fn gcd_lcm_rules() -> Vec<Rule> {
             name: "lcm_self",
             category: RuleCategory::Simplification,
             description: "lcm(a, a) = |a|",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::LCM(a, b) = expr {
                     return a == b;
@@ -611,6 +647,8 @@ fn gcd_lcm_rules() -> Vec<Rule> {
             name: "lcm_one",
             category: RuleCategory::Simplification,
             description: "lcm(a, 1) = |a|",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::LCM(_, b) = expr {
                     return matches!(b.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1));
@@ -637,6 +675,8 @@ fn gcd_lcm_rules() -> Vec<Rule> {
             name: "gcd_lcm_product",
             category: RuleCategory::AlgebraicSolving,
             description: "gcd(a,b) * lcm(a,b) = |a*b|",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match GCD(a,b) * LCM(a,b)
                 if let Expr::Mul(left, right) = expr {
@@ -686,6 +726,8 @@ fn perfect_power_rules() -> Vec<Rule> {
             name: "sqrt_square",
             category: RuleCategory::Simplification,
             description: "√(a²) = |a|",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Sqrt(inner) = expr {
                     if let Expr::Pow(_, exp) = inner.as_ref() {
@@ -714,6 +756,8 @@ fn perfect_power_rules() -> Vec<Rule> {
             name: "square_sqrt",
             category: RuleCategory::Simplification,
             description: "(√a)² = a",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Pow(base, exp) = expr {
                     if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)) {
@@ -742,6 +786,8 @@ fn perfect_power_rules() -> Vec<Rule> {
             name: "sqrt_product",
             category: RuleCategory::Simplification,
             description: "√a · √b = √(ab)",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Mul(a, b) = expr {
                     return matches!(a.as_ref(), Expr::Sqrt(_))
@@ -772,6 +818,8 @@ fn perfect_power_rules() -> Vec<Rule> {
             name: "sqrt_quotient",
             category: RuleCategory::Simplification,
             description: "√(a/b) = √a/√b",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Sqrt(inner) = expr {
                     return matches!(inner.as_ref(), Expr::Div(_, _));
@@ -801,6 +849,8 @@ fn perfect_power_rules() -> Vec<Rule> {
             name: "half_power_sqrt",
             category: RuleCategory::Simplification,
             description: "a^(1/2) = √a",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Pow(_, exp) = expr {
                     if let Expr::Div(num, denom) = exp.as_ref() {
@@ -837,6 +887,8 @@ fn parity_rules() -> Vec<Rule> {
             name: "neg_one_even_power",
             category: RuleCategory::Simplification,
             description: "(-1)^(2n) = 1",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Pow(base, exp) = expr {
                     if let Expr::Neg(inner) = base.as_ref() {
@@ -876,6 +928,8 @@ fn parity_rules() -> Vec<Rule> {
             name: "neg_one_odd_power",
             category: RuleCategory::Simplification,
             description: "(-1)^(2n+1) = -1",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Pow(base, exp) = expr {
                     if let Expr::Neg(inner) = base.as_ref() {
@@ -914,6 +968,8 @@ fn parity_rules() -> Vec<Rule> {
             name: "neg_squared",
             category: RuleCategory::Simplification,
             description: "(-a)² = a²",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Pow(base, exp) = expr {
                     if matches!(base.as_ref(), Expr::Neg(_)) {
@@ -955,6 +1011,8 @@ fn sum_formulas() -> Vec<Rule> {
             name: "sum_constant",
             category: RuleCategory::Simplification,
             description: "Σc (n times) = cn",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match: Mul(Const, Var) which could represent cn
                 if let Expr::Mul(a, b) = expr {
@@ -987,6 +1045,8 @@ fn sum_formulas() -> Vec<Rule> {
             name: "sum_arithmetic",
             category: RuleCategory::Simplification,
             description: "1+2+...+n = n(n+1)/2",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match: Div(Mul(n, Add(n, 1)), 2)
                 if let Expr::Div(num, denom) = expr {
@@ -1026,6 +1086,8 @@ fn sum_formulas() -> Vec<Rule> {
             name: "sum_squares",
             category: RuleCategory::Simplification,
             description: "1²+2²+...+n² = n(n+1)(2n+1)/6",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match: Div(Mul(...), 6)
                 if let Expr::Div(_, denom) = expr {
@@ -1058,6 +1120,8 @@ fn sum_formulas() -> Vec<Rule> {
             name: "sum_cubes",
             category: RuleCategory::Simplification,
             description: "1³+2³+...+n³ = [n(n+1)/2]²",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match: Pow(Div(Mul(n, n+1), 2), 2)
                 if let Expr::Pow(base, exp) = expr {
@@ -1089,6 +1153,8 @@ fn sum_formulas() -> Vec<Rule> {
             name: "geometric_sum",
             category: RuleCategory::Simplification,
             description: "1+r+r²+...+r^n = (r^(n+1)-1)/(r-1)",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match: Div(Sub(Pow(r, n+1), 1), Sub(r, 1))
                 if let Expr::Div(num, denom) = expr {
@@ -1138,6 +1204,8 @@ fn factorial_rules() -> Vec<Rule> {
             name: "factorial_zero",
             category: RuleCategory::Simplification,
             description: "0! = 1",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Factorial(inner) = expr {
                     return matches!(inner.as_ref(), Expr::Const(c) if c.is_zero());
@@ -1164,6 +1232,8 @@ fn factorial_rules() -> Vec<Rule> {
             name: "factorial_one",
             category: RuleCategory::Simplification,
             description: "1! = 1",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Factorial(inner) = expr {
                     return matches!(inner.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1));
@@ -1190,6 +1260,8 @@ fn factorial_rules() -> Vec<Rule> {
             name: "factorial_recurse",
             category: RuleCategory::Expansion,
             description: "n! = n · (n-1)!",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Factorial(_)),
             apply: |expr, _ctx| {
                 if let Expr::Factorial(n) = expr {
@@ -1222,6 +1294,8 @@ fn floor_ceiling_rules() -> Vec<Rule> {
             name: "floor_integer",
             category: RuleCategory::Simplification,
             description: "⌊n⌋ = n for integer n",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Floor(inner) = expr {
                     // Integer check: if it's a Const with denominator 1
@@ -1253,6 +1327,8 @@ fn floor_ceiling_rules() -> Vec<Rule> {
             name: "ceiling_integer",
             category: RuleCategory::Simplification,
             description: "⌈n⌉ = n for integer n",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 if let Expr::Ceiling(inner) = expr {
                     if let Expr::Const(r) = inner.as_ref() {
@@ -1283,6 +1359,8 @@ fn floor_ceiling_rules() -> Vec<Rule> {
             name: "floor_ceiling_diff",
             category: RuleCategory::AlgebraicSolving,
             description: "⌈x⌉ - ⌊x⌋ = 0 or 1",
+            domains: &[Domain::NumberTheory],
+            requires: &[],
             is_applicable: |expr, _ctx| {
                 // Match: Sub(Ceiling(x), Floor(x))
                 if let Expr::Sub(a, b) = expr {
@@ -1415,6 +1493,8 @@ fn fermat_little_theorem() -> Rule {
         name: "fermat_little_theorem",
         category: RuleCategory::Simplification,
         description: "a^(p-1) ≡ 1 (mod p)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Mod(Pow(a, p-1), p)
             if let Expr::Mod(inner, modulus) = expr {
@@ -1450,6 +1530,8 @@ fn fermat_last_theorem() -> Rule {
         name: "fermat_last_theorem",
         category: RuleCategory::AlgebraicSolving,
         description: "No integer solutions to x^n + y^n = z^n for n > 2",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Equation{ lhs: Add(Pow(x,n), Pow(y,n)), rhs: Pow(z,n) }
             if let Expr::Equation { lhs, rhs } = expr {
@@ -1481,6 +1563,8 @@ fn euler_theorem() -> Rule {
         name: "euler_theorem",
         category: RuleCategory::Simplification,
         description: "a^φ(n) ≡ 1 (mod n)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Mod(Pow(a, phi(n)), n)
             if let Expr::Mod(inner, _modulus) = expr {
@@ -1506,6 +1590,8 @@ fn euler_phi_multiplicative() -> Rule {
         name: "euler_phi_multiplicative",
         category: RuleCategory::Simplification,
         description: "φ(mn) = φ(m)φ(n) for gcd(m,n)=1",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Mul(expr, expr) as the Euler phi is multiplicative
             matches!(expr, Expr::Mul(_, _))
@@ -1532,6 +1618,8 @@ fn euler_phi_prime_power() -> Rule {
         name: "euler_phi_prime_power",
         category: RuleCategory::Simplification,
         description: "φ(p^k) = p^k - p^(k-1)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Pow(p, k) for prime power
             matches!(expr, Expr::Pow(_, _))
@@ -1561,6 +1649,8 @@ fn chinese_remainder_theorem() -> Rule {
         name: "chinese_remainder_theorem",
         category: RuleCategory::EquationSolving,
         description: "CRT: x ≡ a_i (mod m_i) has unique solution mod Π m_i",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match system of Mod equations
             matches!(expr, Expr::Equation { .. })
@@ -1589,6 +1679,8 @@ fn quadratic_residue() -> Rule {
         name: "quadratic_residue",
         category: RuleCategory::AlgebraicSolving,
         description: "Quadratic residue test",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Mod(Pow(x, 2), p) or Equation with Mod
             if let Expr::Mod(inner, _) = expr {
@@ -1617,6 +1709,8 @@ fn legendre_symbol_multiplicative() -> Rule {
         name: "legendre_symbol_multiplicative",
         category: RuleCategory::Simplification,
         description: "(ab/p) = (a/p)(b/p)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Legendre symbol involves Mul and Mod
             matches!(expr, Expr::Mul(_, _))
@@ -1642,6 +1736,8 @@ fn euler_criterion() -> Rule {
         name: "euler_criterion",
         category: RuleCategory::Simplification,
         description: "(a/p) = a^((p-1)/2) mod p",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Mod(Pow(a, (p-1)/2), p)
             if let Expr::Mod(inner, _) = expr {
@@ -1671,6 +1767,8 @@ fn prime_counting_approx() -> Rule {
         name: "prime_counting_approx",
         category: RuleCategory::Simplification,
         description: "π(x) ~ x/ln(x)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Div(x, Ln(x))
             if let Expr::Div(num, denom) = expr {
@@ -1701,6 +1799,8 @@ fn bertrand_postulate() -> Rule {
         name: "bertrand_postulate",
         category: RuleCategory::AlgebraicSolving,
         description: "Prime exists between n and 2n",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Lt(n, Mul(2, n)) or Gt pattern for range
             matches!(expr, Expr::Gt(_, _) | Expr::Lt(_, _))
@@ -1723,6 +1823,8 @@ fn linear_diophantine() -> Rule {
         name: "linear_diophantine",
         category: RuleCategory::EquationSolving,
         description: "ax + by = c solvable iff gcd(a,b) | c",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match linear equations: Equation { lhs: Add(Mul(a,x), Mul(b,y)), rhs: c }
             matches!(expr, Expr::Equation { .. })
@@ -1753,6 +1855,8 @@ fn pell_equation() -> Rule {
         name: "pell_equation",
         category: RuleCategory::EquationSolving,
         description: "Pell equation x² - Dy² = 1",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Equation { lhs: Sub(Pow(x,2), Mul(D, Pow(y,2))), rhs: 1 }
             if let Expr::Equation { lhs, rhs } = expr {
@@ -1783,6 +1887,8 @@ fn sum_of_two_squares() -> Rule {
         name: "sum_of_two_squares",
         category: RuleCategory::AlgebraicSolving,
         description: "Sum of two squares condition",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Add(Pow(a,2), Pow(b,2))
             if let Expr::Add(a, b) = expr {
@@ -1810,6 +1916,8 @@ fn sum_of_four_squares() -> Rule {
         name: "sum_of_four_squares",
         category: RuleCategory::AlgebraicSolving,
         description: "Every n = a² + b² + c² + d²",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match any positive integer - this is Lagrange's four square theorem
             matches!(expr, Expr::Const(c) if !c.is_negative())
@@ -1832,6 +1940,8 @@ fn wilson_theorem() -> Rule {
         name: "wilson_theorem",
         category: RuleCategory::Simplification,
         description: "(p-1)! ≡ -1 (mod p)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Mod(Factorial(p-1), p)
             if let Expr::Mod(inner, _) = expr {
@@ -1857,6 +1967,8 @@ fn hensel_lemma() -> Rule {
         name: "hensel_lemma",
         category: RuleCategory::EquationSolving,
         description: "Hensel's lemma for lifting solutions",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Mod equations that could be lifted
             matches!(expr, Expr::Mod(_, _) | Expr::Equation { .. })
@@ -1879,6 +1991,8 @@ fn order_divides_phi() -> Rule {
         name: "order_divides_phi",
         category: RuleCategory::Simplification,
         description: "ord_n(a) | φ(n)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: GCD or divisibility expressions
             matches!(expr, Expr::GCD(_, _) | Expr::Mod(_, _))
@@ -1901,6 +2015,8 @@ fn primitive_root_existence() -> Rule {
         name: "primitive_root_existence",
         category: RuleCategory::AlgebraicSolving,
         description: "Primitive roots exist for n = 1,2,4,p^k,2p^k",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Const(n) where n is a prime power or 2*prime power
             matches!(expr, Expr::Const(_) | Expr::Pow(_, _))
@@ -1923,6 +2039,8 @@ fn legendre_formula() -> Rule {
         name: "legendre_formula",
         category: RuleCategory::Simplification,
         description: "ν_p(n!) = Σ⌊n/p^k⌋",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Factorial expressions
             matches!(expr, Expr::Factorial(_))
@@ -1945,6 +2063,8 @@ fn lucas_theorem() -> Rule {
         name: "lucas_theorem",
         category: RuleCategory::Simplification,
         description: "Lucas' theorem for binomials mod p",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Mod of binomial coefficients
             matches!(expr, Expr::Mod(_, _))
@@ -1967,6 +2087,8 @@ fn mobius_inversion() -> Rule {
         name: "mobius_inversion",
         category: RuleCategory::Simplification,
         description: "Möbius inversion formula",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Sum or Div expressions (divisor sums)
             matches!(expr, Expr::Div(_, _) | Expr::Add(_, _))
@@ -1989,6 +2111,8 @@ fn mobius_multiplicative() -> Rule {
         name: "mobius_multiplicative",
         category: RuleCategory::Simplification,
         description: "μ(mn) = μ(m)μ(n) for gcd(m,n)=1",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Mul(_, _))
         },
@@ -2013,6 +2137,8 @@ fn chebyshev_prime_bounds() -> Rule {
         name: "chebyshev_prime_bounds",
         category: RuleCategory::AlgebraicSolving,
         description: "Chebyshev bounds on π(x)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Div(_, _) | Expr::Ln(_))
         },
@@ -2034,6 +2160,8 @@ fn even_perfect_number() -> Rule {
         name: "even_perfect_number",
         category: RuleCategory::AlgebraicSolving,
         description: "Even perfect = 2^(p-1)(2^p - 1)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Mul(Pow(2, p-1), Sub(Pow(2, p), 1))
             if let Expr::Mul(a, b) = expr {
@@ -2059,6 +2187,8 @@ fn mersenne_prime_condition() -> Rule {
         name: "mersenne_prime_condition",
         category: RuleCategory::AlgebraicSolving,
         description: "2^p - 1 prime => p prime",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Sub(Pow(2, p), 1)
             if let Expr::Sub(a, b) = expr {
@@ -2086,6 +2216,8 @@ fn sum_of_divisors() -> Rule {
         name: "sum_of_divisors",
         category: RuleCategory::Simplification,
         description: "σ(n) = Σ d for d|n",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Const or Pow (for computing divisor sums)
             matches!(expr, Expr::Const(_) | Expr::Pow(_, _))
@@ -2108,6 +2240,8 @@ fn number_of_divisors() -> Rule {
         name: "number_of_divisors",
         category: RuleCategory::Simplification,
         description: "τ(n) is number of divisors",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Const(_) | Expr::Pow(_, _))
         },
@@ -2129,6 +2263,8 @@ fn totient_sum() -> Rule {
         name: "totient_sum",
         category: RuleCategory::Simplification,
         description: "Σ φ(d) = n for d|n",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Const(_) | Expr::Var(_))
         },
@@ -2150,6 +2286,8 @@ fn primitive_root_count() -> Rule {
         name: "primitive_root_count",
         category: RuleCategory::Simplification,
         description: "φ(φ(n)) primitive roots mod n",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Const(_) | Expr::Pow(_, _))
         },
@@ -2171,6 +2309,8 @@ fn carmichael_function() -> Rule {
         name: "carmichael_function",
         category: RuleCategory::Simplification,
         description: "Carmichael function λ(n)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Const(_) | Expr::LCM(_, _))
         },
@@ -2192,6 +2332,8 @@ fn square_free_density() -> Rule {
         name: "square_free_density",
         category: RuleCategory::Simplification,
         description: "Square-free density = 6/π²",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Div(6, Pow(Pi, 2))
             if let Expr::Div(num, denom) = expr {
@@ -2219,6 +2361,8 @@ fn prime_gap_bound() -> Rule {
         name: "prime_gap_bound",
         category: RuleCategory::AlgebraicSolving,
         description: "Prime gap upper bounds",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Sub(_, _) | Expr::Gt(_, _))
         },
@@ -2240,6 +2384,8 @@ fn sophie_germain_prime() -> Rule {
         name: "sophie_germain_prime",
         category: RuleCategory::AlgebraicSolving,
         description: "Sophie Germain: p and 2p+1 both prime",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Add(Mul(2, p), 1) pattern for 2p+1
             if let Expr::Add(a, b) = expr {
@@ -2267,6 +2413,8 @@ fn quadratic_reciprocity() -> Rule {
         name: "quadratic_reciprocity",
         category: RuleCategory::Simplification,
         description: "Quadratic reciprocity law",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Mul(_, _) | Expr::Pow(_, _))
         },
@@ -2288,6 +2436,8 @@ fn jacobi_symbol() -> Rule {
         name: "jacobi_symbol",
         category: RuleCategory::Simplification,
         description: "Jacobi symbol (a/n)",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Div(_, _) | Expr::Mod(_, _))
         },
@@ -2309,6 +2459,8 @@ fn kronecker_symbol() -> Rule {
         name: "kronecker_symbol",
         category: RuleCategory::Simplification,
         description: "Kronecker symbol extension",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Div(_, _) | Expr::Mod(_, _))
         },
@@ -2330,6 +2482,8 @@ fn tonelli_shanks() -> Rule {
         name: "tonelli_shanks",
         category: RuleCategory::EquationSolving,
         description: "Tonelli-Shanks modular square root",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Mod(_, _) | Expr::Sqrt(_))
         },
@@ -2351,6 +2505,8 @@ fn discrete_log_order() -> Rule {
         name: "discrete_log_order",
         category: RuleCategory::EquationSolving,
         description: "Discrete logarithm order",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Pow(_, _) | Expr::Mod(_, _))
         },
@@ -2372,6 +2528,8 @@ fn continued_fraction_gcd() -> Rule {
         name: "continued_fraction_gcd",
         category: RuleCategory::Simplification,
         description: "GCD via continued fractions",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::GCD(_, _) | Expr::Div(_, _))
         },
@@ -2393,6 +2551,8 @@ fn farey_neighbors() -> Rule {
         name: "farey_neighbors",
         category: RuleCategory::AlgebraicSolving,
         description: "Farey neighbors: |ad - bc| = 1",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Sub(_, _) | Expr::Abs(_))
         },
@@ -2414,6 +2574,8 @@ fn stern_brocot() -> Rule {
         name: "stern_brocot",
         category: RuleCategory::Simplification,
         description: "Stern-Brocot tree mediant",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Div(_, _) | Expr::Add(_, _))
         },
@@ -2435,6 +2597,8 @@ fn egyptian_fraction() -> Rule {
         name: "egyptian_fraction",
         category: RuleCategory::Expansion,
         description: "Egyptian fraction decomposition",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Div(_, _))
         },
@@ -2456,6 +2620,8 @@ fn gaussian_norm() -> Rule {
         name: "gaussian_norm",
         category: RuleCategory::Simplification,
         description: "Gaussian integer norm N(a+bi) = a² + b²",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: Add(Pow(a, 2), Pow(b, 2))
             if let Expr::Add(a, b) = expr {
@@ -2481,6 +2647,8 @@ fn gaussian_prime() -> Rule {
         name: "gaussian_prime",
         category: RuleCategory::AlgebraicSolving,
         description: "Gaussian prime conditions",
+        domains: &[Domain::NumberTheory],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Const(_) | Expr::Add(_, _))
         },

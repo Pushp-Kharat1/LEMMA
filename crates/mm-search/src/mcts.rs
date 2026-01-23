@@ -245,17 +245,24 @@ impl NeuralMCTS {
     }
 
     /// Expand a node by adding children for all valid actions.
+    /// Uses the guardrail to filter rules by domain/features before expansion.
     fn expand(&self, node: &mut MCTSNode) {
         let ctx = RuleContext::default();
 
-        // Get policy priors from neural network
+        // GUARDRAIL: Analyze the problem to get domains/features
+        let profile = mm_rules::analyze(&node.state);
+
+        // GUARDRAIL: Filter rules by domain and features BEFORE NN scoring
+        let valid_rules = mm_rules::filter_rules(self.rules.all(), &profile, &node.state, &ctx);
+
+        // Get policy priors from neural network (for all rules)
         let priors = self
             .policy
             .forward(&node.state)
             .unwrap_or_else(|_| vec![1.0 / self.rules.len() as f32; self.rules.len()]);
 
-        // Find applicable rules and create children
-        for rule in self.rules.applicable(&node.state, &ctx) {
+        // Expand only using guardrail-filtered rules
+        for rule in valid_rules {
             let applications = rule.apply(&node.state, &ctx);
 
             for app in applications {
@@ -363,9 +370,12 @@ impl NeuralMCTS {
         let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
         seen.insert(format!("{:?}", current));
 
+        // GUARDRAIL: Analyze the problem once to get domains/features
+        let profile = mm_rules::analyze(&expr);
+
         for _iteration in 0..MAX_ITERATIONS {
-            // Check if any rules apply
-            let applicable = self.rules.applicable(&current, &ctx);
+            // GUARDRAIL: Filter rules by domain and features
+            let applicable = mm_rules::filter_rules(self.rules.all(), &profile, &current, &ctx);
             if applicable.is_empty() {
                 break; // No more rules - we're done
             }
@@ -505,6 +515,88 @@ impl NeuralMCTS {
             steps: all_steps,
             verified: true,
         }
+    }
+
+    /// Progressive solve: pattern match → decompose → solve easiest first → recombine.
+    ///
+    /// This is the main entry point for solving problems like integrals of sums.
+    pub fn progressive_solve(&self, expr: Expr) -> Solution {
+        // 1. Try pattern match first (fast path for known forms)
+        if let Some(result) = mm_rules::match_integral_pattern(&expr) {
+            return Solution {
+                problem: expr.clone(),
+                result,
+                steps: vec![Step {
+                    before: expr.clone(),
+                    after: expr.clone(),
+                    rule_id: RuleId(0),
+                    rule_name: "pattern_match",
+                    justification: "Matched known integral pattern".to_string(),
+                }],
+                verified: true,
+            };
+        }
+
+        // 2. Check if this is an integral of a sum - decompose and solve each term
+        if let Expr::Integral { expr: inner, var } = &expr {
+            if matches!(inner.as_ref(), Expr::Add(_, _) | Expr::Sub(_, _)) {
+                // Decompose into individual terms
+                let terms = mm_rules::decompose_additive(inner);
+
+                if terms.len() > 1 {
+                    // Score and sort by solvability (easiest first)
+                    let mut scored: Vec<_> = terms
+                        .iter()
+                        .map(|t| (t.clone(), mm_rules::solvability_score(t)))
+                        .collect();
+                    scored.sort_by(|a, b| b.1.cmp(&a.1));
+
+                    // Solve each term as a separate integral
+                    let mut all_steps = Vec::new();
+                    let mut partial_results = Vec::new();
+
+                    for (term, _score) in &scored {
+                        let term_integral = Expr::Integral {
+                            expr: Box::new(term.clone()),
+                            var: *var,
+                        };
+
+                        // Try pattern match on this term
+                        if let Some(result) = mm_rules::match_integral_pattern(&term_integral) {
+                            all_steps.push(Step {
+                                before: term_integral.clone(),
+                                after: result.clone(),
+                                rule_id: RuleId(0),
+                                rule_name: "pattern_match",
+                                justification: format!("Pattern matched: ∫{:?}", term),
+                            });
+                            partial_results.push(result);
+                        } else {
+                            // Fall back to regular simplify
+                            let term_solution = self.simplify(term_integral);
+                            all_steps.extend(term_solution.steps);
+                            partial_results.push(term_solution.result);
+                        }
+                    }
+
+                    // Recombine results by addition
+                    let combined = partial_results
+                        .into_iter()
+                        .reduce(|acc, r| Expr::Add(Box::new(acc), Box::new(r)))
+                        .unwrap_or(Expr::int(0));
+
+                    return Solution {
+                        problem: expr,
+                        result: combined,
+                        steps: all_steps,
+                        verified: true,
+                    };
+                }
+            }
+        }
+
+        // 3. Fall back to regular simplify for non-decomposable expressions
+        self.simplify(expr)
     }
 
     /// Recursively simplify sub-expressions by applying rules to inner parts.

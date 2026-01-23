@@ -6,7 +6,7 @@
 
 //! Equation solving rules and transformations.
 
-use crate::{Rule, RuleApplication, RuleCategory, RuleId};
+use crate::{Domain, Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational, Symbol};
 
 /// Get all equation solving rules.
@@ -32,6 +32,8 @@ fn isolate_variable() -> Rule {
         name: "isolate_variable",
         category: RuleCategory::EquationSolving,
         description: "Move terms to isolate variable: ax + b = c → ax = c - b",
+        domains: &[Domain::Equations],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Equation { lhs, rhs: _ } = expr {
                 // Check if LHS has addition/subtraction with constant
@@ -87,6 +89,8 @@ fn cancel_addition() -> Rule {
         name: "cancel_addition",
         category: RuleCategory::EquationSolving,
         description: "Cancel addition: x + a = b → x = b - a",
+        domains: &[Domain::Equations],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Equation { lhs, .. } = expr {
                 return matches!(lhs.as_ref(), Expr::Add(_, _));
@@ -122,6 +126,8 @@ fn cancel_subtraction() -> Rule {
         name: "cancel_subtraction",
         category: RuleCategory::EquationSolving,
         description: "Cancel subtraction: x - a = b → x = b + a",
+        domains: &[Domain::Equations],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Equation { lhs, .. } = expr {
                 return matches!(lhs.as_ref(), Expr::Sub(_, _));
@@ -157,6 +163,8 @@ fn cancel_multiplication() -> Rule {
         name: "cancel_multiplication",
         category: RuleCategory::EquationSolving,
         description: "Cancel multiplication: ax = b -> x = b/a (or xa = b -> x = b/a)",
+        domains: &[Domain::Equations],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Equation { lhs, .. } = expr {
                 if let Expr::Mul(a, b) = lhs.as_ref() {
@@ -217,6 +225,8 @@ fn cancel_division() -> Rule {
         name: "cancel_division",
         category: RuleCategory::EquationSolving,
         description: "Cancel division: x/a = b → x = ab",
+        domains: &[Domain::Equations],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Equation { lhs, .. } = expr {
                 if let Expr::Div(_, a) = lhs.as_ref() {
@@ -254,6 +264,8 @@ fn linear_solve() -> Rule {
         name: "linear_solve",
         category: RuleCategory::EquationSolving,
         description: "Solve linear equation: ax + b = c → x = (c-b)/a",
+        domains: &[Domain::Equations],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Check for ax + b = c pattern
             if let Expr::Equation { lhs, rhs } = expr {
@@ -310,6 +322,8 @@ fn quadratic_formula() -> Rule {
         name: "quadratic_formula",
         category: RuleCategory::EquationSolving,
         description: "Quadratic formula: ax² + bx + c = 0 → x = (-b ± √(b²-4ac))/(2a)",
+        domains: &[Domain::Equations],
+        requires: &[],
         is_applicable: |expr, _ctx| {
             // Check for ax^2 + bx + c = 0 pattern
             if let Expr::Equation { rhs, .. } = expr {

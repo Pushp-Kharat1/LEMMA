@@ -54,6 +54,61 @@ pub enum RuleCategory {
     NumberTheory,
 }
 
+/// Mathematical domain for rule applicability filtering.
+///
+/// Rules are tagged with domains to prevent wrong-domain matches
+/// (e.g., number theory rules on calculus problems).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Domain {
+    /// Algebraic manipulation (factoring, expansion, simplification).
+    Algebra,
+    /// Differentiation and derivative rules.
+    CalculusDiff,
+    /// Integration rules.
+    CalculusInt,
+    /// Trigonometric identities and evaluations.
+    Trigonometry,
+    /// Vector operations.
+    Vector,
+    /// Number theory (primes, divisibility, modular arithmetic).
+    NumberTheory,
+    /// Combinatorics (permutations, combinations, counting).
+    Combinatorics,
+    /// Inequality manipulation and bounds.
+    Inequalities,
+    /// Equation solving.
+    Equations,
+}
+
+/// AST features required for a rule to apply.
+///
+/// Used by the guardrail to filter rules based on expression structure.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Feature {
+    /// Expression contains an integral.
+    Integral,
+    /// Expression contains a derivative.
+    Derivative,
+    /// Expression contains trigonometric functions.
+    Trig,
+    /// Expression contains exponentials (a^x or e^x).
+    Exponential,
+    /// Expression contains logarithms.
+    Logarithm,
+    /// Expression is a product.
+    Product,
+    /// Expression is a composite function.
+    Composite,
+    /// Expression contains fractional powers (x^(1/2), etc).
+    FractionalPower,
+    /// Expression is a polynomial.
+    Polynomial,
+    /// Expression contains an equation.
+    Equation,
+    /// Expression contains an inequality.
+    Inequality,
+}
+
 /// Context for rule application.
 ///
 /// Contains information that rules might need, such as the variable
@@ -85,6 +140,12 @@ pub struct Rule {
     pub category: RuleCategory,
     /// Description for explanation.
     pub description: &'static str,
+    /// Mathematical domains this rule applies to.
+    /// Empty slice means "applicable to all domains" (backward compatibility).
+    pub domains: &'static [Domain],
+    /// AST features required for this rule to be considered.
+    /// Empty slice means "no specific features required" (backward compatibility).
+    pub requires: &'static [Feature],
     /// Check if this rule can be applied to the expression.
     pub is_applicable: fn(&Expr, &RuleContext) -> bool,
     /// Apply the rule, returning possible results.
@@ -105,6 +166,99 @@ impl Rule {
     pub fn apply(&self, expr: &Expr, ctx: &RuleContext) -> Vec<RuleApplication> {
         (self.apply)(expr, ctx)
     }
+}
+
+/// Macro for creating Rule structs with default `domains` and `requires` fields.
+///
+/// This provides backward compatibility - existing rules don't need to specify
+/// the new domain/feature fields. They default to empty slices, which means
+/// "applicable to all domains" (guardrail won't filter them).
+///
+/// # Example
+///
+/// ```ignore
+/// rule! {
+///     id: RuleId(1),
+///     name: "const_fold",
+///     category: RuleCategory::Simplification,
+///     description: "Evaluate constant expressions",
+///     is_applicable: |expr, _ctx| { ... },
+///     apply: |expr, _ctx| { ... },
+///     reversible: false,
+///     cost: 1,
+/// }
+/// ```
+///
+/// Or with explicit domains/requires:
+///
+/// ```ignore
+/// rule! {
+///     id: RuleId(101),
+///     name: "power_rule",
+///     category: RuleCategory::Derivative,
+///     description: "d/dx[x^n] = n*x^(n-1)",
+///     domains: &[Domain::CalculusDiff],
+///     requires: &[Feature::Derivative],
+///     is_applicable: |expr, _ctx| { ... },
+///     apply: |expr, _ctx| { ... },
+///     reversible: false,
+///     cost: 2,
+/// }
+/// ```
+#[macro_export]
+macro_rules! rule {
+    // Version with explicit domains and requires
+    {
+        id: $id:expr,
+        name: $name:expr,
+        category: $category:expr,
+        description: $description:expr,
+        domains: $domains:expr,
+        requires: $requires:expr,
+        is_applicable: $is_applicable:expr,
+        apply: $apply:expr,
+        reversible: $reversible:expr,
+        cost: $cost:expr $(,)?
+    } => {
+        Rule {
+            id: $id,
+            name: $name,
+            category: $category,
+            description: $description,
+            domains: $domains,
+            requires: $requires,
+            is_applicable: $is_applicable,
+            apply: $apply,
+            reversible: $reversible,
+            cost: $cost,
+        }
+    };
+    // Version without domains/requires (backward compatibility)
+    {
+        id: $id:expr,
+        name: $name:expr,
+        category: $category:expr,
+        description: $description:expr,
+        domains: &[],
+        requires: &[],
+        is_applicable: $is_applicable:expr,
+        apply: $apply:expr,
+        reversible: $reversible:expr,
+        cost: $cost:expr $(,)?
+    } => {
+        Rule {
+            id: $id,
+            name: $name,
+            category: $category,
+            description: $description,
+            domains: &[],  // Default: applicable to all domains
+            requires: &[], // Default: no specific features required
+            is_applicable: $is_applicable,
+            apply: $apply,
+            reversible: $reversible,
+            cost: $cost,
+        }
+    };
 }
 
 impl fmt::Debug for Rule {

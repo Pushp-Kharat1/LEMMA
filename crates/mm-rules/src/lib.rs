@@ -26,15 +26,24 @@ pub mod calculus;
 pub mod case_analysis;
 pub mod combinatorics;
 pub mod equations;
+pub mod guardrail;
 pub mod induction;
 pub mod inequalities;
 pub mod inequality_chain;
 pub mod integration;
 pub mod number_theory;
+pub mod patterns;
 pub mod polynomial;
 pub mod polynomials;
 pub mod quantifier;
 pub mod rule;
 pub mod trig;
 
-pub use rule::{Rule, RuleApplication, RuleCategory, RuleContext, RuleId, RuleSet};
+pub use guardrail::{
+    analyze, decompose_additive, filter_rules, is_rule_applicable, solvability_score,
+    ProblemProfile,
+};
+pub use patterns::match_integral_pattern;
+pub use rule::{
+    Domain, Feature, Rule, RuleApplication, RuleCategory, RuleContext, RuleId, RuleSet,
+};
