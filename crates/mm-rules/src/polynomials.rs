@@ -10,7 +10,20 @@
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
-/// Get all polynomial rules (54 rules: 500-527, 540-561, 800-818).
+/// Collects the complete set of polynomial transformation and solving rules.
+///
+/// This aggregates rules from Vieta’s formulas, symmetric polynomial identities, factoring rules, rational-root criteria, and phase-3 advanced polynomial rules (IDs 500–527, 540–561, 800–818).
+///
+/// # Returns
+///
+/// A vector containing all defined `Rule` instances used for polynomial transformations, factorizations, and root analysis.
+///
+/// # Examples
+///
+/// ```
+/// let rules = polynomial_rules();
+/// assert_eq!(rules.len(), 54);
+/// ```
 pub fn polynomial_rules() -> Vec<Rule> {
     let mut rules = Vec::new();
 
@@ -275,6 +288,17 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
 // Polynomial Factoring Rules (ID 540+)
 // ============================================================================
 
+/// Collects factoring-related rule definitions for polynomial manipulations.
+///
+/// Returns a vector of Rule instances implementing factoring identities, theorems,
+/// and decomposition/algorithmic helpers (Rule IDs 540–559).
+///
+/// # Examples
+///
+/// ```
+/// let rules = factoring_rules();
+/// assert_eq!(rules.len(), 20);
+/// ```
 fn factoring_rules() -> Vec<Rule> {
     vec![
         // Factor theorem: (x-a) divides P(x) iff P(a) = 0

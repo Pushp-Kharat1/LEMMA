@@ -144,6 +144,21 @@ trait StrategyDisplay {
 }
 
 impl StrategyDisplay for mm_rules::backward::BackwardStep {
+    /// Get a human-readable name for the backward reasoning strategy.
+    ///
+    /// This returns a concise, descriptive label for the variant stored in `self.strategy`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Given a `BackwardStep` value `step`, obtain its display name:
+    /// let name = step.strategy_name();
+    /// println!("{}", name);
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// The strategy name as a `&str`.
     fn strategy_name(&self) -> &str {
         use mm_rules::backward::BackwardStrategy;
         match self.strategy {

@@ -2080,6 +2080,22 @@ fn mersenne_prime_condition() -> Rule {
 }
 
 // σ(n) = Σ d for d|n
+/// Computes the sum-of-divisors function σ(n) for small positive integer constants and otherwise
+/// produces a descriptive, non-evaluated result.
+///
+/// For an expression that is a positive integer constant less than 1000, the rule's `apply` returns
+/// a `Const` expression containing the integer σ(n) (the sum of all positive divisors of n) and a
+/// justification string. For any other expression the rule is applicable only as a descriptive
+/// transformation and returns the original expression with a generic justification.
+///
+/// # Examples
+///
+/// ```
+/// let rule = sum_of_divisors();
+/// let expr = Expr::Const(Rational::from_integer(6));
+/// let apps = (rule.apply)(&expr, &Context::default());
+/// assert_eq!(apps[0].result, Expr::Const(Rational::from_integer(12))); // 1+2+3+6 = 12
+/// ```
 fn sum_of_divisors() -> Rule {
     Rule {
         id: RuleId(726),
@@ -2123,6 +2139,21 @@ fn sum_of_divisors() -> Rule {
 }
 
 // τ(n) = number of divisors
+/// Computes the number of positive divisors τ(n) for small positive integer constants.
+///
+/// This rule applies only when the expression is a positive integer constant less than 1000;
+/// in that case it returns a concrete constant equal to the count of all positive divisors of n.
+/// Otherwise the rule leaves the expression unchanged and provides a descriptive justification.
+///
+/// # Examples
+///
+/// ```
+/// // Example: τ(12) = 6 because divisors are 1,2,3,4,6,12
+/// let rule = number_of_divisors();
+/// let expr = Expr::Const(Rational::from_integer(12));
+/// let apps = (rule.apply)(&expr, &Default::default());
+/// assert_eq!(apps[0].result, Expr::Const(Rational::from_integer(6)));
+/// ```
 fn number_of_divisors() -> Rule {
     Rule {
         id: RuleId(727),

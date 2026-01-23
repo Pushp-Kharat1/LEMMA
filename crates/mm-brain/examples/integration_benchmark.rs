@@ -23,6 +23,47 @@ struct IntegrationProblem {
     requires_chaining: bool,
 }
 
+/// Runs an end-to-end integration benchmark that uses a neural substitution predictor to
+
+/// guide a rule-based search over calculus integration rules and reports per-problem and
+
+/// aggregate metrics.
+
+///
+
+/// The benchmark:
+
+/// - Instantiates a SubstitutionPredictor and loads calculus rules.
+
+/// - Evaluates a fixed set of integration problems, requesting top predictions from the
+
+///   predictor and using those predictions to guide a depth-limited search for applicable
+
+///   rules and (optionally) a solution expression.
+
+/// - Measures and prints prediction and search timings, steps taken, rules applied, expected
+
+///   approaches, and overall statistics (solved/failed counts and average time).
+
+///
+
+/// This function is intended as an example harness and demonstration; the search implementation
+
+/// used here is a placeholder that illustrates neural-guided ranking and rule attempts.
+
+///
+
+/// # Examples
+
+///
+
+/// ```no_run
+
+/// // Run the benchmark (prints results to stdout)
+
+/// integration_benchmark::main();
+
+/// ```
 fn main() {
     println!("╔══════════════════════════════════════════════════════════════════╗");
     println!("║     INTEGRATION BENCHMARK - Neural Network Guided Search         ║");
@@ -211,8 +252,36 @@ fn main() {
     println!("   4. End-to-end integration solving capability");
 }
 
-/// Neural-guided search through rule space
-/// Uses neural network predictions to prioritize which rules to try
+/// Perform a simple neural-guided search over available rules using substitution predictions.
+///
+/// The function uses the provided substitution predictions to prioritize which rules to
+/// attempt when searching for an integration transformation. It returns a summary of the
+/// search (whether any rule was attempted, how many prediction steps were consumed,
+/// which rules were tried, and an optional solution expression if found).
+///
+/// Parameters:
+/// - `predictions`: ordered substitution predictions from a neural model used to rank rules.
+/// - `rules`: the set of candidate rules to consider during the search.
+/// - `max_depth`: maximum number of prediction steps to consume before stopping the search.
+///
+/// # Returns
+///
+/// A tuple `(success, steps, rules_used, solution)`:
+/// - `success`: `true` if at least one rule was attempted, `false` otherwise.
+/// - `steps`: number of prediction iterations consumed during the search.
+/// - `rules_used`: list of rule names that were attempted in the search (in attempted order).
+/// - `solution`: an optional `Expr` representing a found solution; `None` if no solution was produced.
+///
+/// # Examples
+///
+/// ```
+/// // Demonstrate calling the search with no predictions or rules.
+/// let (success, steps, rules_used, solution) = neural_guided_search("", &[], &[], 5);
+/// assert_eq!(success, false);
+/// assert_eq!(steps, 0);
+/// assert!(rules_used.is_empty());
+/// assert!(solution.is_none());
+/// ```
 fn neural_guided_search(
     _statement: &str,
     predictions: &[mm_brain::SubstitutionPrediction],
@@ -262,6 +331,19 @@ fn neural_guided_search(
     (success, steps, rules_used, None)
 }
 
+/// Format an expression into a debug-style string representation.
+///
+/// Produces a `String` containing the expression formatted using its `Debug` implementation,
+/// suitable for displaying or logging a solved expression.
+///
+/// # Examples
+///
+/// ```
+/// // Given an `Expr` value `expr`:
+/// // let expr = Expr::...;
+/// // let s = format_solution(&expr);
+/// // println!("{}", s);
+/// ```
 fn format_solution(expr: &Expr) -> String {
     // Pretty print the solution
     format!("{:?}", expr)

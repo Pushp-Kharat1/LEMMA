@@ -10,7 +10,18 @@
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
-/// Get all inequality rules (26 working rules: 300-365, 380-382, 500-525).
+/// Aggregates all available inequality rules into a single list.
+///
+/// The returned list includes AM-GM, Cauchy–Schwarz, triangle inequality,
+/// absolute value, square non-negativity, and advanced inequality rules.
+///
+/// # Examples
+///
+/// ```
+/// let rules = inequality_rules();
+/// assert!(!rules.is_empty());
+/// ```
+pub fn
 pub fn inequality_rules() -> Vec<Rule> {
     let mut rules = Vec::new();
 
@@ -688,7 +699,20 @@ fn square_inequality_rules() -> Vec<Rule> {
 // Phase 3: Advanced Inequalities (ID 500+)
 // ============================================================================
 
-/// Get all advanced inequality rules
+/// Collects the library's advanced inequality rules for use by the solver.
+///
+/// This returns a list of constructed `Rule` objects covering advanced and utility
+/// inequalities (notably Bernoulli, QM-AM/HM-GM variants, monotonicity of Exp/Ln,
+/// absolute-value/power identities, and a suite of advanced inequalities with
+/// IDs in the 500–525 range such as Holder, Jensen, Chebyshev, Muirhead, Schur,
+/// Nesbitt, Young, and Minkowski).
+///
+/// # Examples
+///
+/// ```
+/// let rules = advanced_inequality_rules();
+/// assert!(!rules.is_empty());
+/// ```
 pub fn advanced_inequality_rules() -> Vec<Rule> {
     vec![
         // Bernoulli's inequality
@@ -1089,6 +1113,22 @@ fn exp_monotonic() -> Rule {
 }
 
 // a > b > 0 => ln(a) > ln(b)
+/// Constructs a rule encoding the monotonicity of the natural logarithm on R+.
+///
+/// When applied to an expression `a > b` (with `a, b > 0` implied), the rule produces the inequality `ln(a) > ln(b)`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = ln_monotonic();
+/// let expr = Expr::Gt(
+///     Box::new(Expr::Var("a".into())),
+///     Box::new(Expr::Var("b".into())),
+/// );
+/// // `apply` takes the expression and a context (ignored by this rule).
+/// let apps = (rule.apply)(expr, &());
+/// assert!(matches!(apps[0].result, Expr::Gt(_, _)));
+/// ```
 fn ln_monotonic() -> Rule {
     Rule {
         id: RuleId(513),
@@ -1118,6 +1158,17 @@ fn ln_monotonic() -> Rule {
 // ============================================================================
 
 // Holder's inequality
+/// Constructs a Rule that represents Hölder's inequality for conjugate exponents.
+///
+/// The rule encodes the inequality (Σ|ab|)^p ≤ (Σ|a|^p)(Σ|b|^q) with 1/p + 1/q = 1 and is intended for expressions involving products or powers; when applied it produces a RuleApplication preserving the input expression and a textual justification.
+///
+/// # Examples
+///
+/// ```
+/// let r = holder_inequality();
+/// assert_eq!(r.id.0, 514);
+/// assert_eq!(r.name, "holder_inequality");
+/// ```
 fn holder_inequality() -> Rule {
     Rule {
         id: RuleId(514),
@@ -1137,6 +1188,19 @@ fn holder_inequality() -> Rule {
 }
 
 // Jensen's inequality for convex functions
+/// Creates a rule that applies Jensen's inequality for convex functions.
+///
+/// The returned `Rule` detects average-like expressions (addition or division)
+/// and produces an application asserting that for a convex function `f`:
+/// f((x + y) / 2) ≤ (f(x) + f(y)) / 2.
+///
+/// # Examples
+///
+/// ```
+/// let r = jensen_convex();
+/// assert_eq!(r.id.0, 515);
+/// assert_eq!(r.name, "jensen_convex");
+/// ```
 fn jensen_convex() -> Rule {
     Rule {
         id: RuleId(515),
@@ -1156,6 +1220,17 @@ fn jensen_convex() -> Rule {
 }
 
 // Jensen's inequality for concave functions
+/// Produces a rule encoding Jensen's inequality for concave functions: f((x + y)/2) >= (f(x) + f(y))/2.
+///
+/// The rule is applicable to expressions that are additions or divisions and, when applied, returns a single RuleApplication that preserves the input expression and includes a justification referencing Jensen's inequality for concave f.
+///
+/// # Examples
+///
+/// ```
+/// let rule = jensen_concave();
+/// assert_eq!(rule.id, RuleId(516));
+/// assert_eq!(rule.name, "jensen_concave");
+/// ```
 fn jensen_concave() -> Rule {
     Rule {
         id: RuleId(516),
@@ -1175,6 +1250,17 @@ fn jensen_concave() -> Rule {
 }
 
 // Weighted Jensen
+/// Constructs the Weighted Jensen inequality rule for convex functions.
+///
+/// The rule represents the inequality f(Σ w_i · x_i) ≤ Σ w_i · f(x_i) for convex f with weights w_i summing to 1; it matches expressions that look like weighted sums and returns a placeholder RuleApplication preserving the original expression with a justification.
+///
+/// # Examples
+///
+/// ```
+/// let r = jensen_weighted();
+/// assert_eq!(r.id.0, 517);
+/// assert!(r.description.contains("Weighted Jensen"));
+/// ```
 fn jensen_weighted() -> Rule {
     Rule {
         id: RuleId(517),
@@ -1194,6 +1280,20 @@ fn jensen_weighted() -> Rule {
 }
 
 // Chebyshev's sum inequality
+/// Constructs the Chebyshev sum inequality rule for similarly ordered sequences.
+///
+/// The returned rule represents Chebyshev's inequality in the form (Σa)(Σb) ≤ n·Σab
+/// for sequences that are similarly ordered; it matches sum or product expressions
+/// and produces a RuleApplication that preserves the original expression with a
+/// justification referencing Chebyshev's inequality.
+///
+/// # Examples
+///
+/// ```
+/// let rule = chebyshev_sum();
+/// assert_eq!(rule.id, RuleId(518));
+/// assert_eq!(rule.name, "chebyshev_sum");
+/// ```
 fn chebyshev_sum() -> Rule {
     Rule {
         id: RuleId(518),
@@ -1213,6 +1313,17 @@ fn chebyshev_sum() -> Rule {
 }
 
 // Power mean inequality
+/// Constructs the power mean inequality rule which encodes that the power mean M_p is less than or equal to M_q when p ≤ q.
+///
+/// This rule matches expressions that are powers or divisions and, when applied, returns a RuleApplication preserving the input expression and providing a justification referencing the power mean inequality.
+///
+/// # Examples
+///
+/// ```
+/// let rule = power_mean_inequality();
+/// assert_eq!(rule.id.0, 519);
+/// assert_eq!(rule.name, "power_mean_inequality");
+/// ```
 fn power_mean_inequality() -> Rule {
     Rule {
         id: RuleId(519),
@@ -1232,6 +1343,16 @@ fn power_mean_inequality() -> Rule {
 }
 
 // Muirhead's inequality
+/// Constructs the Muirhead inequality rule for reasoning about symmetric sums when one exponent vector majorizes another.
+///
+/// The rule is applicable to additive or multiplicative expressions and, upon application, produces the original expression together with a justification referencing Muirhead's majorization condition.
+///
+/// # Examples
+///
+/// ```
+/// let rule = muirhead_inequality();
+/// assert_eq!(rule.id.0, 520);
+/// ```
 fn muirhead_inequality() -> Rule {
     Rule {
         id: RuleId(520),
@@ -1251,6 +1372,41 @@ fn muirhead_inequality() -> Rule {
 }
 
 // Schur's inequality
+/// Creates the rule encoding Schur's inequality.
+
+///
+
+/// Schur's inequality: for nonnegative r and real numbers x,y,z,
+
+/// Σ x^r (x - y)(x - z) ≥ 0 (summed cyclically).
+
+///
+
+/// # Returns
+
+///
+
+/// The `Rule` representing Schur's inequality (id 521), with an applicability
+
+/// heuristic for additive or multiplicative expressions and a justification
+
+/// string produced on application.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let rule = schur_inequality();
+
+/// assert_eq!(rule.id, RuleId(521));
+
+/// assert_eq!(rule.name, "schur_inequality");
+
+/// ```
 fn schur_inequality() -> Rule {
     Rule {
         id: RuleId(521),
@@ -1270,6 +1426,18 @@ fn schur_inequality() -> Rule {
 }
 
 // Nesbitt's inequality
+/// Nesbitt's inequality rule that yields the constant 3/2 as a lower bound.
+///
+/// When applied to expressions of the form a/(b+c) + b/(a+c) + c/(a+b), this rule produces
+/// an application with result 3/2 and a justification string referencing Nesbitt's inequality.
+///
+/// # Examples
+///
+/// ```
+/// let rule = nesbitt_inequality();
+/// // rule.id is 522
+/// assert_eq!(rule.id.0, 522);
+/// ```
 fn nesbitt_inequality() -> Rule {
     Rule {
         id: RuleId(522),
@@ -1289,6 +1457,19 @@ fn nesbitt_inequality() -> Rule {
 }
 
 // Rearrangement inequality
+/// Produces the rearrangement inequality rule for sums/products.
+///
+/// Returns a `Rule` that matches addition or multiplication expressions and,
+/// when applied, yields the same expression with a justification stating that
+/// the sum of pairwise products is maximized when the two sequences are sorted
+/// in the same order.
+///
+/// # Examples
+///
+/// ```
+/// let rule = rearrangement_inequality();
+/// assert_eq!(rule.id, RuleId(523));
+/// ```
 fn rearrangement_inequality() -> Rule {
     Rule {
         id: RuleId(523),
@@ -1308,6 +1489,24 @@ fn rearrangement_inequality() -> Rule {
 }
 
 // Young's inequality
+/// Constructs a Rule for Young's inequality: for conjugate exponents p,q with 1/p + 1/q = 1,
+/// it asserts ab ≤ a^p/p + b^q/q.
+///
+/// The produced Rule is categorized as an inequality, matches product or sum expressions
+/// (Expr::Mul or Expr::Add) as applicable, and when applied returns the original expression
+/// together with a justification string referencing Young's inequality. The rule is not reversible.
+///
+/// # Examples
+///
+/// ```
+/// let r = young_inequality();
+/// assert_eq!(r.id, RuleId(524));
+/// assert_eq!(r.name, "young_inequality");
+/// let expr = Expr::Mul(Box::new(Expr::Var("a".into())), Box::new(Expr::Var("b".into())));
+/// let apps = (r.apply)(&expr, &Default::default());
+/// assert_eq!(apps[0].result, expr);
+/// assert!(apps[0].justification.contains("Young"));
+/// ```
 fn young_inequality() -> Rule {
     Rule {
         id: RuleId(524),
@@ -1327,6 +1526,19 @@ fn young_inequality() -> Rule {
 }
 
 // Minkowski's inequality
+/// Constructs the Minkowski inequality rule for p ≥ 1.
+///
+/// The returned rule represents the inequality ||a + b||_p ≤ ||a||_p + ||b||_p and is intended to match expressions involving vector sums or p-norm-like powers; its application produces a justification string asserting Minkowski's inequality for p ≥ 1.
+///
+/// # Examples
+///
+/// ```
+/// let rule = minkowski_inequality();
+/// // rule id and a sample justification produced by `apply`
+/// assert_eq!(rule.id, RuleId(525));
+/// let apps = (rule.apply)(&Expr::Add(Box::new(Expr::Var("a".into())), Box::new(Expr::Var("b".into()))), &Default::default());
+/// assert!(apps.iter().any(|app| app.justification.contains("Minkowski")));
+/// ```
 fn minkowski_inequality() -> Rule {
     Rule {
         id: RuleId(525),
