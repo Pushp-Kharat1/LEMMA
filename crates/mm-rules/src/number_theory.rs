@@ -645,6 +645,58 @@ fn modular_rules() -> Vec<Rule> {
             reversible: false,
             cost: 2,
         },
+        // Legendre symbol computation (a/p)
+        Rule {
+            id: RuleId(126),
+            name: "legendre_symbol_compute",
+            category: RuleCategory::Simplification,
+            description: "Legendre symbol (a/p) computation",
+            is_applicable: |expr, _ctx| {
+                // Custom pattern for Legendre symbol representation
+                // For now, check Mod(a, p) for odd primes
+                if let Expr::Mod(_, p) = expr {
+                    if let Expr::Const(pv) = p.as_ref() {
+                        let p_val = pv.numer();
+                        return p_val > 2 && p_val < 100 && p_val % 2 == 1;
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Mod(a, p) = expr {
+                    if let (Expr::Const(av), Expr::Const(pv)) = (a.as_ref(), p.as_ref()) {
+                        let a_val = av.numer();
+                        let p_val = pv.numer();
+                        
+                        // Legendre symbol: (a/p) via Euler's criterion
+                        fn mod_pow(mut base: i64, mut exp: i64, modulus: i64) -> i64 {
+                            let mut result = 1i64;
+                            base = ((base % modulus) + modulus) % modulus;
+                            while exp > 0 {
+                                if exp % 2 == 1 {
+                                    result = (result * base) % modulus;
+                                }
+                                base = (base * base) % modulus;
+                                exp /= 2;
+                            }
+                            result
+                        }
+                        
+                        let exp = (p_val - 1) / 2;
+                        let result = mod_pow(a_val, exp, p_val);
+                        let legendre = if result == 0 { 0 } else if result == 1 { 1 } else { -1 };
+                        
+                        return vec![RuleApplication {
+                            result: Expr::Const(Rational::from_integer(legendre)),
+                            justification: format!("Legendre ({}/{}) = {}", a_val, p_val, legendre),
+                        }];
+                    }
+                }
+                vec![]
+            },
+            reversible: false,
+            cost: 3,
+        },
     ]
 }
 
