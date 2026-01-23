@@ -19,6 +19,19 @@ use mm_rules::rule::standard_rules;
 use mm_search::NeuralMCTS;
 use mm_verifier::Verifier;
 
+/// Runs the LEMMA comprehensive CBSE Class 12 Math paper demonstration.
+///
+/// Initializes the symbol table, loads the standard rule set, constructs a Verifier
+/// and NeuralMCTS, executes the suite of question demonstrations (sections A–E),
+/// and prints a structured final results summary including counts of passed/total
+/// and showcased capabilities.
+///
+/// # Examples
+///
+/// ```
+/// // Run the demo; output is printed to stdout.
+/// cbse_comprehensive::main();
+/// ```
 fn main() {
     println!("╔══════════════════════════════════════════════════════════════════╗");
     println!("║         CBSE Class 12 Math Paper - LEMMA Comprehensive Test     ║");
@@ -98,6 +111,28 @@ fn main() {
 // ============================================================================
 // Q2: Vector Perpendicularity (MCQ)
 // ============================================================================
+/// Runs the MCQ demonstration for Q2 (vector perpendicularity) and updates test counters.
+///
+/// Prints the problem statement and the computed dot product for the given vectors,
+/// increments `total`, and increments `passed` when the dot product equals 0 (vectors perpendicular).
+///
+/// # Arguments
+///
+/// * `symbols` - mutable reference to the SymbolTable used by the demo (may be used by other tests).
+/// * `mcts` - reference to a NeuralMCTS instance (present for consistency with other tests).
+/// * `passed` - mutable reference to the count of passed tests; incremented on success.
+/// * `total` - mutable reference to the total tests counter; always incremented by this function.
+///
+/// # Examples
+///
+/// ```no_run
+/// let mut symbols = SymbolTable::new();
+/// let mcts = NeuralMCTS::new(/* verifier */);
+/// let mut passed = 0;
+/// let mut total = 0;
+/// test_q2_vectors(&mut symbols, &mcts, &mut passed, &mut total);
+/// assert_eq!(total, 1);
+/// ```
 fn test_q2_vectors(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q2: If a⃗ = 3î - 2ĵ - k̂ and b⃗ = î - ĵ + k̂ are perpendicular │");
@@ -129,6 +164,30 @@ fn test_q2_vectors(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i3
 // ============================================================================
 // Q8: Optimization - Find Maximum (MCQ)
 // ============================================================================
+/// Demonstrates solving the optimization MCQ for f(x) = x³ - 3x + 2 on the interval [0, 2] using LEMMA components.
+///
+/// This function computes the derivative, invokes the NeuralMCTS simplifier, evaluates the function at candidate points,
+/// uses LEMMA's interval maximization, prints step-by-step results to stdout, and updates the provided counters.
+///
+/// Arguments:
+/// - `symbols`: mutable symbol table used to intern variables for expressions.
+/// - `mcts`: neural-guided search/simplifier instance used to propose expression transformations.
+/// - `passed`: mutable counter incremented when the computed maximum matches the expected answer (4).
+/// - `total`: mutable counter incremented to record that this question was attempted.
+///
+/// # Examples
+///
+/// ```
+/// // Setup (types and constructors assumed to exist in scope)
+/// let mut symbols = SymbolTable::new();
+/// let mcts = NeuralMCTS::new(/* verifier, rules, etc. */);
+/// let mut passed = 0;
+/// let mut total = 0;
+///
+/// test_q8_optimization(&mut symbols, &mcts, &mut passed, &mut total);
+/// assert_eq!(total, 1);
+/// // `passed` will be 1 if the routine finds maximum value 4 at x=2
+/// ```
 fn test_q8_optimization(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q8: Find absolute maximum of f(x) = x³ - 3x + 2 on [0, 2]     │");
@@ -183,6 +242,53 @@ fn test_q8_optimization(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &m
 // ============================================================================
 // Q10: Integration by Substitution
 // ============================================================================
+/// Demonstrates finding the constant k for the integral ∫ 2^(1/x²) / x³ dx = k · 2^(1/x) + C.
+
+///
+
+/// This function runs a proof/demo flow that applies neural simplification and a backward search
+
+/// to identify the multiplicative constant k for the antiderivative, prints intermediate steps,
+
+/// and updates the provided counters tracking total and passed examples.
+
+///
+
+/// # Parameters
+
+///
+
+/// - `symbols`: mutable symbol table used to intern variable names for the demonstration.
+
+/// - `mcts`: neural search/simplifier used to suggest transformations of the integrand.
+
+/// - `passed`: incremented when the demonstration obtains the expected result.
+
+/// - `total`: incremented to record that this test was attempted.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// // Setup (types and constructors are provided by the surrounding crate)
+
+/// let mut symbols = SymbolTable::new();
+
+/// let mcts = NeuralMCTS::new();
+
+/// let mut passed = 0;
+
+/// let mut total = 0;
+
+/// test_q10_integration(&mut symbols, &mcts, &mut passed, &mut total);
+
+/// assert_eq!(total, 1);
+
+/// ```
 fn test_q10_integration(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q10: If ∫(2^(1/x²))/x³ dx = k·2^(1/x) + C, find k            │");
@@ -242,6 +348,27 @@ fn test_q10_integration(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &m
 // ============================================================================
 // Q11: Vector Angles with Constraint
 // ============================================================================
+/// Demonstrates and solves the Q11 vectors problem, printing steps and updating test counters.
+///
+/// Uses the constraint a⃗ + b⃗ + c⃗ = 0⃗ to compute the dot product between b⃗ and c⃗, determines the angle between b⃗ and c⃗, prints the step-by-step solution, and increments the provided counters.
+///
+/// Parameters:
+/// - `symbols`: mutable symbol table used by demonstration routines (may be used for lookups or transformations).
+/// - `mcts`: neural MCTS instance used for optional transformation/simplification steps during the demonstration.
+/// - `passed`: mutable counter incremented when the demonstration is considered successful.
+/// - `total`: mutable counter incremented to record that the question was attempted.
+///
+/// # Examples
+///
+/// ```
+/// let mut passed = 0;
+/// let mut total = 0;
+/// // Call `test_q11_vectors(&mut symbols, &mcts, &mut passed, &mut total);`
+/// // where `symbols` is a SymbolTable and `mcts` is a NeuralMCTS instance.
+/// // After a successful run:
+/// // assert_eq!(passed, 1);
+/// // assert_eq!(total, 1);
+/// ```
 fn test_q11_vectors(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q11: Given |a⃗|=√37, |b⃗|=3, |c⃗|=4, and a⃗+b⃗+c⃗=0⃗            │");
@@ -269,6 +396,34 @@ fn test_q11_vectors(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i
 // ============================================================================
 // Q17: Area Under Curve
 // ============================================================================
+/// Demonstrates solving the area bounded by y² = x, x = 4, and the x-axis using LEMMA components.
+///
+/// This function constructs the definite integral ∫₀⁴ √x dx, applies the neural simplifier to the integrand,
+/// prints the neural transformation steps (if any), then performs the manual definite integration and
+/// updates the provided counters to reflect a completed demonstration.
+///
+/// # Parameters
+///
+/// - `symbols`: symbol table used to intern variable names for constructing expressions.
+/// - `mcts`: neural-guided search/simplifier used to transform the integrand before manual evaluation.
+/// - `passed`: mutable counter incremented when the demonstration completes successfully.
+/// - `total`: mutable counter incremented for each demonstrated question.
+///
+/// # Examples
+///
+/// ```
+/// # use mm_core::SymbolTable;
+/// # use mm_search::NeuralMCTS;
+/// # fn main() {
+/// let mut symbols = SymbolTable::new();
+/// let mcts = NeuralMCTS::new(); // construct as appropriate in your environment
+/// let mut passed = 0;
+/// let mut total = 0;
+/// test_q17_area(&mut symbols, &mcts, &mut passed, &mut total);
+/// assert_eq!(total, 1);
+/// assert_eq!(passed, 1);
+/// # }
+/// ```
 fn test_q17_area(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q17: Find area bounded by y² = x, x = 4, and x-axis           │");
@@ -312,6 +467,18 @@ fn test_q17_area(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32,
 // ============================================================================
 // Q21: Differentiation with Chain Rule
 // ============================================================================
+/// Demonstrates differentiation of the expression 2^(cos² x) using LEMMA components.
+///
+/// Applies NeuralMCTS to simplify the expression, prints the neural transformation steps
+/// (if any), then prints the manual chain-rule differentiation and updates the provided
+/// counters to record the test as attempted and passed.
+///
+/// # Examples
+///
+/// ```
+/// // assumes `symbols`, `mcts`, `passed`, and `total` are initialized in the test harness
+/// test_q21_differentiation(&mut symbols, &mcts, &mut passed, &mut total);
+/// ```
 fn test_q21_differentiation(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q21: Differentiate 2^(cos²x) using chain rule                  │");
@@ -355,6 +522,30 @@ fn test_q21_differentiation(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed
 // ============================================================================
 // Q22: Trigonometry - Special Angles
 // ============================================================================
+/// Evaluates the trigonometric expression sin(π/3) using the LEMMA neural simplifier and reports the result.
+///
+/// This function prints a short demo of solving sin(π/3): it runs the provided `NeuralMCTS` simplifier,
+/// displays any key transformation found, increments `total`, and increments `passed` when LEMMA applies a
+/// special-angle transformation (i.e., recognizes `sin(π/3) = √3/2`).
+///
+/// Parameters:
+/// - `symbols`: mutable reference to the `SymbolTable` used by LEMMA (passed through to the simplifier).
+/// - `mcts`: reference to the `NeuralMCTS` instance used to simplify the expression.
+/// - `passed`: mutable counter incremented when the demonstration is considered successful.
+/// - `total`: mutable counter incremented for each demonstrated question.
+///
+/// # Examples
+///
+/// ```
+/// // setup: create a symbol table and a NeuralMCTS (placeholders shown)
+/// let mut symbols = SymbolTable::new();
+/// let mcts = NeuralMCTS::new(&symbols);
+/// let mut passed = 0;
+/// let mut total = 0;
+///
+/// test_q22_trigonometry(&mut symbols, &mcts, &mut passed, &mut total);
+/// assert_eq!(total, 1);
+/// ```
 fn test_q22_trigonometry(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q22: Evaluate trigonometric expression                          │");
@@ -391,6 +582,36 @@ fn test_q22_trigonometry(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &
 // ============================================================================
 // Q23: Vector Cross Product
 // ============================================================================
+/// Compute and print the cross product of two 3D vectors and report the parallelogram area.
+///
+/// This test prints the matrix setup for the cross product of a = (2, -1, 1) and b = (1, 3, -1),
+/// computes a × b, its magnitude |a × b| = √62, increments `total`, and marks the test passed by
+/// incrementing `passed`.
+///
+/// # Parameters
+///
+/// - `symbols`: mutable reference to the SymbolTable used by the demo (not modified by this test).
+/// - `mcts`: neural search instance used by the demo (not used for the numeric cross product here).
+/// - `passed`: mutable counter incremented when the test is considered successful.
+/// - `total`: mutable counter incremented for each test attempted.
+///
+/// # Examples
+///
+/// ```rust
+/// // Construct or obtain a SymbolTable and NeuralMCTS according to your environment.
+/// // Here we show usage; actual construction is environment-specific.
+/// # use mm_core::SymbolTable;
+/// # use mm_search::NeuralMCTS;
+/// # fn example() {
+/// let mut symbols = SymbolTable::new();
+/// let mut mcts = NeuralMCTS::new(/* verifier */);
+/// let mut passed = 0;
+/// let mut total = 0;
+/// test_q23_vectors_cross(&mut symbols, &mcts, &mut passed, &mut total);
+/// assert_eq!(total, 1);
+/// assert_eq!(passed, 1);
+/// # }
+/// ```
 fn test_q23_vectors_cross(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q23: Area of parallelogram with sides a⃗=(2,-1,1), b⃗=(1,3,-1) │");
@@ -421,6 +642,22 @@ fn test_q23_vectors_cross(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: 
 // ============================================================================
 // Q24: Monotonicity Analysis
 // ============================================================================
+/// Determines the intervals on which f(x) = 5x^(3/2) - 3x^(5/2) is increasing or decreasing and prints the result.
+///
+/// The function computes the derivative, identifies critical points at x = 0 and x = 1, and reports that f is increasing on [0, 1] and decreasing on [1, ∞).
+///
+/// # Examples
+///
+/// ```
+/// // Example usage (types and values shown for illustration; adjust to your setup)
+/// let mut symbols = SymbolTable::new();
+/// let mcts = NeuralMCTS::new();
+/// let mut passed = 0;
+/// let mut total = 0;
+/// test_q24_monotonicity(&mut symbols, &mcts, &mut passed, &mut total);
+/// assert_eq!(total, 1);
+/// assert_eq!(passed, 1);
+/// ```
 fn test_q24_monotonicity(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q24: Find intervals where f(x)=5x^(3/2)-3x^(5/2) is inc/dec   │");
@@ -462,6 +699,23 @@ fn test_q24_monotonicity(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &
 // ============================================================================
 // Q25: Case Study - Vector Operations
 // ============================================================================
+/// Demonstrates and solves a kite-flying vector case study: computes the angle between two given vectors,
+/// finds a vector of magnitude 21 opposite to a specified vector, prints step-by-step results, and updates test counters.
+///
+/// This function prints the problem statement and intermediate values, computes the dot product and magnitudes to
+/// obtain cos(θ) for the angle between the two kite strings, constructs the required opposite vector scaled to
+/// magnitude 21, increments `total`, and increments `passed` on completion.
+///
+/// # Examples
+///
+/// ```ignore
+/// let mut symbols = SymbolTable::new();
+/// let mcts = NeuralMCTS::default();
+/// let mut passed = 0;
+/// let mut total = 0;
+/// test_q25_vectors_case(&mut symbols, &mcts, &mut passed, &mut total);
+/// assert_eq!(total, 1);
+/// ```
 fn test_q25_vectors_case(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q25: Case study - Kite flying with vectors                      │");
@@ -491,6 +745,31 @@ fn test_q25_vectors_case(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &
 // ============================================================================
 // Q26: Related Rates
 // ============================================================================
+/// Solve the related-rates problem for an equilateral triangle, print the differential steps, numeric result, and update counters.
+///
+/// Increments `total` for the attempted question and increments `passed` when the computed result is presented.
+/// The function prints the differentiation steps for A = (√3/4) s², substitutes s = 15 cm and ds/dt = 3 cm/s,
+/// and prints the symbolic and numeric value of dA/dt = 45√3/2 cm²/s.
+///
+/// # Parameters
+///
+/// - `symbols`: symbol table provided to the test harness (not modified here).
+/// - `mcts`: neural search instance provided to the test harness (not used by this problem).
+/// - `passed`: mutable counter incremented when the test is considered passed.
+/// - `total`: mutable counter incremented for each attempted test.
+///
+/// # Examples
+///
+/// ```ignore
+/// // Assuming SymbolTable and NeuralMCTS are available from the test harness:
+/// let mut symbols = SymbolTable::new();
+/// let mcts = NeuralMCTS::new(...);
+/// let mut passed = 0;
+/// let mut total = 0;
+/// test_q26_related_rates(&mut symbols, &mcts, &mut passed, &mut total);
+/// assert_eq!(total, 1);
+/// assert_eq!(passed, 1);
+/// ```
 fn test_q26_related_rates(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q26: Related rates - Equilateral triangle area                  │");
@@ -514,6 +793,29 @@ fn test_q26_related_rates(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: 
 // ============================================================================
 // Q28: Trigonometric Integration
 // ============================================================================
+/// Demonstrates LEMMA-assisted evaluation of the integral ∫(x + sin x)/(1 + cos x) dx and reports the result.
+///
+/// The function constructs the integrand, asks the provided NeuralMCTS to simplify it, prints up to a few
+/// neural transformation steps (if any), then prints a textbook-style antiderivative and updates the
+/// provided counters tracking total and passed problems. It performs no symbolic return value; effects are
+/// visible via printed output and by mutating `passed` and `total`.
+///
+/// # Parameters
+///
+/// - `passed`: incremented when the demonstration is considered successful.
+/// - `total`: incremented to record that this question was attempted.
+///
+/// # Examples
+///
+/// ```
+/// // Assume `symbols` and `mcts` are initialized instances of SymbolTable and NeuralMCTS.
+/// let mut symbols = SymbolTable::standard();
+/// let mut mcts = NeuralMCTS::with_verifier(/* ... */);
+/// let mut passed = 0;
+/// let mut total = 0;
+/// test_q28_integration_trig(&mut symbols, &mcts, &mut passed, &mut total);
+/// assert_eq!(total, 1);
+/// ```
 fn test_q28_integration_trig(symbols: &mut SymbolTable, mcts: &NeuralMCTS, passed: &mut i32, total: &mut i32) {
     println!("┌─────────────────────────────────────────────────────────────────┐");
     println!("│ Q28: Evaluate ∫(x + sin x)/(1 + cos x) dx                      │");

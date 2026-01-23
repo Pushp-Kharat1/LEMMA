@@ -10,7 +10,16 @@
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
-/// Get all combinatorics rules (66 rules: 400-442, 600-669).
+/// Returns the complete set of combinatorics rules used by the solver.
+///
+/// This aggregates binomial, counting, recurrence, and advanced combinatorics rule sets (IDs 400–442 and 600–669).
+///
+/// # Examples
+///
+/// ```
+/// let rules = combinatorics_rules();
+/// assert_eq!(rules.len(), 66);
+/// ```
 pub fn combinatorics_rules() -> Vec<Rule> {
     let mut rules = Vec::new();
 
@@ -396,7 +405,16 @@ fn recurrence_rules() -> Vec<Rule> {
 // Phase 3: Advanced Combinatorics Rules (ID 600+)
 // ============================================================================
 
-/// Get all advanced combinatorics rules
+/// Aggregate advanced combinatorics rule constructors (derangement, Catalan, Stirling, generating functions, identities, and related rules) into a single collection.
+///
+/// Returns a vector of `Rule` objects covering the advanced combinatorics rules (IDs 600–669).
+///
+/// # Examples
+///
+/// ```
+/// let rules = advanced_combinatorics_rules();
+/// assert!(!rules.is_empty());
+/// ```
 pub fn advanced_combinatorics_rules() -> Vec<Rule> {
     vec![
         // Derangement rules
@@ -466,6 +484,17 @@ pub fn advanced_combinatorics_rules() -> Vec<Rule> {
 }
 
 // D(n) = n! * Σ(-1)^k/k!
+/// Constructs the derangement formula rule.
+///
+/// The rule encodes the derangement identity D(n) = n! * Σ (-1)^k / k! and is applicable to factorial or product expressions.
+/// The rule's apply function is a placeholder that returns the original expression with a justification message.
+///
+/// # Examples
+///
+/// ```
+/// let r = derangement_formula();
+/// assert_eq!(r.id, RuleId(600));
+/// ```
 fn derangement_formula() -> Rule {
     Rule {
         id: RuleId(600),
@@ -956,6 +985,15 @@ fn fibonacci_gcd() -> Rule {
 }
 
 // L(n) = F(n-1) + F(n+1)
+/// Provides a simplification rule relating Lucas numbers to Fibonacci numbers.
+///
+/// # Examples
+///
+/// ```
+/// let rule = lucas_numbers();
+/// assert_eq!(rule.id.0, 625);
+/// assert_eq!(rule.description, "L(n) = F(n-1) + F(n+1)");
+/// ```
 fn lucas_numbers() -> Rule {
     Rule {
         id: RuleId(625),
@@ -979,6 +1017,17 @@ fn lucas_numbers() -> Rule {
 // ============================================================================
 
 // Permutations with repetition: n^k
+/// Constructs a rule that recognizes expressions of the form `n^k` where the exponent is a constant or variable and documents the permutation-with-repetition interpretation.
+///
+/// The rule matches power expressions whose exponent is either a constant or a variable and provides the justification "Permutations with repetition: n choices k times = n^k".
+///
+/// # Examples
+///
+/// ```
+/// let rule = permutation_with_repetition();
+/// assert_eq!(rule.cost, 1);
+/// assert_eq!(rule.description, "Permutations with repetition: n^k");
+/// ```
 fn permutation_with_repetition() -> Rule {
     Rule {
         id: RuleId(650),
@@ -1004,6 +1053,18 @@ fn permutation_with_repetition() -> Rule {
 }
 
 // Combinations with repetition: C(n+k-1, k)
+/// Creates a Rule for combinations with repetition (stars and bars).
+///
+/// The rule targets factorial-division expressions and provides the standard
+/// combinatorial justification "C(n+k-1, k) = (n+k-1)!/(k!(n-1)!)".
+///
+/// # Examples
+///
+/// ```
+/// let r = combination_with_repetition();
+/// assert_eq!(r.id, RuleId(651));
+/// assert_eq!(r.name, "combination_with_repetition");
+/// ```
 fn combination_with_repetition() -> Rule {
     Rule {
         id: RuleId(651),
@@ -1026,6 +1087,21 @@ fn combination_with_repetition() -> Rule {
 }
 
 // Bell numbers: B(n+1) = Σ C(n,k)*B(k)
+/// Creates the Bell numbers recurrence rule.
+///
+/// This rule encodes the recurrence B(n+1) = Σ_{k=0..n} C(n,k) * B(k) and applies to addition or multiplication expressions.
+///
+/// # Returns
+///
+/// A `Rule` with id 652 that matches `Expr::Add` or `Expr::Mul` and returns the input unchanged with a justification string describing the Bell number recurrence.
+///
+/// # Examples
+///
+/// ```
+/// let r = bell_number_recurrence();
+/// assert_eq!(r.id, RuleId(652));
+/// assert_eq!(r.name, "bell_number_recurrence");
+/// ```
 fn bell_number_recurrence() -> Rule {
     Rule {
         id: RuleId(652),
@@ -1047,6 +1123,18 @@ fn bell_number_recurrence() -> Rule {
 }
 
 // Multinomial coefficient: n!/(k1! k2! ... km!)
+/// Constructs a Rule for the multinomial coefficient identity n! / (k1! k2! ... km!).
+///
+/// The returned Rule matches division expressions whose numerator is a factorial and, when applied,
+/// yields the same expression with a justification message describing the multinomial coefficient.
+///
+/// # Examples
+///
+/// ```
+/// let rule = multinomial_coefficient();
+/// // rule.id == RuleId(653)
+/// assert_eq!(rule.id.0, 653);
+/// ```
 fn multinomial_coefficient() -> Rule {
     Rule {
         id: RuleId(653),
@@ -1072,6 +1160,29 @@ fn multinomial_coefficient() -> Rule {
 }
 
 // Binomial coefficient sum by row: Σ k*C(n,k) = n*2^(n-1)
+/// Constructs the combinatorics rule for the identity Σ k * C(n, k) = n * 2^(n-1).
+
+///
+
+/// The returned `Rule` recognizes multiplicative expressions involving a power of two and
+
+/// provides a `RuleApplication` whose justification is the identity Σ k*C(n,k) = n*2^(n-1).
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let rule = binomial_weighted_sum();
+
+/// assert_eq!(rule.id, RuleId(654));
+
+/// assert_eq!(rule.name, "binomial_weighted_sum");
+
+/// ```
 fn binomial_weighted_sum() -> Rule {
     Rule {
         id: RuleId(654),
@@ -1103,6 +1214,22 @@ fn binomial_weighted_sum() -> Rule {
 }
 
 // Derangement subfactorial: !n = D(n)
+/// Constructs the simplification rule for the subfactorial (derangement) identity.
+///
+/// This rule matches factorial or binomial-like division expressions corresponding to subfactorials
+/// and preserves the expression while providing the justification "!n = D(n) = ⌊n!/e + 1/2⌋".
+///
+/// # Returns
+///
+/// A `Rule` with id 655 named `"subfactorial"` that is applicable to `Expr::Factorial(_)` or `Expr::Div(_, _)` and whose application returns the original expression with a justification string.
+///
+/// # Examples
+///
+/// ```
+/// let r = subfactorial();
+/// assert_eq!(r.name, "subfactorial");
+/// assert_eq!(r.id.0, 655);
+/// ```
 fn subfactorial() -> Rule {
     Rule {
         id: RuleId(655),
@@ -1124,6 +1251,16 @@ fn subfactorial() -> Rule {
 }
 
 // Christmas stocking identity: C(n,m)*C(m,k) = C(n,k)*C(n-k,m-k)
+/// Constructs the simplification rule encoding the "Christmas stocking" binomial identity:
+/// C(n, m) * C(m, k) = C(n, k) * C(n - k, m - k).
+///
+/// # Examples
+///
+/// ```
+/// let r = christmas_stocking();
+/// assert_eq!(r.id, RuleId(656));
+/// assert_eq!(r.name, "christmas_stocking");
+/// ```
 fn christmas_stocking() -> Rule {
     Rule {
         id: RuleId(656),
@@ -1145,6 +1282,18 @@ fn christmas_stocking() -> Rule {
 }
 
 // Sum of squares: Σ C(n,k)^2 = C(2n,n)
+/// Constructs the rule for the binomial squares sum identity: Σ C(n,k)^2 = C(2n,n).
+///
+/// The produced Rule matches expressions that represent binomial-coefficient patterns (division or power)
+/// and, when applied, returns a RuleApplication preserving the expression with a justification citing the identity.
+///
+/// # Examples
+///
+/// ```
+/// let r = binomial_squares_sum();
+/// assert_eq!(r.id, RuleId(657));
+/// assert_eq!(r.name, "binomial_squares_sum");
+/// ```
 fn binomial_squares_sum() -> Rule {
     Rule {
         id: RuleId(657),
@@ -1167,6 +1316,17 @@ fn binomial_squares_sum() -> Rule {
 }
 
 // Rising factorial: (x)_n = x(x+1)(x+2)...(x+n-1)
+/// Constructs the rule for the rising factorial identity.
+///
+/// The rule has id 658 and represents the rising factorial (x)_n = x(x+1)(x+2)...(x+n-1); it applies to multiplication expressions and, when applied, returns the original expression with a justification string describing the rising factorial formula.
+///
+/// # Examples
+///
+/// ```
+/// let rule = rising_factorial();
+/// assert_eq!(rule.id, RuleId(658));
+/// assert_eq!(rule.name, "rising_factorial");
+/// ```
 fn rising_factorial() -> Rule {
     Rule {
         id: RuleId(658),
@@ -1188,6 +1348,33 @@ fn rising_factorial() -> Rule {
 }
 
 // Falling factorial: (x)^n = x(x-1)(x-2)...(x-n+1)
+/// Creates a Rule representing the falling factorial identity.
+
+///
+
+/// The rule describes the falling factorial (x)_n = x(x-1)(x-2)…(x-n+1). It applies to multiplication expressions and, when applied, returns the input expression unchanged with a justification string describing the falling factorial.
+
+///
+
+/// # Returns
+
+///
+
+/// The constructed `Rule` which matches `Expr::Mul(_, _)` and produces a single `RuleApplication` containing the original expression and a justification: `"Falling factorial: x^(n) = x(x-1)(x-2)...(x-n+1)"`.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let rule = falling_factorial();
+
+/// assert_eq!(rule.id, RuleId(659));
+
+/// ```
 fn falling_factorial() -> Rule {
     Rule {
         id: RuleId(659),
@@ -1209,6 +1396,17 @@ fn falling_factorial() -> Rule {
 }
 
 // Legendre's formula: vp(n!) = Σ ⌊n/p^k⌋
+/// Creates a rule representing Legendre's formula for the p-adic valuation of n!.
+///
+/// The rule applies to floor or division expressions and, when applied, returns the input unchanged with a justification stating that the highest power of a prime p dividing n! is the sum of floor(n / p^k) over k.
+///
+/// # Examples
+///
+/// ```
+/// let r = legendre_formula();
+/// assert_eq!(r.id.0, 660);
+/// assert!(r.description.contains("vp(n!)"));
+/// ```
 fn legendre_formula() -> Rule {
     Rule {
         id: RuleId(660),
@@ -1230,6 +1428,17 @@ fn legendre_formula() -> Rule {
 }
 
 // Kummer's theorem for binomial mod p
+/// Provides the Kummer theorem rule which relates the p-adic valuation of a binomial coefficient to carries in base p.
+///
+/// The rule matches expressions of the form `C(m+n, m)` when presented as a division or modulus and records that `v_p(C(m+n,m))` equals the number of carries when adding `m` and `n` in base `p`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = kummer_theorem();
+/// assert_eq!(rule.id, RuleId(661));
+/// assert!(rule.description.contains("Kummer"));
+/// ```
 fn kummer_theorem() -> Rule {
     Rule {
         id: RuleId(661),
@@ -1251,6 +1460,17 @@ fn kummer_theorem() -> Rule {
 }
 
 // Lucas' theorem: C(m,n) mod p = Π C(mi,ni) mod p
+/// Constructs the Rule implementing Lucas' theorem for binomial coefficients modulo a prime.
+///
+/// The returned `Rule` matches expressions of the form `C(m,n) mod p` (represented as a `Mod` whose inner expression is a `Div`) and provides a justification string describing Lucas' theorem. The rule has id `662`, category `NumberTheory`, is not reversible, and has cost `3`.
+///
+/// # Examples
+///
+/// ```
+/// let r = lucas_theorem();
+/// assert_eq!(r.id, RuleId(662));
+/// assert_eq!(r.name, "lucas_theorem");
+/// ```
 fn lucas_theorem() -> Rule {
     Rule {
         id: RuleId(662),
@@ -1275,6 +1495,18 @@ fn lucas_theorem() -> Rule {
 }
 
 // Burnside's lemma: |X/G| = (1/|G|) Σ |X^g|
+/// Constructs the combinatorics rule representing Burnside's lemma for orbit counting.
+///
+/// The returned Rule matches multiplicative or divisional expressions and records
+/// the identity |X/G| = (1/|G|) Σ |X^g| with an explanatory justification.
+///
+/// # Examples
+///
+/// ```
+/// let r = burnside_lemma();
+/// assert_eq!(r.id, RuleId(663));
+/// assert!(r.description.contains("Burnside"));
+/// ```
 fn burnside_lemma() -> Rule {
     Rule {
         id: RuleId(663),
@@ -1296,6 +1528,17 @@ fn burnside_lemma() -> Rule {
 }
 
 // Polya enumeration theorem
+/// Constructs a Rule implementing the Polya enumeration theorem.
+///
+/// The returned Rule matches division or multiplication expressions and, when applied,
+/// records a justification about counting inequivalent configurations under a group action.
+///
+/// # Examples
+///
+/// ```
+/// let rule = polya_enumeration();
+/// assert_eq!(rule.id, RuleId(664));
+/// ```
 fn polya_enumeration() -> Rule {
     Rule {
         id: RuleId(664),
@@ -1317,6 +1560,17 @@ fn polya_enumeration() -> Rule {
 }
 
 // Catalan alternative formula: C_n = (2n)!/(n!(n+1)!)
+/// Provides a rule recognizing the Catalan number alternative formula C_n = (2n)! / (n! (n+1)!).
+///
+/// The rule matches expressions that are a division whose numerator is a factorial and records
+/// the Catalan alternative as its justification without performing a transformation.
+///
+/// # Examples
+///
+/// ```
+/// let r = catalan_alternative();
+/// assert_eq!(r.id.0, 665);
+/// ```
 fn catalan_alternative() -> Rule {
     Rule {
         id: RuleId(665),
@@ -1341,6 +1595,18 @@ fn catalan_alternative() -> Rule {
 }
 
 // Partition function: p(n,k) number of partitions of n into k parts
+/// Creates a Rule representing the partition recurrence p(n,k) = p(n-1,k-1) + p(n-k,k).
+///
+/// The rule matches addition expressions and, when applied, returns the input expression
+/// unchanged with a justification describing the partition recurrence.
+///
+/// # Examples
+///
+/// ```
+/// let r = partition_into_parts();
+/// assert_eq!(r.id.0, 666);
+/// assert_eq!(r.name, "partition_into_parts");
+/// ```
 fn partition_into_parts() -> Rule {
     Rule {
         id: RuleId(666),
@@ -1362,6 +1628,31 @@ fn partition_into_parts() -> Rule {
 }
 
 // Restricted permutations: permutations avoiding pattern
+/// Constructs the rule for pattern-avoiding permutations.
+
+///
+
+/// The returned `Rule` matches factorial expressions or binomial-style divisions and, when applied,
+
+/// produces the same expression with a justification noting that pattern-avoiding permutations
+
+/// are counted by Catalan or similar sequences.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let r = pattern_avoidance();
+
+/// assert_eq!(r.id, RuleId(667));
+
+/// assert_eq!(r.name, "pattern_avoidance");
+
+/// ```
 fn pattern_avoidance() -> Rule {
     Rule {
         id: RuleId(667),
@@ -1383,6 +1674,19 @@ fn pattern_avoidance() -> Rule {
 }
 
 // Recurrence for derangements: D(n) = n*D(n-1) + (-1)^n
+/// Constructs a Rule that encodes the simple derangement recurrence D(n) = n*D(n-1) + (-1)^n.
+///
+/// # Returns
+///
+/// The `Rule` representing the derangement simple recurrence (id 668).
+///
+/// # Examples
+///
+/// ```
+/// let rule = derangement_simple_recurrence();
+/// assert_eq!(rule.id, RuleId(668));
+/// assert_eq!(rule.name, "derangement_simple_recurrence");
+/// ```
 fn derangement_simple_recurrence() -> Rule {
     Rule {
         id: RuleId(668),
@@ -1404,6 +1708,19 @@ fn derangement_simple_recurrence() -> Rule {
 }
 
 // Generating function for Fibonacci: F(x) = x/(1-x-x^2)
+/// Constructs a rule that recognizes the Fibonacci generating function x/(1 - x - x^2)
+///
+/// The rule matches expressions written as a division whose denominator is a polynomial of the form `1 - x - x^2`
+/// and, when applied, returns the same expression with a justification stating the generating function identity
+/// Σ F_n x^n = x/(1 - x - x^2).
+///
+/// # Examples
+///
+/// ```
+/// let r = fibonacci_generating_function();
+/// assert_eq!(r.id, RuleId(669));
+/// assert!(r.description.contains("x/(1-x-x^2)"));
+/// ```
 fn fibonacci_generating_function() -> Rule {
     Rule {
         id: RuleId(669),
