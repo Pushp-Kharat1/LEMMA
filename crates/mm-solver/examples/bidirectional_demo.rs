@@ -4,7 +4,7 @@
 //!
 //! Usage: cargo run --example bidirectional_demo -p mm-solver
 
-use mm_core::{Expr, Rational, SymbolTable};
+use mm_core::{Expr, SymbolTable};
 use mm_rules::backward::backward_search;
 use mm_rules::rule::standard_rules;
 use mm_rules::RuleContext;
@@ -144,6 +144,21 @@ trait StrategyDisplay {
 }
 
 impl StrategyDisplay for mm_rules::backward::BackwardStep {
+    /// Get a human-readable name for the backward reasoning strategy.
+    ///
+    /// This returns a concise, descriptive label for the variant stored in `self.strategy`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Given a `BackwardStep` value `step`, obtain its display name:
+    /// let name = step.strategy_name();
+    /// println!("{}", name);
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// The strategy name as a `&str`.
     fn strategy_name(&self) -> &str {
         use mm_rules::backward::BackwardStrategy;
         match self.strategy {
@@ -151,6 +166,10 @@ impl StrategyDisplay for mm_rules::backward::BackwardStep {
             BackwardStrategy::EquivalentForm => "Equivalent form transformation",
             BackwardStrategy::TheoremApplication => "Theorem application",
             BackwardStrategy::Substitution => "Substitution",
+            BackwardStrategy::UniversalIntro => "Universal introduction",
+            BackwardStrategy::ExistentialWitness => "Existential witness",
+            BackwardStrategy::Induction => "Induction",
+            BackwardStrategy::CaseSplit => "Case split",
         }
     }
 }

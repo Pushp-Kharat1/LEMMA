@@ -81,6 +81,9 @@ impl Expr {
             Expr::Sin(e) => e.evaluate(env).map(|x| x.sin()),
             Expr::Cos(e) => e.evaluate(env).map(|x| x.cos()),
             Expr::Tan(e) => e.evaluate(env).map(|x| x.tan()),
+            Expr::Arcsin(e) => e.evaluate(env).map(|x| x.asin()),
+            Expr::Arccos(e) => e.evaluate(env).map(|x| x.acos()),
+            Expr::Arctan(e) => e.evaluate(env).map(|x| x.atan()),
             Expr::Ln(e) => {
                 let val = e.evaluate(env)?;
                 if val > 0.0 {
@@ -349,6 +352,9 @@ impl Expr {
             | Expr::Sin(e)
             | Expr::Cos(e)
             | Expr::Tan(e)
+            | Expr::Arcsin(e)
+            | Expr::Arccos(e)
+            | Expr::Arctan(e)
             | Expr::Ln(e)
             | Expr::Exp(e)
             | Expr::Abs(e) => {

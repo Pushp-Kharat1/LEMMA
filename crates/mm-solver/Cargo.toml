@@ -76,3 +76,7 @@ path = "examples/proof_solver_demo.rs"
 [[example]]
 name = "honest_capability_test"
 path = "examples/honest_capability_test.rs"
+
+[[example]]
+name = "cbse_math_test"
+path = "examples/cbse_math_test.rs"

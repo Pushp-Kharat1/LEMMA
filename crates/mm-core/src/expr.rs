@@ -52,6 +52,15 @@ pub enum Expr {
     /// Tangent: tan(a)
     Tan(Box<Expr>),
 
+    /// Inverse sine: arcsin(a)
+    Arcsin(Box<Expr>),
+
+    /// Inverse cosine: arccos(a)
+    Arccos(Box<Expr>),
+
+    /// Inverse tangent: arctan(a)
+    Arctan(Box<Expr>),
+
     /// Natural logarithm: ln(a)
     Ln(Box<Expr>),
 
@@ -217,6 +226,27 @@ pub struct Factor {
 // ============================================================================
 
 impl PartialEq for Expr {
+    /// Determine whether two expressions are structurally equal.
+    ///
+    /// Compares variants and their contained data (including boxed subexpressions,
+    /// symbol identifiers, and collection contents) so that two expressions are
+    /// equal only if they have the same variant and equal components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let a = Expr::int(1);
+    /// let b = Expr::int(1);
+    /// assert!(a.eq(&b));
+    ///
+    /// let x = Expr::Var(Symbol::from("x"));
+    /// let y = Expr::Var(Symbol::from("y"));
+    /// assert!(!x.eq(&y));
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// `true` if both expressions are the same variant and their contents are equal, `false` otherwise.
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Expr::Const(a), Expr::Const(b)) => a == b,
@@ -228,6 +258,9 @@ impl PartialEq for Expr {
             (Expr::Sin(a), Expr::Sin(b)) => a == b,
             (Expr::Cos(a), Expr::Cos(b)) => a == b,
             (Expr::Tan(a), Expr::Tan(b)) => a == b,
+            (Expr::Arcsin(a), Expr::Arcsin(b)) => a == b,
+            (Expr::Arccos(a), Expr::Arccos(b)) => a == b,
+            (Expr::Arctan(a), Expr::Arctan(b)) => a == b,
             (Expr::Ln(a), Expr::Ln(b)) => a == b,
             (Expr::Exp(a), Expr::Exp(b)) => a == b,
             (Expr::Abs(a), Expr::Abs(b)) => a == b,
@@ -259,6 +292,31 @@ impl PartialEq for Expr {
 impl Eq for Expr {}
 
 impl Hash for Expr {
+    /// Hashes the expression by first hashing its variant discriminant and then hashing the variant's contents.
+    ///
+    /// This produces a stable structural hash suitable for use in hash maps and memoization: atoms hash their payloads, constants without payloads rely on the discriminant, unary variants hash their inner expression, binary variants hash both operands, and collection/compound variants hash their contained elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::collections::hash_map::DefaultHasher;
+    /// use std::hash::{Hash, Hasher};
+    ///
+    /// // construct two equivalent expressions and verify they produce the same hash
+    /// let a = Expr::int(2);
+    /// let b = Expr::frac(4, 2); // canonical equality may differ, but hashing demonstrates usage
+    ///
+    /// let mut ha = DefaultHasher::new();
+    /// a.hash(&mut ha);
+    /// let ha = ha.finish();
+    ///
+    /// let mut hb = DefaultHasher::new();
+    /// b.hash(&mut hb);
+    /// let hb = hb.finish();
+    ///
+    /// // hashes may or may not match depending on canonicalization; this demonstrates calling `hash`.
+    /// let _ = (ha, hb);
+    /// ```
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(self).hash(state);
         match self {
@@ -270,6 +328,9 @@ impl Hash for Expr {
             | Expr::Sin(e)
             | Expr::Cos(e)
             | Expr::Tan(e)
+            | Expr::Arcsin(e)
+            | Expr::Arccos(e)
+            | Expr::Arctan(e)
             | Expr::Ln(e)
             | Expr::Exp(e)
             | Expr::Abs(e) => e.hash(state),
@@ -372,6 +433,20 @@ impl PartialOrd for Expr {
 }
 
 impl Ord for Expr {
+    /// Compares two expressions to determine their ordering.
+    ///
+    /// The comparison is a total order: it first compares the variant discriminants (type of expression),
+    /// and if they are the same it compares the variant contents recursively.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::cmp::Ordering;
+    /// // Assuming Expr::int is available in scope as a constructor for integer constants:
+    /// let a = Expr::int(1);
+    /// let b = Expr::int(2);
+    /// assert_eq!(a.cmp(&b), Ordering::Less);
+    /// ```
     fn cmp(&self, other: &Self) -> Ordering {
         // First compare by discriminant (type of expression)
         let self_disc = std::mem::discriminant(self);
@@ -392,6 +467,9 @@ impl Ord for Expr {
             (Expr::Sin(a), Expr::Sin(b)) => a.cmp(b),
             (Expr::Cos(a), Expr::Cos(b)) => a.cmp(b),
             (Expr::Tan(a), Expr::Tan(b)) => a.cmp(b),
+            (Expr::Arcsin(a), Expr::Arcsin(b)) => a.cmp(b),
+            (Expr::Arccos(a), Expr::Arccos(b)) => a.cmp(b),
+            (Expr::Arctan(a), Expr::Arctan(b)) => a.cmp(b),
             (Expr::Ln(a), Expr::Ln(b)) => a.cmp(b),
             (Expr::Exp(a), Expr::Exp(b)) => a.cmp(b),
             (Expr::Abs(a), Expr::Abs(b)) => a.cmp(b),
@@ -470,7 +548,22 @@ impl Expr {
         matches!(self, Expr::Var(_))
     }
 
-    /// Get the complexity (number of nodes) of this expression.
+    /// Compute a rough node count for the expression AST.
+    ///
+    /// The complexity is defined as 1 for atomic nodes (constants, variables, Pi, E),
+    /// plus the sum of complexities of child nodes plus 1 per composite node.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use mm_core::expr::Expr;
+    /// let c = Expr::int(1);
+    /// assert_eq!(c.complexity(), 1);
+    ///
+    /// let add = Expr::Add(Box::new(Expr::int(1)), Box::new(Expr::int(2)));
+    /// // one node for the Add plus one node for each constant
+    /// assert_eq!(add.complexity(), 3);
+    /// ```
     pub fn complexity(&self) -> usize {
         match self {
             Expr::Const(_) | Expr::Var(_) | Expr::Pi | Expr::E => 1,
@@ -479,6 +572,9 @@ impl Expr {
             | Expr::Sin(e)
             | Expr::Cos(e)
             | Expr::Tan(e)
+            | Expr::Arcsin(e)
+            | Expr::Arccos(e)
+            | Expr::Arctan(e)
             | Expr::Ln(e)
             | Expr::Exp(e)
             | Expr::Abs(e) => 1 + e.complexity(),

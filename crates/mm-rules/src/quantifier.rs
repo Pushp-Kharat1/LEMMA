@@ -180,7 +180,31 @@ impl QuantifierEngine {
         suggestions
     }
 
-    /// Substitute a variable with an expression in a body.
+    /// Recursively substitutes all free occurrences of `var` with `value` in `body`.
+    ///
+    /// The substitution respects binding: occurrences of `var` that are shadowed by inner quantifiers,
+    /// summation/product indices, or other binders are not replaced, and domains of quantified
+    /// expressions are also substituted where appropriate.
+    ///
+    /// # Parameters
+    /// - `body`: expression to perform substitution in.
+    /// - `var`: the symbol to be replaced.
+    /// - `value`: the expression to substitute for `var`.
+    ///
+    /// # Returns
+    /// An expression equivalent to `body` with every free occurrence of `var` replaced by `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mm_core::{Expr, SymbolTable};
+    /// let st = SymbolTable::new();
+    /// let x = st.intern("x");
+    /// let five = Expr::Const(5.0);
+    /// let body = Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::Const(1.0)));
+    /// let out = QuantifierEngine::new().substitute(&body, x, &five);
+    /// assert_eq!(out, Expr::Add(Box::new(Expr::Const(5.0)), Box::new(Expr::Const(1.0))));
+    /// ```
     fn substitute(&self, body: &Expr, var: Symbol, value: &Expr) -> Expr {
         match body {
             Expr::Var(v) if *v == var => value.clone(),
@@ -191,6 +215,9 @@ impl QuantifierEngine {
             Expr::Sin(e) => Expr::Sin(Box::new(self.substitute(e, var, value))),
             Expr::Cos(e) => Expr::Cos(Box::new(self.substitute(e, var, value))),
             Expr::Tan(e) => Expr::Tan(Box::new(self.substitute(e, var, value))),
+            Expr::Arcsin(e) => Expr::Arcsin(Box::new(self.substitute(e, var, value))),
+            Expr::Arccos(e) => Expr::Arccos(Box::new(self.substitute(e, var, value))),
+            Expr::Arctan(e) => Expr::Arctan(Box::new(self.substitute(e, var, value))),
             Expr::Ln(e) => Expr::Ln(Box::new(self.substitute(e, var, value))),
             Expr::Exp(e) => Expr::Exp(Box::new(self.substitute(e, var, value))),
             Expr::Abs(e) => Expr::Abs(Box::new(self.substitute(e, var, value))),

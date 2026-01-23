@@ -208,6 +208,24 @@ impl ExpressionEncoder {
                 self.tokenize_recursive(e, tokens);
                 tokens.push(")".to_string());
             }
+            Expr::Arcsin(e) => {
+                tokens.push("arcsin".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(e, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Arccos(e) => {
+                tokens.push("arccos".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(e, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Arctan(e) => {
+                tokens.push("arctan".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(e, tokens);
+                tokens.push(")".to_string());
+            }
             Expr::Ln(e) => {
                 tokens.push("ln".to_string());
                 tokens.push("(".to_string());

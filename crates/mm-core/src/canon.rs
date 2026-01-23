@@ -47,7 +47,19 @@ impl Expr {
         simplified.simplify_top()
     }
 
-    /// Recursively simplify all children with depth tracking.
+    /// Recursively canonicalizes each immediate child expression while tracking recursion depth.
+    ///
+    /// If `depth` is greater than or equal to `Self::MAX_CANON_DEPTH`, this returns a clone of `self` without further recursion.
+    /// Otherwise returns a new `Expr` where every direct child has been canonicalized with the provided `depth`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Construct an expression and canonicalize its children at depth 0.
+    /// let expr = Expr::Neg(Box::new(Expr::Var(0)));
+    /// let out = expr.simplify_recursive_with_depth(0);
+    /// assert_eq!(out, Expr::Neg(Box::new(Expr::Var(0))));
+    /// ```
     fn simplify_recursive_with_depth(&self, depth: usize) -> Expr {
         if depth >= Self::MAX_CANON_DEPTH {
             return self.clone();
@@ -63,6 +75,9 @@ impl Expr {
             Expr::Sin(e) => Expr::Sin(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Cos(e) => Expr::Cos(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Tan(e) => Expr::Tan(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Arcsin(e) => Expr::Arcsin(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Arccos(e) => Expr::Arccos(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Arctan(e) => Expr::Arctan(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Ln(e) => Expr::Ln(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Exp(e) => Expr::Exp(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Abs(e) => Expr::Abs(Box::new(e.canonicalize_with_depth(depth))),
