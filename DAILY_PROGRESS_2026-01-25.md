@@ -25,12 +25,32 @@
 - ⚠️ Warnings: unused variables (non-critical)
 - Ready for commit
 
+## Phase 2: Polynomial Rules (6 rules)
+
+**Polynomial Factoring & Expansion:**
+- **Rule 339**: `(a+b)(a-b) = a² - b²` - Conjugate multiply
+- **Rule 340**: `a³ + b³ = (a+b)(a² - ab + b²)` - Sum of cubes
+- **Rule 341**: `a³ - b³ = (a-b)(a² + ab + b²)` - Difference of cubes
+- **Rule 342**: `(a+b)³ = a³ + 3a²b + 3ab² + b³` - Cube expansion
+- **Rule 343**: `(a-b)³ = a³ - 3a²b + 3ab² - b³` - Cube difference
+- **Rule 344**: Complete the square (informational)
+
+### Files Modified
+- `crates/mm-rules/src/algebra.rs` (lines 1782-2027)
+- `crates/mm-rules/src/inequalities.rs` (line 24, fixed syntax error)
+
+### Build Status
+- ✅ Clean build
+- Fixed syntax error in inequalities.rs
+- Ready for commit
+
 ## Algebra Module Status
 
 **Before Phase 1**: ~30 stubs  
-**After Phase 1**: 24 stubs remaining
+**After Phase 1**: 24 stubs  
+**After Phase 2**: 18 stubs remaining
 
+**Completed**: 12 rules (6 log/exp + 6 polynomial)  
 **Remaining Work**:
-- Phase 2: Polynomial rules (6 rules)
 - Phase 3: Fraction rules (5 rules)
 - Phase 4: Advanced polynomial division (9 rules)

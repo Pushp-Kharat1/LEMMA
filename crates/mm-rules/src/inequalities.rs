@@ -21,7 +21,6 @@ use mm_core::{Expr, Rational};
 /// let rules = inequality_rules();
 /// assert!(!rules.is_empty());
 /// ```
-pub fn
 pub fn inequality_rules() -> Vec<Rule> {
     let mut rules = Vec::new();
 
