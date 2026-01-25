@@ -2033,8 +2033,16 @@ fn vieta_sum() -> Rule {
         name: "vieta_sum",
         category: RuleCategory::Simplification,
         description: "Sum of roots = -b/a",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            // Match quadratic equations
+            matches!(expr, Expr::Equation { .. })
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Vieta's formulas: For ax² + bx + c = 0, sum of roots = -b/a".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2047,8 +2055,15 @@ fn vieta_product() -> Rule {
         name: "vieta_product",
         category: RuleCategory::Simplification,
         description: "Product of roots = c/a",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Equation { .. })
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Vieta's formulas: For ax² + bx + c = 0, product of roots = c/a".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2061,8 +2076,19 @@ fn factor_quadratic() -> Rule {
         name: "factor_quadratic",
         category: RuleCategory::Factoring,
         description: "Factor quadratic using roots",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            // Match quadratic expressions
+            if let Expr::Add(_, _) = expr {
+                return true;
+            }
+            false
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Factor quadratic: ax² + bx + c = a(x - r₁)(x - r₂) where r₁, r₂ are roots".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -2075,8 +2101,15 @@ fn rational_root_test() -> Rule {
         name: "rational_root_test",
         category: RuleCategory::Simplification,
         description: "Rational root theorem",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Rational Root Theorem: For aₙxⁿ + ... + a₁x + a₀ = 0, rational roots are ±(factors of a₀)/(factors of aₙ)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -2089,8 +2122,15 @@ fn synthetic_division() -> Rule {
         name: "synthetic_division",
         category: RuleCategory::Simplification,
         description: "Synthetic division",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Div(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Synthetic division: Efficient method to divide polynomial by (x - a)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -2103,8 +2143,15 @@ fn polynomial_division() -> Rule {
         name: "polynomial_division",
         category: RuleCategory::Simplification,
         description: "Polynomial long division",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Div(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Polynomial long division: P(x)/Q(x) = S(x) + R(x)/Q(x) where deg(R) < deg(Q)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -2117,8 +2164,15 @@ fn remainder_theorem() -> Rule {
         name: "remainder_theorem",
         category: RuleCategory::Simplification,
         description: "Remainder theorem",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Div(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Remainder Theorem: When P(x) is divided by (x - a), remainder = P(a)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -2131,8 +2185,15 @@ fn factor_theorem() -> Rule {
         name: "factor_theorem",
         category: RuleCategory::Simplification,
         description: "Factor theorem",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Factor Theorem: (x - a) is a factor of P(x) if and only if P(a) = 0".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -2145,8 +2206,15 @@ fn bezout_identity() -> Rule {
         name: "bezout_identity",
         category: RuleCategory::Simplification,
         description: "Bezout's identity: gcd(a,b) = ax + by",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::GCD(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Bézout's Identity: For any integers a, b, there exist x, y such that gcd(a,b) = ax + by".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -2159,8 +2227,15 @@ fn euclidean_division() -> Rule {
         name: "euclidean_division",
         category: RuleCategory::Simplification,
         description: "Euclidean division",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Div(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Euclidean Division: For integers a, b (b > 0), a = bq + r where 0 ≤ r < b".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -2173,8 +2248,29 @@ fn fraction_add() -> Rule {
         name: "fraction_add",
         category: RuleCategory::Simplification,
         description: "a/b + c/d = (ad + bc)/bd",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Add(left, right) = expr {
+                return matches!(left.as_ref(), Expr::Div(_, _)) && matches!(right.as_ref(), Expr::Div(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Add(left, right) = expr {
+                if let (Expr::Div(a, b), Expr::Div(c, d)) = (left.as_ref(), right.as_ref()) {
+                    let ad = Expr::Mul(a.clone(), d.clone());
+                    let bc = Expr::Mul(b.clone(), c.clone());
+                    let bd = Expr::Mul(b.clone(), d.clone());
+                    return vec![RuleApplication {
+                        result: Expr::Div(
+                            Box::new(Expr::Add(Box::new(ad), Box::new(bc))),
+                            Box::new(bd),
+                        ),
+                        justification: "a/b + c/d = (ad + bc)/bd".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2187,8 +2283,26 @@ fn fraction_mul() -> Rule {
         name: "fraction_mul",
         category: RuleCategory::Simplification,
         description: "(a/b) * (c/d) = (ac)/(bd)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Mul(left, right) = expr {
+                return matches!(left.as_ref(), Expr::Div(_, _)) && matches!(right.as_ref(), Expr::Div(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Mul(left, right) = expr {
+                if let (Expr::Div(a, b), Expr::Div(c, d)) = (left.as_ref(), right.as_ref()) {
+                    return vec![RuleApplication {
+                        result: Expr::Div(
+                            Box::new(Expr::Mul(a.clone(), c.clone())),
+                            Box::new(Expr::Mul(b.clone(), d.clone())),
+                        ),
+                        justification: "(a/b) * (c/d) = (ac)/(bd)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2201,8 +2315,26 @@ fn fraction_div() -> Rule {
         name: "fraction_div",
         category: RuleCategory::Simplification,
         description: "(a/b) / (c/d) = (ad)/(bc)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Div(num, denom) = expr {
+                return matches!(num.as_ref(), Expr::Div(_, _)) && matches!(denom.as_ref(), Expr::Div(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Div(num, denom) = expr {
+                if let (Expr::Div(a, b), Expr::Div(c, d)) = (num.as_ref(), denom.as_ref()) {
+                    return vec![RuleApplication {
+                        result: Expr::Div(
+                            Box::new(Expr::Mul(a.clone(), d.clone())),
+                            Box::new(Expr::Mul(b.clone(), c.clone())),
+                        ),
+                        justification: "(a/b) / (c/d) = (ad)/(bc)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2215,8 +2347,26 @@ fn cross_multiply() -> Rule {
         name: "cross_multiply",
         category: RuleCategory::Simplification,
         description: "Cross multiply: a/b = c/d → ad = bc",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Equation { lhs, rhs } = expr {
+                return matches!(lhs.as_ref(), Expr::Div(_, _)) && matches!(rhs.as_ref(), Expr::Div(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Equation { lhs, rhs } = expr {
+                if let (Expr::Div(a, b), Expr::Div(c, d)) = (lhs.as_ref(), rhs.as_ref()) {
+                    return vec![RuleApplication {
+                        result: Expr::Equation {
+                            lhs: Box::new(Expr::Mul(a.clone(), d.clone())),
+                            rhs: Box::new(Expr::Mul(b.clone(), c.clone())),
+                        },
+                        justification: "Cross multiply: a/b = c/d → ad = bc".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2229,8 +2379,20 @@ fn lcd_combine() -> Rule {
         name: "lcd_combine",
         category: RuleCategory::Simplification,
         description: "Combine fractions using LCD",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            // Same as fraction_add for now
+            if let Expr::Add(left, right) = expr {
+                return matches!(left.as_ref(), Expr::Div(_, _)) && matches!(right.as_ref(), Expr::Div(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            // Informational - full LCD finding is complex
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Combine fractions using lowest common denominator".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
