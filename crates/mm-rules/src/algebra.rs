@@ -1318,8 +1318,26 @@ fn log_product() -> Rule {
         name: "log_product",
         category: RuleCategory::Simplification,
         description: "log(ab) = log(a) + log(b)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Ln(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Mul(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Ln(inner) = expr {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Add(
+                            Box::new(Expr::Ln(a.clone())),
+                            Box::new(Expr::Ln(b.clone())),
+                        ),
+                        justification: "log(ab) = log(a) + log(b)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1332,8 +1350,26 @@ fn log_quotient() -> Rule {
         name: "log_quotient",
         category: RuleCategory::Simplification,
         description: "log(a/b) = log(a) - log(b)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Ln(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Div(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Ln(inner) = expr {
+                if let Expr::Div(a, b) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Sub(
+                            Box::new(Expr::Ln(a.clone())),
+                            Box::new(Expr::Ln(b.clone())),
+                        ),
+                        justification: "log(a/b) = log(a) - log(b)".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1375,8 +1411,25 @@ fn log_base_change() -> Rule {
         name: "log_base_change",
         category: RuleCategory::Simplification,
         description: "log_b(a) = ln(a)/ln(b)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            // Match: Div(Ln(a), Ln(b)) - this IS the change of base form
+            if let Expr::Div(num, denom) = expr {
+                return matches!(num.as_ref(), Expr::Ln(_)) && matches!(denom.as_ref(), Expr::Ln(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Div(num, denom) = expr {
+                if let (Expr::Ln(a), Expr::Ln(b)) = (num.as_ref(), denom.as_ref()) {
+                    return vec![RuleApplication {
+                        result: expr.clone(),
+                        justification: format!("log_{{{}}}({}) in change of base form", 
+                            "b", "a"),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1427,8 +1480,29 @@ fn exp_product() -> Rule {
         name: "exp_product",
         category: RuleCategory::Simplification,
         description: "e^a * e^b = e^(a+b)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Mul(left, right) = expr {
+                return matches!(left.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::E))
+                    && matches!(right.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::E));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Mul(left, right) = expr {
+                if let (Expr::Pow(base1, exp1), Expr::Pow(base2, exp2)) = (left.as_ref(), right.as_ref()) {
+                    if matches!(base1.as_ref(), Expr::E) && matches!(base2.as_ref(), Expr::E) {
+                        return vec![RuleApplication {
+                            result: Expr::Pow(
+                                Box::new(Expr::E),
+                                Box::new(Expr::Add(exp1.clone(), exp2.clone())),
+                            ),
+                            justification: "e^a * e^b = e^(a+b)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1441,8 +1515,29 @@ fn exp_quotient() -> Rule {
         name: "exp_quotient",
         category: RuleCategory::Simplification,
         description: "e^a / e^b = e^(a-b)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Div(num, denom) = expr {
+                return matches!(num.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::E))
+                    && matches!(denom.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::E));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Div(num, denom) = expr {
+                if let (Expr::Pow(base1, exp1), Expr::Pow(base2, exp2)) = (num.as_ref(), denom.as_ref()) {
+                    if matches!(base1.as_ref(), Expr::E) && matches!(base2.as_ref(), Expr::E) {
+                        return vec![RuleApplication {
+                            result: Expr::Pow(
+                                Box::new(Expr::E),
+                                Box::new(Expr::Sub(exp1.clone(), exp2.clone())),
+                            ),
+                            justification: "e^a / e^b = e^(a-b)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1455,8 +1550,30 @@ fn exp_power() -> Rule {
         name: "exp_power",
         category: RuleCategory::Simplification,
         description: "(e^a)^b = e^(ab)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Pow(base, _) = expr {
+                if let Expr::Pow(inner_base, _) = base.as_ref() {
+                    return matches!(inner_base.as_ref(), Expr::E);
+                }
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Pow(base, outer_exp) = expr {
+                if let Expr::Pow(inner_base, inner_exp) = base.as_ref() {
+                    if matches!(inner_base.as_ref(), Expr::E) {
+                        return vec![RuleApplication {
+                            result: Expr::Pow(
+                                Box::new(Expr::E),
+                                Box::new(Expr::Mul(inner_exp.clone(), outer_exp.clone())),
+                            ),
+                            justification: "(e^a)^b = e^(ab)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
