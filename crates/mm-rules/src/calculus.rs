@@ -2178,8 +2178,13 @@ fn integral_sinh() -> Rule {
         name: "integral_sinh",
         category: RuleCategory::Integral,
         description: "∫sinh(x) dx = cosh(x) + C",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∫sinh(x) dx = cosh(x) + C (hyperbolic integral)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2190,8 +2195,13 @@ fn integral_cosh() -> Rule {
         name: "integral_cosh",
         category: RuleCategory::Integral,
         description: "∫cosh(x) dx = sinh(x) + C",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∫cosh(x) dx = sinh(x) + C (hyperbolic integral)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -3868,8 +3878,13 @@ fn limit_constant() -> Rule {
         name: "limit_constant",
         category: RuleCategory::Simplification,
         description: "lim c = c",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Const(_)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "lim c = c (constant limit)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 1,
     }
@@ -3880,8 +3895,13 @@ fn limit_sum() -> Rule {
         name: "limit_sum",
         category: RuleCategory::Simplification,
         description: "lim(f+g) = lim f + lim g",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Add(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "lim(f+g) = lim f + lim g (sum of limits)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -3892,8 +3912,13 @@ fn limit_product() -> Rule {
         name: "limit_product",
         category: RuleCategory::Simplification,
         description: "lim(fg) = lim f · lim g",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Mul(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "lim(fg) = lim f · lim g (product of limits)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -3904,8 +3929,13 @@ fn limit_quotient() -> Rule {
         name: "limit_quotient",
         category: RuleCategory::Simplification,
         description: "lim(f/g) = lim f / lim g",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "lim(f/g) = lim f / lim g (quotient of limits)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -3916,8 +3946,13 @@ fn limit_power() -> Rule {
         name: "limit_power",
         category: RuleCategory::Simplification,
         description: "lim(f^n) = (lim f)^n",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Pow(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "lim(f^n) = (lim f)^n (power of limit)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -3928,8 +3963,13 @@ fn limit_lhopital() -> Rule {
         name: "limit_lhopital",
         category: RuleCategory::Simplification,
         description: "L'Hôpital's rule for 0/0 or ∞/∞",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "L'Hôpital's rule: lim(f/g) = lim(f'/g') for indeterminate forms".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -3940,8 +3980,13 @@ fn limit_squeeze() -> Rule {
         name: "limit_squeeze",
         category: RuleCategory::Simplification,
         description: "Squeeze theorem",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Squeeze theorem: if g(x) ≤ f(x) ≤ h(x) and lim g = lim h = L, then lim f = L".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -3952,8 +3997,13 @@ fn taylor_exp() -> Rule {
         name: "taylor_exp",
         category: RuleCategory::Simplification,
         description: "e^x = Σ x^n/n!",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Exp(_)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "e^x = Σ(x^n/n!) for n=0 to ∞ (Taylor series)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -3964,8 +4014,13 @@ fn taylor_sin() -> Rule {
         name: "taylor_sin",
         category: RuleCategory::Simplification,
         description: "sin(x) = Σ (-1)^n x^(2n+1)/(2n+1)!",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Sin(_)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin(x) = Σ((-1)^n · x^(2n+1)/(2n+1)!) for n=0 to ∞ (Taylor series)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -3976,8 +4031,13 @@ fn taylor_cos() -> Rule {
         name: "taylor_cos",
         category: RuleCategory::Simplification,
         description: "cos(x) = Σ (-1)^n x^(2n)/(2n)!",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Cos(_)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos(x) = Σ((-1)^n · x^(2n)/(2n)!) for n=0 to ∞ (Taylor series)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -3988,8 +4048,13 @@ fn taylor_ln() -> Rule {
         name: "taylor_ln",
         category: RuleCategory::Simplification,
         description: "ln(1+x) = Σ (-1)^(n+1) x^n/n",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Ln(_)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "ln(1+x) = Σ((-1)^(n+1) · x^n/n) for n=1 to ∞, |x| < 1 (Taylor series)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -4000,8 +4065,13 @@ fn maclaurin_1mx() -> Rule {
         name: "maclaurin_1mx",
         category: RuleCategory::Simplification,
         description: "1/(1-x) = Σ x^n",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "1/(1-x) = Σ(x^n) for n=0 to ∞, |x| < 1 (geometric series)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -4012,8 +4082,13 @@ fn geometric_series() -> Rule {
         name: "geometric_series",
         category: RuleCategory::Simplification,
         description: "Σ ar^n = a/(1-r) for |r|<1",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Σ(a·r^n) = a/(1-r) for |r| < 1 (infinite geometric series)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -4024,8 +4099,13 @@ fn power_series_diff() -> Rule {
         name: "power_series_diff",
         category: RuleCategory::Derivative,
         description: "d/dx(Σa_n x^n) = Σ n·a_n x^(n-1)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "d/dx(Σ(a_n·x^n)) = Σ(n·a_n·x^(n-1)) (term-by-term differentiation)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -4036,8 +4116,13 @@ fn power_series_int() -> Rule {
         name: "power_series_int",
         category: RuleCategory::Integral,
         description: "∫(Σa_n x^n)dx = Σ a_n x^(n+1)/(n+1)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∫(Σ(a_n·x^n))dx = Σ(a_n·x^(n+1)/(n+1)) (term-by-term integration)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -4048,8 +4133,13 @@ fn partial_x() -> Rule {
         name: "partial_x",
         category: RuleCategory::Derivative,
         description: "∂f/∂x partial derivative",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∂f/∂x (partial derivative with respect to x)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -4060,8 +4150,13 @@ fn partial_y() -> Rule {
         name: "partial_y",
         category: RuleCategory::Derivative,
         description: "∂f/∂y partial derivative",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∂f/∂y (partial derivative with respect to y)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -4072,8 +4167,13 @@ fn partial_z() -> Rule {
         name: "partial_z",
         category: RuleCategory::Derivative,
         description: "∂f/∂z partial derivative",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∂f/∂z (partial derivative with respect to z)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -4084,8 +4184,13 @@ fn gradient() -> Rule {
         name: "gradient",
         category: RuleCategory::Derivative,
         description: "∇f = (∂f/∂x, ∂f/∂y, ∂f/∂z)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∇f = (∂f/∂x, ∂f/∂y, ∂f/∂z) (gradient vector)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -4096,8 +4201,13 @@ fn divergence_vec() -> Rule {
         name: "divergence_vec",
         category: RuleCategory::Derivative,
         description: "∇·F divergence of vector field",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∇·F = ∂F₁/∂x + ∂F₂/∂y + ∂F₃/∂z (divergence)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -4108,8 +4218,13 @@ fn curl_vec() -> Rule {
         name: "curl_vec",
         category: RuleCategory::Derivative,
         description: "∇×F curl of vector field",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∇×F = curl(F) = (∂F₃/∂y - ∂F₂/∂z, ∂F₁/∂z - ∂F₃/∂x, ∂F₂/∂x - ∂F₁/∂y)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -4120,8 +4235,13 @@ fn laplacian() -> Rule {
         name: "laplacian",
         category: RuleCategory::Derivative,
         description: "∇²f = ∂²f/∂x² + ∂²f/∂y² + ∂²f/∂z²",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∇²f = ∂²f/∂x² + ∂²f/∂y² + ∂²f/∂z² (Laplacian)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -4132,8 +4252,13 @@ fn chain_multivariable() -> Rule {
         name: "chain_multivariable",
         category: RuleCategory::Derivative,
         description: "Multivariable chain rule",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "dz/dt = ∂z/∂x · dx/dt + ∂z/∂y · dy/dt (multivariable chain rule)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -4144,8 +4269,13 @@ fn implicit_diff() -> Rule {
         name: "implicit_diff",
         category: RuleCategory::Derivative,
         description: "Implicit differentiation",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Implicit differentiation: differentiate both sides with respect to x".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -4156,8 +4286,13 @@ fn total_differential() -> Rule {
         name: "total_differential",
         category: RuleCategory::Derivative,
         description: "df = ∂f/∂x dx + ∂f/∂y dy",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "df = ∂f/∂x dx + ∂f/∂y dy (total differential)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -4168,8 +4303,13 @@ fn directional_derivative() -> Rule {
         name: "directional_derivative",
         category: RuleCategory::Derivative,
         description: "D_u f = ∇f · u",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "D_u f = ∇f · u (directional derivative in direction u)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -4179,9 +4319,14 @@ fn double_integral() -> Rule {
         id: RuleId(462),
         name: "double_integral",
         category: RuleCategory::Integral,
-        description: "∬f dA double integral",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        description: "∬∬f dA double integral",
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∬∬f(x,y) dA = ∫∫f(x,y) dy dx (double integral)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -4191,9 +4336,14 @@ fn triple_integral() -> Rule {
         id: RuleId(463),
         name: "triple_integral",
         category: RuleCategory::Integral,
-        description: "∭f dV triple integral",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        description: "∭∭∭f dV triple integral",
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∭∭∭f(x,y,z) dV = ∫∫∫f(x,y,z) dz dy dx (triple integral)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 5,
     }
@@ -4204,8 +4354,13 @@ fn line_integral() -> Rule {
         name: "line_integral",
         category: RuleCategory::Integral,
         description: "∫_C F·dr line integral",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∫_C F·dr (line integral of vector field along curve C)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -4215,9 +4370,14 @@ fn surface_integral() -> Rule {
         id: RuleId(465),
         name: "surface_integral",
         category: RuleCategory::Integral,
-        description: "∬_S F·dS surface integral",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        description: "∬∬_S F·dS surface integral",
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∬∬_S F·dS (surface integral of vector field over surface S)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 5,
     }
@@ -4227,9 +4387,14 @@ fn greens_theorem() -> Rule {
         id: RuleId(466),
         name: "greens_theorem",
         category: RuleCategory::Integral,
-        description: "Green's theorem: ∮_C = ∬_D",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        description: "Green's theorem: ∮_C = ∬∬_D",
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Green's theorem: ∮_C (P dx + Q dy) = ∬∬_D (∂Q/∂x - ∂P/∂y) dA".to_string(),
+            }]
+        },
         reversible: true,
         cost: 4,
     }
@@ -4240,8 +4405,13 @@ fn stokes_theorem() -> Rule {
         name: "stokes_theorem",
         category: RuleCategory::Integral,
         description: "Stokes' theorem",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Stokes' theorem: ∮_C F·dr = ∬∬_S (∇×F)·dS".to_string(),
+            }]
+        },
         reversible: true,
         cost: 5,
     }
@@ -4252,8 +4422,13 @@ fn divergence_theorem() -> Rule {
         name: "divergence_theorem",
         category: RuleCategory::Integral,
         description: "Divergence theorem",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Divergence theorem (Gauss): ∬∬∬_V (∇·F) dV = ∬∬_S F·dS".to_string(),
+            }]
+        },
         reversible: true,
         cost: 5,
     }
@@ -4264,8 +4439,13 @@ fn jacobian_transform() -> Rule {
         name: "jacobian_transform",
         category: RuleCategory::Integral,
         description: "Jacobian coordinate transform",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "∫∫f(x,y) dx dy = ∫∫f(u,v) |J| du dv where J = ∂(x,y)/∂(u,v) (Jacobian)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }

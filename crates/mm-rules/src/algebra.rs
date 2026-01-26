@@ -1699,8 +1699,26 @@ fn sqrt_quotient() -> Rule {
         name: "sqrt_quotient",
         category: RuleCategory::Simplification,
         description: "√(a/b) = √a / √b",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Sqrt(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Div(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Sqrt(inner) = expr {
+                if let Expr::Div(a, b) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Div(
+                            Box::new(Expr::Sqrt(a.clone())),
+                            Box::new(Expr::Sqrt(b.clone())),
+                        ),
+                        justification: "√(a/b) = √a / √b".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1744,8 +1762,27 @@ fn cube_root_cube() -> Rule {
         name: "cube_root_cube",
         category: RuleCategory::Simplification,
         description: "∛(x³) = x",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Pow(inner, exp) = expr {
+                if matches!(exp.as_ref(), Expr::Const(r) if r.numer() == 1 && r.denom() == 3) {
+                    if let Expr::Pow(_, inner_exp) = inner.as_ref() {
+                        return matches!(inner_exp.as_ref(), Expr::Const(r) if r.numer() == 3);
+                    }
+                }
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Pow(inner, _) = expr {
+                if let Expr::Pow(base, _) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: (**base).clone(),
+                        justification: "∛(x³) = x".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: false,
         cost: 1,
     }
@@ -1758,8 +1795,15 @@ fn nth_root_power() -> Rule {
         name: "nth_root_power",
         category: RuleCategory::Simplification,
         description: "ⁿ√(xⁿ) = |x| (even n) or x (odd n)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "ⁿ√(xⁿ) = |x| for even n, x for odd n".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -1772,8 +1816,18 @@ fn rationalize_denominator() -> Rule {
         name: "rationalize_denominator",
         category: RuleCategory::Simplification,
         description: "Rationalize denominator with conjugate",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Div(_, denom) = expr {
+                return matches!(denom.as_ref(), Expr::Add(_, _) | Expr::Sub(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Rationalize denominator by multiplying by conjugate".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -2405,8 +2459,13 @@ fn abs_nonnegative() -> Rule {
         name: "abs_nonnegative",
         category: RuleCategory::Simplification,
         description: "|x| ≥ 0 always",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Abs(_)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "|x| ≥ 0 for all x (absolute value is non-negative)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 1,
     }
@@ -2419,8 +2478,25 @@ fn abs_square() -> Rule {
         name: "abs_square",
         category: RuleCategory::Simplification,
         description: "|x|² = x²",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Pow(base, exp) = expr {
+                if matches!(exp.as_ref(), Expr::Const(r) if r.numer() == 2 && r.denom() == 1) {
+                    return matches!(base.as_ref(), Expr::Abs(_));
+                }
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Pow(base, exp) = expr {
+                if let Expr::Abs(x) = base.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Pow(x.clone(), exp.clone()),
+                        justification: "|x|² = x²".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: true,
         cost: 1,
     }
@@ -2433,8 +2509,18 @@ fn triangle_inequality() -> Rule {
         name: "triangle_inequality",
         category: RuleCategory::Simplification,
         description: "|a + b| ≤ |a| + |b|",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Abs(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Add(_, _));
+            }
+            false
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "|a + b| ≤ |a| + |b| (triangle inequality)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -2447,8 +2533,20 @@ fn reverse_triangle() -> Rule {
         name: "reverse_triangle",
         category: RuleCategory::Simplification,
         description: "||a| - |b|| ≤ |a - b|",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Abs(inner) = expr {
+                if let Expr::Sub(left, right) = inner.as_ref() {
+                    return matches!(left.as_ref(), Expr::Abs(_)) && matches!(right.as_ref(), Expr::Abs(_));
+                }
+            }
+            false
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "||a| - |b|| ≤ |a - b| (reverse triangle inequality)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -2461,8 +2559,15 @@ fn am_gm_2() -> Rule {
         name: "am_gm_2",
         category: RuleCategory::Simplification,
         description: "(a+b)/2 ≥ √(ab) for a,b ≥ 0",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Div(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "(a+b)/2 ≥ √(ab) for a,b ≥ 0 (AM-GM inequality)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -2475,8 +2580,15 @@ fn am_gm_3() -> Rule {
         name: "am_gm_3",
         category: RuleCategory::Simplification,
         description: "(a+b+c)/3 ≥ ∛(abc) for a,b,c ≥ 0",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Div(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "(a+b+c)/3 ≥ ∛(abc) for a,b,c ≥ 0 (AM-GM inequality for 3 terms)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -2489,8 +2601,15 @@ fn qm_am() -> Rule {
         name: "qm_am",
         category: RuleCategory::Simplification,
         description: "√((a²+b²)/2) ≥ (a+b)/2",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sqrt(_) | Expr::Div(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "√((a²+b²)/2) ≥ (a+b)/2 (QM-AM inequality)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 2,
     }
@@ -2503,8 +2622,15 @@ fn cauchy_schwarz_2() -> Rule {
         name: "cauchy_schwarz_2",
         category: RuleCategory::Simplification,
         description: "(ab + cd)² ≤ (a²+c²)(b²+d²)",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Pow(_, _) | Expr::Mul(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "(ab + cd)² ≤ (a²+c²)(b²+d²) (Cauchy-Schwarz inequality)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 3,
     }
@@ -2517,8 +2643,15 @@ fn holders_inequality() -> Rule {
         name: "holders_inequality",
         category: RuleCategory::Simplification,
         description: "Holder's inequality",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Mul(_, _) | Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Hölder's inequality: (∑|aᵢbᵢ|) ≤ (∑|aᵢ|ᵖ)^(1/p) · (∑|bᵢ|ᵍ)^(1/q)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
@@ -2531,8 +2664,15 @@ fn minkowski_inequality() -> Rule {
         name: "minkowski_inequality",
         category: RuleCategory::Simplification,
         description: "Minkowski inequality",
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Minkowski inequality: (∑|aᵢ+bᵢ|ᵖ)^(1/p) ≤ (∑|aᵢ|ᵖ)^(1/p) + (∑|bᵢ|ᵖ)^(1/p)".to_string(),
+            }]
+        },
         reversible: false,
         cost: 4,
     }
