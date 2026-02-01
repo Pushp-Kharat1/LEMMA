@@ -56,8 +56,20 @@ impl VerifyResult {
     }
 }
 
-/// Check if an expression contains calculus operations (derivatives/integrals)
-/// that cannot be numerically evaluated.
+/// Detects whether an expression contains calculus operations (derivatives or integrals)
+/// or any subexpression that contains them.
+///
+/// This checks recursively: returns `true` if the expression is a derivative or integral
+/// node, or if any child/subexpression contains such a node; returns `false` for plain
+/// constants, variables, and transcendental constants that do not enclose calculus.
+///
+/// # Examples
+///
+/// ```
+/// // A simple non-calculus expression
+/// let expr = Expr::Neg(Box::new(Expr::Const(1.0)));
+/// assert!(!is_calculus_expr(&expr));
+/// ```
 fn is_calculus_expr(expr: &Expr) -> bool {
     match expr {
         Expr::Derivative { .. } | Expr::Integral { .. } => true,
@@ -264,7 +276,23 @@ impl Verifier {
     }
 }
 
-/// Substitute a variable with an expression.
+/// Replace all free occurrences of a variable in an expression with another expression.
+///
+/// The substitution avoids replacing occurrences that are bound by local quantifiers or
+/// summation/product indices (for example, the bound variable of `Summation`, `BigProduct`,
+/// `ForAll`, and `Exists` are not substituted when they shadow `var`). All other expression
+/// nodes are traversed and reconstructed with `var` replaced by `value`.
+///
+/// # Examples
+///
+/// ```
+/// use mm_core::{Expr, Symbol};
+///
+/// let x = Symbol::from("x");
+/// let expr = Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::Const(1.0)));
+/// let replaced = substitute(&expr, x, &Expr::Const(3.0));
+/// assert_eq!(replaced, Expr::Add(Box::new(Expr::Const(3.0)), Box::new(Expr::Const(1.0))));
+/// ```
 fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
     match expr {
         Expr::Var(v) if *v == var => value.clone(),

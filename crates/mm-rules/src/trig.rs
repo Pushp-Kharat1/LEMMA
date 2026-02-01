@@ -6,7 +6,7 @@
 
 //! Trigonometric identity rules.
 
-use crate::{Domain, Rule, RuleApplication, RuleCategory, RuleId};
+use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::Expr;
 
 /// Get all trigonometric rules.
@@ -59,8 +59,6 @@ fn pythagorean_identity() -> Rule {
         name: "pythagorean_identity",
         category: RuleCategory::TrigIdentity,
         description: "Pythagorean identity: sin²(x) + cos²(x) = 1",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             // Check for sin²(x) + cos²(x) pattern
             if let Expr::Add(left, right) = expr {
@@ -109,8 +107,6 @@ fn sin_double_angle() -> Rule {
         name: "sin_double_angle",
         category: RuleCategory::TrigIdentity,
         description: "Double angle: 2sin(x)cos(x) = sin(2x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             // Check for 2 * sin(x) * cos(x) pattern
             if let Expr::Mul(outer_left, outer_right) = expr {
@@ -161,8 +157,6 @@ fn cos_double_angle() -> Rule {
         name: "cos_double_angle",
         category: RuleCategory::TrigIdentity,
         description: "Double angle: cos²(x) - sin²(x) = cos(2x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             // Check for cos²(x) - sin²(x) pattern
             if let Expr::Sub(left, right) = expr {
@@ -203,8 +197,6 @@ fn sin_zero() -> Rule {
         name: "sin_zero",
         category: RuleCategory::TrigIdentity,
         description: "sin(0) = 0",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Const(r) if r.is_zero());
@@ -237,8 +229,6 @@ fn cos_zero() -> Rule {
         name: "cos_zero",
         category: RuleCategory::TrigIdentity,
         description: "cos(0) = 1",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Const(r) if r.is_zero());
@@ -271,8 +261,6 @@ fn tan_zero() -> Rule {
         name: "tan_zero",
         category: RuleCategory::TrigIdentity,
         description: "tan(0) = 0",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Tan(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Const(r) if r.is_zero());
@@ -330,8 +318,6 @@ fn sin_pi() -> Rule {
         name: "sin_pi",
         category: RuleCategory::TrigIdentity,
         description: "sin(π) = 0",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
                 return matches!(arg.as_ref(), Expr::Pi);
@@ -360,8 +346,6 @@ fn cos_pi() -> Rule {
         name: "cos_pi",
         category: RuleCategory::TrigIdentity,
         description: "cos(π) = -1",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
                 return matches!(arg.as_ref(), Expr::Pi);
@@ -390,8 +374,6 @@ fn sin_pi_over_2() -> Rule {
         name: "sin_pi_over_2",
         category: RuleCategory::TrigIdentity,
         description: "sin(π/2) = 1",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
                 if let Expr::Div(num, denom) = arg.as_ref() {
@@ -424,8 +406,6 @@ fn cos_pi_over_2() -> Rule {
         name: "cos_pi_over_2",
         category: RuleCategory::TrigIdentity,
         description: "cos(π/2) = 0",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
                 if let Expr::Div(num, denom) = arg.as_ref() {
@@ -458,8 +438,6 @@ fn sin_pi_over_4() -> Rule {
         name: "sin_pi_over_4",
         category: RuleCategory::TrigIdentity,
         description: "sin(π/4) = √2/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
                 if let Expr::Div(num, denom) = arg.as_ref() {
@@ -495,8 +473,6 @@ fn cos_pi_over_4() -> Rule {
         name: "cos_pi_over_4",
         category: RuleCategory::TrigIdentity,
         description: "cos(π/4) = √2/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
                 if let Expr::Div(num, denom) = arg.as_ref() {
@@ -532,8 +508,6 @@ fn sin_pi_over_6() -> Rule {
         name: "sin_pi_over_6",
         category: RuleCategory::TrigIdentity,
         description: "sin(π/6) = 1/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
                 if let Expr::Div(num, denom) = arg.as_ref() {
@@ -566,8 +540,6 @@ fn cos_pi_over_6() -> Rule {
         name: "cos_pi_over_6",
         category: RuleCategory::TrigIdentity,
         description: "cos(π/6) = √3/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
                 if let Expr::Div(num, denom) = arg.as_ref() {
@@ -603,8 +575,6 @@ fn sin_pi_over_3() -> Rule {
         name: "sin_pi_over_3",
         category: RuleCategory::TrigIdentity,
         description: "sin(π/3) = √3/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
                 if let Expr::Div(num, denom) = arg.as_ref() {
@@ -640,8 +610,6 @@ fn cos_pi_over_3() -> Rule {
         name: "cos_pi_over_3",
         category: RuleCategory::TrigIdentity,
         description: "cos(π/3) = 1/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
                 if let Expr::Div(num, denom) = arg.as_ref() {
@@ -678,8 +646,6 @@ fn tan_identity() -> Rule {
         name: "tan_identity",
         category: RuleCategory::TrigIdentity,
         description: "tan(x) = sin(x)/cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Tan(_)),
         apply: |expr, _ctx| {
             if let Expr::Tan(arg) = expr {
@@ -704,8 +670,6 @@ fn sec_identity() -> Rule {
         name: "sec_identity",
         category: RuleCategory::TrigIdentity,
         description: "1/cos(x) = sec(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Div(num, denom) = expr {
                 return matches!(num.as_ref(), Expr::Const(c) if c.is_one())
@@ -739,8 +703,6 @@ fn csc_identity() -> Rule {
         name: "csc_identity",
         category: RuleCategory::TrigIdentity,
         description: "1/sin(x) = csc(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Div(num, denom) = expr {
                 return matches!(num.as_ref(), Expr::Const(c) if c.is_one())
@@ -773,8 +735,6 @@ fn cot_identity() -> Rule {
         name: "cot_identity",
         category: RuleCategory::TrigIdentity,
         description: "cos(x)/sin(x) = cot(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Div(num, denom) = expr {
                 return matches!(num.as_ref(), Expr::Cos(_))
@@ -814,8 +774,6 @@ fn sin_neg() -> Rule {
         name: "sin_neg",
         category: RuleCategory::TrigIdentity,
         description: "sin(-x) = -sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
                 return matches!(arg.as_ref(), Expr::Neg(_));
@@ -844,8 +802,6 @@ fn cos_neg() -> Rule {
         name: "cos_neg",
         category: RuleCategory::TrigIdentity,
         description: "cos(-x) = cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
                 return matches!(arg.as_ref(), Expr::Neg(_));
@@ -874,8 +830,6 @@ fn tan_neg() -> Rule {
         name: "tan_neg",
         category: RuleCategory::TrigIdentity,
         description: "tan(-x) = -tan(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Tan(arg) = expr {
                 return matches!(arg.as_ref(), Expr::Neg(_));
@@ -908,8 +862,6 @@ fn sin_sum_formula() -> Rule {
         name: "sin_sum_formula",
         category: RuleCategory::TrigIdentity,
         description: "2·sin(x)·cos(x) = sin(2x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             // Pattern: 2 * sin(x) * cos(x)
             if let Expr::Mul(a, b) = expr {
@@ -966,8 +918,6 @@ fn cos_sum_formula() -> Rule {
         name: "cos_sum_formula",
         category: RuleCategory::TrigIdentity,
         description: "cos²(x) - sin²(x) = cos(2x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sub(left, right) = expr {
                 let left_is_cos_sq = is_squared_trig(left, false);
@@ -1037,8 +987,6 @@ fn cos_double_angle_2cos() -> Rule {
         name: "cos_double_angle_2cos",
         category: RuleCategory::TrigIdentity,
         description: "2cos²(x) - 1 = cos(2x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: 2*cos²(x) - 1
             if let Expr::Sub(left, right) = expr {
@@ -1084,8 +1032,6 @@ fn cos_double_angle_2sin() -> Rule {
         name: "cos_double_angle_2sin",
         category: RuleCategory::TrigIdentity,
         description: "1 - 2sin²(x) = cos(2x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: 1 - 2*sin²(x)
             if let Expr::Sub(left, right) = expr {
@@ -1131,8 +1077,6 @@ fn tan_double_angle() -> Rule {
         name: "tan_double_angle",
         category: RuleCategory::TrigIdentity,
         description: "tan(2x) ↔ 2tan(x)/(1-tan²(x))",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match tan(2x) where arg is 2*something
             if let Expr::Tan(inner) = expr {
@@ -1184,8 +1128,6 @@ fn sin_triple_angle() -> Rule {
         name: "sin_triple_angle",
         category: RuleCategory::TrigIdentity,
         description: "sin(3x) = 3sin(x) - 4sin³(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(inner) = expr {
                 if let Expr::Mul(a, b) = inner.as_ref() {
@@ -1236,8 +1178,6 @@ fn cos_triple_angle() -> Rule {
         name: "cos_triple_angle",
         category: RuleCategory::TrigIdentity,
         description: "cos(3x) = 4cos³(x) - 3cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(inner) = expr {
                 if let Expr::Mul(a, b) = inner.as_ref() {
@@ -1288,8 +1228,6 @@ fn tan_sec_identity() -> Rule {
         name: "tan_sec_identity",
         category: RuleCategory::TrigIdentity,
         description: "1 + tan²(x) = sec²(x) = 1/cos²(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: 1 + tan²(x)
             if let Expr::Add(left, right) = expr {
@@ -1333,8 +1271,6 @@ fn cot_csc_identity() -> Rule {
         name: "cot_csc_identity",
         category: RuleCategory::TrigIdentity,
         description: "1 + cot²(x) = csc²(x) = 1/sin²(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             // Match: 1 + (cos/sin)² - simplified check
             // For now just return false as we don't have a Cot type
@@ -1389,8 +1325,6 @@ fn sin_sin_product() -> Rule {
         name: "sin_sin_product",
         category: RuleCategory::TrigIdentity,
         description: "sin(a)sin(b) = (cos(a-b) - cos(a+b))/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Mul(left, right) = expr {
                 return matches!(left.as_ref(), Expr::Sin(_))
@@ -1425,8 +1359,6 @@ fn cos_cos_product() -> Rule {
         name: "cos_cos_product",
         category: RuleCategory::TrigIdentity,
         description: "cos(a)cos(b) = (cos(a-b) + cos(a+b))/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Mul(left, right) = expr {
                 return matches!(left.as_ref(), Expr::Cos(_))
@@ -1461,8 +1393,6 @@ fn sin_cos_product() -> Rule {
         name: "sin_cos_product",
         category: RuleCategory::TrigIdentity,
         description: "sin(a)cos(b) = (sin(a+b) + sin(a-b))/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Mul(left, right) = expr {
                 return (matches!(left.as_ref(), Expr::Sin(_))
@@ -1504,8 +1434,6 @@ fn sin_half_angle() -> Rule {
         name: "sin_half_angle",
         category: RuleCategory::TrigIdentity,
         description: "sin(x/2) = √((1-cos(x))/2)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(inner) = expr {
                 if let Expr::Div(num, den) = inner.as_ref() {
@@ -1549,8 +1477,6 @@ fn cos_half_angle() -> Rule {
         name: "cos_half_angle",
         category: RuleCategory::TrigIdentity,
         description: "cos(x/2) = √((1+cos(x))/2)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(inner) = expr {
                 if let Expr::Div(num, den) = inner.as_ref() {
@@ -1594,8 +1520,6 @@ fn sin_cos_cofunction() -> Rule {
         name: "sin_cos_cofunction",
         category: RuleCategory::TrigIdentity,
         description: "sin(π/2 - x) = cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(inner) = expr {
                 if let Expr::Sub(left, _) = inner.as_ref() {
@@ -1632,8 +1556,6 @@ fn cos_sin_cofunction() -> Rule {
         name: "cos_sin_cofunction",
         category: RuleCategory::TrigIdentity,
         description: "cos(π/2 - x) = sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(inner) = expr {
                 if let Expr::Sub(left, _) = inner.as_ref() {
@@ -1669,8 +1591,6 @@ fn tan_cot_cofunction() -> Rule {
         name: "tan_cot_cofunction",
         category: RuleCategory::TrigIdentity,
         description: "tan(π/2 - x) = cot(x) = cos(x)/sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _ctx| {
             if let Expr::Tan(inner) = expr {
                 if let Expr::Sub(left, _) = inner.as_ref() {
@@ -1770,10 +1690,13 @@ fn hyperbolic_sinh() -> Rule {
         name: "hyperbolic_sinh",
         category: RuleCategory::TrigIdentity,
         description: "sinh(x) = (e^x - e^(-x))/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false, // Pattern matching for sinh
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sinh(x) = (e^x - e^(-x))/2 (hyperbolic sine definition)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1786,10 +1709,13 @@ fn hyperbolic_cosh() -> Rule {
         name: "hyperbolic_cosh",
         category: RuleCategory::TrigIdentity,
         description: "cosh(x) = (e^x + e^(-x))/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cosh(x) = (e^x + e^(-x))/2 (hyperbolic cosine definition)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1802,10 +1728,13 @@ fn hyperbolic_tanh() -> Rule {
         name: "hyperbolic_tanh",
         category: RuleCategory::TrigIdentity,
         description: "tanh(x) = sinh(x)/cosh(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "tanh(x) = sinh(x)/cosh(x) (hyperbolic tangent definition)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1818,10 +1747,13 @@ fn sinh_identity() -> Rule {
         name: "sinh_double",
         category: RuleCategory::TrigIdentity,
         description: "sinh(2x) = 2sinh(x)cosh(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Mul(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sinh(2x) = 2sinh(x)cosh(x) (double angle)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1834,10 +1766,13 @@ fn cosh_identity() -> Rule {
         name: "cosh_double",
         category: RuleCategory::TrigIdentity,
         description: "cosh(2x) = cosh²(x) + sinh²(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| matches!(expr, Expr::Add(_, _)),
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cosh(2x) = cosh²(x) + sinh²(x) (double angle)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1850,10 +1785,15 @@ fn sinh_cosh_identity() -> Rule {
         name: "sinh_cosh_pythagorean",
         category: RuleCategory::TrigIdentity,
         description: "cosh²(x) - sinh²(x) = 1",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sub(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cosh²(x) - sinh²(x) = 1 (hyperbolic Pythagorean identity)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 1,
     }
@@ -1866,10 +1806,23 @@ fn sin_arcsin() -> Rule {
         name: "sin_arcsin",
         category: RuleCategory::TrigIdentity,
         description: "sin(arcsin(x)) = x",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Sin(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Arcsin(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Sin(inner) = expr {
+                if let Expr::Arcsin(x) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: (**x).clone(),
+                        justification: "sin(arcsin(x)) = x".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: false,
         cost: 1,
     }
@@ -1882,10 +1835,23 @@ fn cos_arccos() -> Rule {
         name: "cos_arccos",
         category: RuleCategory::TrigIdentity,
         description: "cos(arccos(x)) = x",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Cos(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Arccos(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Cos(inner) = expr {
+                if let Expr::Arccos(x) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: (**x).clone(),
+                        justification: "cos(arccos(x)) = x".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: false,
         cost: 1,
     }
@@ -1898,10 +1864,23 @@ fn tan_arctan() -> Rule {
         name: "tan_arctan",
         category: RuleCategory::TrigIdentity,
         description: "tan(arctan(x)) = x",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Tan(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Arctan(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            if let Expr::Tan(inner) = expr {
+                if let Expr::Arctan(x) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: (**x).clone(),
+                        justification: "tan(arctan(x)) = x".to_string(),
+                    }];
+                }
+            }
+            vec![]
+        },
         reversible: false,
         cost: 1,
     }
@@ -1914,10 +1893,23 @@ fn arcsin_arccos_sum() -> Rule {
         name: "arcsin_arccos_sum",
         category: RuleCategory::TrigIdentity,
         description: "arcsin(x) + arccos(x) = π/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Add(left, right) = expr {
+                let is_arcsin_arccos = matches!(left.as_ref(), Expr::Arcsin(_)) && matches!(right.as_ref(), Expr::Arccos(_));
+                let is_arccos_arcsin = matches!(left.as_ref(), Expr::Arccos(_)) && matches!(right.as_ref(), Expr::Arcsin(_));
+                return is_arcsin_arccos || is_arccos_arcsin;
+            }
+            false
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: Expr::Div(
+                    Box::new(Expr::Pi),
+                    Box::new(Expr::int(2)),
+                ),
+                justification: "arcsin(x) + arccos(x) = π/2".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -1930,10 +1922,18 @@ fn sin_sum_to_product() -> Rule {
         name: "sin_sum_to_product",
         category: RuleCategory::TrigIdentity,
         description: "sinA + sinB = 2sin((A+B)/2)cos((A-B)/2)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Add(left, right) = expr {
+                return matches!(left.as_ref(), Expr::Sin(_)) && matches!(right.as_ref(), Expr::Sin(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sinA + sinB = 2sin((A+B)/2)cos((A-B)/2) (sum-to-product)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -1946,10 +1946,18 @@ fn cos_sum_to_product() -> Rule {
         name: "cos_sum_to_product",
         category: RuleCategory::TrigIdentity,
         description: "cosA + cosB = 2cos((A+B)/2)cos((A-B)/2)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Add(left, right) = expr {
+                return matches!(left.as_ref(), Expr::Cos(_)) && matches!(right.as_ref(), Expr::Cos(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cosA + cosB = 2cos((A+B)/2)cos((A-B)/2) (sum-to-product)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -1962,10 +1970,18 @@ fn sin_diff_to_product() -> Rule {
         name: "sin_diff_to_product",
         category: RuleCategory::TrigIdentity,
         description: "sinA - sinB = 2cos((A+B)/2)sin((A-B)/2)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Sub(left, right) = expr {
+                return matches!(left.as_ref(), Expr::Sin(_)) && matches!(right.as_ref(), Expr::Sin(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sinA - sinB = 2cos((A+B)/2)sin((A-B)/2) (difference-to-product)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -1978,10 +1994,18 @@ fn cos_diff_to_product() -> Rule {
         name: "cos_diff_to_product",
         category: RuleCategory::TrigIdentity,
         description: "cosA - cosB = -2sin((A+B)/2)sin((A-B)/2)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            if let Expr::Sub(left, right) = expr {
+                return matches!(left.as_ref(), Expr::Cos(_)) && matches!(right.as_ref(), Expr::Cos(_));
+            }
+            false
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cosA - cosB = -2sin((A+B)/2)sin((A-B)/2) (difference-to-product)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -1994,10 +2018,15 @@ fn sin_squared_half() -> Rule {
         name: "sin_squared_half",
         category: RuleCategory::TrigIdentity,
         description: "sin²(x/2) = (1 - cos(x))/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin²(x/2) = (1 - cos(x))/2 (power reduction)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2010,10 +2039,15 @@ fn cos_squared_half() -> Rule {
         name: "cos_squared_half",
         category: RuleCategory::TrigIdentity,
         description: "cos²(x/2) = (1 + cos(x))/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos²(x/2) = (1 + cos(x))/2 (power reduction)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2026,10 +2060,15 @@ fn tan_half_sin() -> Rule {
         name: "tan_half_sin",
         category: RuleCategory::TrigIdentity,
         description: "tan(x/2) = sin(x)/(1 + cos(x))",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Tan(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "tan(x/2) = sin(x)/(1 + cos(x)) (half-angle formula)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2042,10 +2081,15 @@ fn tan_half_cos() -> Rule {
         name: "tan_half_cos",
         category: RuleCategory::TrigIdentity,
         description: "tan(x/2) = (1 - cos(x))/sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Tan(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "tan(x/2) = (1 - cos(x))/sin(x) (half-angle formula)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2058,10 +2102,15 @@ fn sin_3x_expand() -> Rule {
         name: "sin_3x_expand",
         category: RuleCategory::TrigIdentity,
         description: "sin(3x) = 3sin(x) - 4sin³(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sin(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin(3x) = 3sin(x) - 4sin³(x) (triple angle formula)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -2074,10 +2123,15 @@ fn cos_3x_expand() -> Rule {
         name: "cos_3x_expand",
         category: RuleCategory::TrigIdentity,
         description: "cos(3x) = 4cos³(x) - 3cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Cos(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos(3x) = 4cos³(x) - 3cos(x) (triple angle formula)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -2090,10 +2144,15 @@ fn sin_4x_formula() -> Rule {
         name: "sin_4x_formula",
         category: RuleCategory::TrigIdentity,
         description: "sin(4x) = 4sin(x)cos(x)(1 - 2sin²(x))",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sin(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin(4x) = 4sin(x)cos(x)(1 - 2sin²(x)) (quadruple angle)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 4,
     }
@@ -2106,10 +2165,15 @@ fn cos_4x_formula() -> Rule {
         name: "cos_4x_formula",
         category: RuleCategory::TrigIdentity,
         description: "cos(4x) = 8cos⁴(x) - 8cos²(x) + 1",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Cos(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos(4x) = 8cos⁴(x) - 8cos²(x) + 1 (quadruple angle)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 4,
     }
@@ -2122,10 +2186,15 @@ fn cot_reciprocal() -> Rule {
         name: "cot_reciprocal",
         category: RuleCategory::TrigIdentity,
         description: "cot(x) = 1/tan(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Div(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cot(x) = 1/tan(x) (reciprocal identity)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 1,
     }
@@ -2138,10 +2207,15 @@ fn sec_reciprocal() -> Rule {
         name: "sec_reciprocal",
         category: RuleCategory::TrigIdentity,
         description: "sec(x) = 1/cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Div(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sec(x) = 1/cos(x) (reciprocal identity)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 1,
     }
@@ -2154,10 +2228,15 @@ fn csc_reciprocal() -> Rule {
         name: "csc_reciprocal",
         category: RuleCategory::TrigIdentity,
         description: "csc(x) = 1/sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Div(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "csc(x) = 1/sin(x) (reciprocal identity)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 1,
     }
@@ -2170,8 +2249,6 @@ fn sin_neg_x() -> Rule {
         name: "sin_neg_x",
         category: RuleCategory::TrigIdentity,
         description: "sin(-x) = -sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _| {
             if let Expr::Sin(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Neg(_));
@@ -2201,8 +2278,6 @@ fn cos_neg_x() -> Rule {
         name: "cos_neg_x",
         category: RuleCategory::TrigIdentity,
         description: "cos(-x) = cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _| {
             if let Expr::Cos(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Neg(_));
@@ -2232,8 +2307,6 @@ fn tan_neg_x() -> Rule {
         name: "tan_neg_x",
         category: RuleCategory::TrigIdentity,
         description: "tan(-x) = -tan(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
         is_applicable: |expr, _| {
             if let Expr::Tan(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Neg(_));
@@ -2263,10 +2336,15 @@ fn sin_pi_minus() -> Rule {
         name: "sin_pi_minus",
         category: RuleCategory::TrigIdentity,
         description: "sin(π - x) = sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sin(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin(π - x) = sin(x) (supplementary angle)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2279,10 +2357,15 @@ fn cos_pi_minus() -> Rule {
         name: "cos_pi_minus",
         category: RuleCategory::TrigIdentity,
         description: "cos(π - x) = -cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Cos(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos(π - x) = -cos(x) (supplementary angle)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2295,10 +2378,15 @@ fn sin_pi_plus() -> Rule {
         name: "sin_pi_plus",
         category: RuleCategory::TrigIdentity,
         description: "sin(π + x) = -sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sin(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin(π + x) = -sin(x) (angle shift)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2311,10 +2399,15 @@ fn cos_pi_plus() -> Rule {
         name: "cos_pi_plus",
         category: RuleCategory::TrigIdentity,
         description: "cos(π + x) = -cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Cos(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos(π + x) = -cos(x) (angle shift)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2327,10 +2420,15 @@ fn sin_2pi_plus() -> Rule {
         name: "sin_2pi_plus",
         category: RuleCategory::TrigIdentity,
         description: "sin(2π + x) = sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sin(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin(2π + x) = sin(x) (periodicity)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 1,
     }
@@ -2343,10 +2441,15 @@ fn cos_2pi_plus() -> Rule {
         name: "cos_2pi_plus",
         category: RuleCategory::TrigIdentity,
         description: "cos(2π + x) = cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Cos(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos(2π + x) = cos(x) (periodicity)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 1,
     }
@@ -2359,10 +2462,15 @@ fn tan_pi_plus() -> Rule {
         name: "tan_pi_plus",
         category: RuleCategory::TrigIdentity,
         description: "tan(π + x) = tan(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Tan(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "tan(π + x) = tan(x) (periodicity)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 1,
     }
@@ -2375,10 +2483,15 @@ fn sin_complementary() -> Rule {
         name: "sin_complementary",
         category: RuleCategory::TrigIdentity,
         description: "sin(π/2 - x) = cos(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sin(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin(π/2 - x) = cos(x) (complementary angle)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2391,10 +2504,15 @@ fn cos_complementary() -> Rule {
         name: "cos_complementary",
         category: RuleCategory::TrigIdentity,
         description: "cos(π/2 - x) = sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Cos(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos(π/2 - x) = sin(x) (complementary angle)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2407,10 +2525,15 @@ fn sin_supplementary() -> Rule {
         name: "sin_supplementary",
         category: RuleCategory::TrigIdentity,
         description: "sin(π - x) = sin(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sin(_))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin(π - x) = sin(x) (supplementary angle)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2423,10 +2546,15 @@ fn sin_squared_formula() -> Rule {
         name: "sin_squared_formula",
         category: RuleCategory::TrigIdentity,
         description: "sin²(x) = (1 - cos(2x))/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin²(x) = (1 - cos(2x))/2 (power reduction)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2439,10 +2567,15 @@ fn cos_squared_formula() -> Rule {
         name: "cos_squared_formula",
         category: RuleCategory::TrigIdentity,
         description: "cos²(x) = (1 + cos(2x))/2",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos²(x) = (1 + cos(2x))/2 (power reduction)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2455,10 +2588,15 @@ fn tan_squared_formula() -> Rule {
         name: "tan_squared_formula",
         category: RuleCategory::TrigIdentity,
         description: "tan²(x) = (1 - cos(2x))/(1 + cos(2x))",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "tan²(x) = (1 - cos(2x))/(1 + cos(2x)) (power reduction)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -2471,10 +2609,15 @@ fn sin_pow4() -> Rule {
         name: "sin_pow4",
         category: RuleCategory::TrigIdentity,
         description: "sin⁴(x) = (3 - 4cos(2x) + cos(4x))/8",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "sin⁴(x) = (3 - 4cos(2x) + cos(4x))/8 (fourth power reduction)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 4,
     }
@@ -2487,10 +2630,15 @@ fn cos_pow4() -> Rule {
         name: "cos_pow4",
         category: RuleCategory::TrigIdentity,
         description: "cos⁴(x) = (3 + 4cos(2x) + cos(4x))/8",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Pow(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos⁴(x) = (3 + 4cos(2x) + cos(4x))/8 (fourth power reduction)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 4,
     }
@@ -2503,10 +2651,15 @@ fn triple_sin_formula() -> Rule {
         name: "triple_sin_formula",
         category: RuleCategory::TrigIdentity,
         description: "3sin(x) - sin(3x) = 4sin³(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sub(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "3sin(x) - sin(3x) = 4sin³(x) (triple angle identity)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -2519,10 +2672,15 @@ fn triple_cos_formula() -> Rule {
         name: "triple_cos_formula",
         category: RuleCategory::TrigIdentity,
         description: "cos(3x) + 3cos(x) = 4cos³(x)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Add(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "cos(3x) + 3cos(x) = 4cos³(x) (triple angle identity)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }
@@ -2535,10 +2693,15 @@ fn chebyshev_t2() -> Rule {
         name: "chebyshev_t2",
         category: RuleCategory::TrigIdentity,
         description: "T_2(x) = 2x² - 1",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sub(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Chebyshev polynomial T₂(x) = 2x² - 1".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2551,10 +2714,15 @@ fn chebyshev_t3() -> Rule {
         name: "chebyshev_t3",
         category: RuleCategory::TrigIdentity,
         description: "T_3(x) = 4x³ - 3x",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sub(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Chebyshev polynomial T₃(x) = 4x³ - 3x".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2567,10 +2735,15 @@ fn chebyshev_u2() -> Rule {
         name: "chebyshev_u2",
         category: RuleCategory::TrigIdentity,
         description: "U_2(x) = 4x² - 1",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sub(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Chebyshev polynomial U₂(x) = 4x² - 1".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2583,10 +2756,15 @@ fn chebyshev_u3() -> Rule {
         name: "chebyshev_u3",
         category: RuleCategory::TrigIdentity,
         description: "U_3(x) = 8x³ - 4x",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Sub(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "Chebyshev polynomial U₃(x) = 8x³ - 4x".to_string(),
+            }]
+        },
         reversible: true,
         cost: 2,
     }
@@ -2599,10 +2777,15 @@ fn prosthaphaeresis_1() -> Rule {
         name: "prosthaphaeresis_1",
         category: RuleCategory::TrigIdentity,
         description: "2cos(A)cos(B) = cos(A+B) + cos(A-B)",
-        domains: &[Domain::Trigonometry],
-        requires: &[],
-        is_applicable: |_, _| false,
-        apply: |_, _| vec![],
+        is_applicable: |expr, _| {
+            matches!(expr, Expr::Mul(_, _))
+        },
+        apply: |expr, _| {
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "2cos(A)cos(B) = cos(A+B) + cos(A-B) (product-to-sum)".to_string(),
+            }]
+        },
         reversible: true,
         cost: 3,
     }

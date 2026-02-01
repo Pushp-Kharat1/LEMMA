@@ -41,3 +41,22 @@ real_imo_problems.json
 __pycache__/
 *.pyc
 *.pyo
+
+# Internal documentation (not for repo)
+DAILY_PROGRESS_*.md
+DAILY_PROGRESS_*.pdf
+DAILY_PROGRESS_*.html
+WORK_SUMMARY_*.md
+WORK_SUMMARY_*.pdf
+ASSESSMENT_SUMMARY.md
+CBSE_COMPREHENSIVE_REPORT.md
+CBSE_COMPREHENSIVE_REPORT.pdf
+IMPLEMENTATION_PLAN.md
+PROJECT_OVERVIEW.md
+RULES_PRD.json
+TESTING_COMPLETE.pdf
+WHERE_ARE_PROOFS_STORED.pdf
+PR_TEMPLATE.md
+proof_logs/
+real_neural_logs/
+test_logs/

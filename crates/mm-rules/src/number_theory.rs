@@ -520,6 +520,372 @@ fn modular_rules() -> Vec<Rule> {
             reversible: false,
             cost: 1,
         },
+        // Modular inverse: a⁻¹ mod m exists iff gcd(a,m) = 1
+        Rule {
+            id: RuleId(123),
+            name: "modular_inverse",
+            category: RuleCategory::EquationSolving,
+            description: "a⁻¹ mod m via extended Euclidean",
+            is_applicable: |expr, _ctx| {
+                // Match: Mod(Div(1, a), m) or inverse pattern
+                if let Expr::Mod(inner, modulus) = expr {
+                    if let Expr::Div(num, _) = inner.as_ref() {
+                        if matches!(num.as_ref(), Expr::Const(c) if *c == Rational::from_integer(1)) {
+                            // Check modulus is small constant
+                            if let Expr::Const(m) = modulus.as_ref() {
+                                return m.is_integer() && m.numer() > 1 && m.numer() < 1000;
+                            }
+                        }
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Mod(inner, modulus) = expr {
+                    if let Expr::Div(_, a) = inner.as_ref() {
+                        if let Expr::Const(m) = modulus.as_ref() {
+                            if let Expr::Const(av) = a.as_ref() {
+                                let a_val = av.numer();
+                                let m_val = m.numer();
+                                
+                                // Extended Euclidean algorithm
+                                fn extended_gcd(a: i64, b: i64) -> (i64, i64, i64) {
+                                    if b == 0 {
+                                        return (a, 1, 0);
+                                    }
+                                    let (g, x1, y1) = extended_gcd(b, a % b);
+                                    (g, y1, x1 - (a / b) * y1)
+                                }
+                                
+                                let (g, x, _) = extended_gcd(a_val, m_val);
+                                if g == 1 {
+                                    let inv = ((x % m_val) + m_val) % m_val;
+                                    return vec![RuleApplication {
+                                        result: Expr::Const(Rational::from_integer(inv)),
+                                        justification: format!("Modular inverse: {}⁻¹ ≡ {} (mod {})", a_val, inv, m_val),
+                                    }];
+                                }
+                            }
+                        }
+                    }
+                }
+                vec![]
+            },
+            reversible: false,
+            cost: 3,
+        },
+        // Modular exponentiation: a^n mod m (fast)
+        Rule {
+            id: RuleId(124),
+            name: "modular_exponentiation",
+            category: RuleCategory::Simplification,
+            description: "a^n mod m via repeated squaring",
+            is_applicable: |expr, _ctx| {
+                // Match: Mod(Pow(a, n), m)
+                if let Expr::Mod(inner, modulus) = expr {
+                    if matches!(inner.as_ref(), Expr::Pow(_, _)) {
+                        if let Expr::Const(m) = modulus.as_ref() {
+                            return m.is_integer() && m.numer() > 1 && m.numer() < 1000;
+                        }
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Mod(inner, modulus) = expr {
+                    if let Expr::Pow(base, exp) = inner.as_ref() {
+                        if let (Expr::Const(a), Expr::Const(n), Expr::Const(m)) = 
+                            (base.as_ref(), exp.as_ref(), modulus.as_ref()) {
+                            let a_val = a.numer();
+                            let n_val = n.numer();
+                            let m_val = m.numer();
+                            
+                            if n_val >= 0 && m_val > 0 {
+                                // Fast modular exponentiation
+                                fn mod_pow(mut base: i64, mut exp: i64, modulus: i64) -> i64 {
+                                    let mut result = 1i64;
+                                    base %= modulus;
+                                    while exp > 0 {
+                                        if exp % 2 == 1 {
+                                            result = (result * base) % modulus;
+                                        }
+                                        base = (base * base) % modulus;
+                                        exp /= 2;
+                                    }
+                                    result
+                                }
+                                
+                                let result = mod_pow(a_val, n_val, m_val);
+                                return vec![RuleApplication {
+                                    result: Expr::Const(Rational::from_integer(result)),
+                                    justification: format!("Modular exponentiation: {}^{} ≡ {} (mod {})", a_val, n_val, result, m_val),
+                                }];
+                            }
+                        }
+                    }
+                }
+                vec![]
+            },
+            reversible: false,
+            cost: 3,
+        },
+        // Extended GCD: gcd(a,b) = ax + by (Bezout coefficients)
+        Rule {
+            id: RuleId(125),
+            name: "extended_gcd",
+            category: RuleCategory::EquationSolving,
+            description: "Extended GCD: gcd(a,b) = ax + by",
+            is_applicable: |expr, _ctx| {
+                // Match: GCD(a, b) where both are small constants
+                if let Expr::GCD(a, b) = expr {
+                    if let (Expr::Const(av), Expr::Const(bv)) = (a.as_ref(), b.as_ref()) {
+                        return av.is_integer() && bv.is_integer() && 
+                               av.numer().abs() < 1000 && bv.numer().abs() < 1000;
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::GCD(a, b) = expr {
+                    if let (Expr::Const(av), Expr::Const(bv)) = (a.as_ref(), b.as_ref()) {
+                        let a_val = av.numer();
+                        let b_val = bv.numer();
+                        
+                        // Extended Euclidean algorithm
+                        fn extended_gcd(a: i64, b: i64) -> (i64, i64, i64) {
+                            if b == 0 {
+                                return (a, 1, 0);
+                            }
+                            let (g, x1, y1) = extended_gcd(b, a % b);
+                            (g, y1, x1 - (a / b) * y1)
+                        }
+                        
+                        let (g, x, y) = extended_gcd(a_val, b_val);
+                        return vec![RuleApplication {
+                            result: Expr::Const(Rational::from_integer(g)),
+                            justification: format!("Extended GCD: gcd({}, {}) = {} = {}·{} + {}·{}", 
+                                a_val, b_val, g, a_val, x, b_val, y),
+                        }];
+                    }
+                }
+                vec![]
+            },
+            reversible: false,
+            cost: 2,
+        },
+        // Legendre symbol computation (a/p)
+        Rule {
+            id: RuleId(126),
+            name: "legendre_symbol_compute",
+            category: RuleCategory::Simplification,
+            description: "Legendre symbol (a/p) computation",
+            is_applicable: |expr, _ctx| {
+                // Custom pattern for Legendre symbol representation
+                // For now, check Mod(a, p) for odd primes
+                if let Expr::Mod(_, p) = expr {
+                    if let Expr::Const(pv) = p.as_ref() {
+                        let p_val = pv.numer();
+                        return p_val > 2 && p_val < 100 && p_val % 2 == 1;
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Mod(a, p) = expr {
+                    if let (Expr::Const(av), Expr::Const(pv)) = (a.as_ref(), p.as_ref()) {
+                        let a_val = av.numer();
+                        let p_val = pv.numer();
+                        
+                        // Legendre symbol: (a/p) via Euler's criterion
+                        fn mod_pow(mut base: i64, mut exp: i64, modulus: i64) -> i64 {
+                            let mut result = 1i64;
+                            base = ((base % modulus) + modulus) % modulus;
+                            while exp > 0 {
+                                if exp % 2 == 1 {
+                                    result = (result * base) % modulus;
+                                }
+                                base = (base * base) % modulus;
+                                exp /= 2;
+                            }
+                            result
+                        }
+                        
+                        let exp = (p_val - 1) / 2;
+                        let result = mod_pow(a_val, exp, p_val);
+                        let legendre = if result == 0 { 0 } else if result == 1 { 1 } else { -1 };
+                        
+                        return vec![RuleApplication {
+                            result: Expr::Const(Rational::from_integer(legendre)),
+                            justification: format!("Legendre ({}/{}) = {}", a_val, p_val, legendre),
+                        }];
+                    }
+                }
+                vec![]
+            },
+            reversible: false,
+            cost: 3,
+        },
+        // Tonelli-Shanks: Modular square root
+        Rule {
+            id: RuleId(127),
+            name: "tonelli_shanks_compute",
+            category: RuleCategory::EquationSolving,
+            description: "Tonelli-Shanks modular square root",
+            is_applicable: |expr, _ctx| {
+                // Match: Sqrt(Mod(a, p)) or Mod(Sqrt(a), p) for odd primes
+                if let Expr::Sqrt(inner) = expr {
+                    if let Expr::Const(a) = inner.as_ref() {
+                        return a.is_integer() && a.numer() > 0 && a.numer() < 100;
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                // For now, provide informational result
+                // Full Tonelli-Shanks is complex - would need prime p as context
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Tonelli-Shanks: Computes x where x² ≡ a (mod p) for prime p".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 4,
+        },
+        // Primitive root finder
+        Rule {
+            id: RuleId(128),
+            name: "primitive_root_find",
+            category: RuleCategory::AlgebraicSolving,
+            description: "Find smallest primitive root mod n",
+            is_applicable: |expr, _ctx| {
+                // Match: Const(n) for small n where primitive roots exist
+                if let Expr::Const(n) = expr {
+                    let n_val = n.numer();
+                    // Primitive roots exist for n = 1,2,4,p^k,2p^k
+                    return n_val > 0 && n_val < 50;
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                if let Expr::Const(n) = expr {
+                    let n_val = n.numer();
+                    
+                    // Compute Euler's totient
+                    fn euler_phi(mut n: i64) -> i64 {
+                        let mut result = n;
+                        let mut p = 2i64;
+                        while p * p <= n {
+                            if n % p == 0 {
+                                while n % p == 0 {
+                                    n /= p;
+                                }
+                                result -= result / p;
+                            }
+                            p += 1;
+                        }
+                        if n > 1 {
+                            result -= result / n;
+                        }
+                        result
+                    }
+                    
+                    fn mod_pow(mut base: i64, mut exp: i64, modulus: i64) -> i64 {
+                        let mut result = 1i64;
+                        base %= modulus;
+                        while exp > 0 {
+                            if exp % 2 == 1 {
+                                result = (result * base) % modulus;
+                            }
+                            base = (base * base) % modulus;
+                            exp /= 2;
+                        }
+                        result
+                    }
+                    
+                    // Check if g is a primitive root mod n
+                    fn is_primitive_root(g: i64, n: i64, phi: i64) -> bool {
+                        if mod_pow(g, phi, n) != 1 {
+                            return false;
+                        }
+                        // Check that order is exactly phi
+                        let mut d = 2i64;
+                        while d * d <= phi {
+                            if phi % d == 0 {
+                                if mod_pow(g, phi / d, n) == 1 {
+                                    return false;
+                                }
+                                if d != phi / d && mod_pow(g, d, n) == 1 {
+                                    return false;
+                                }
+                            }
+                            d += 1;
+                        }
+                        true
+                    }
+                    
+                    let phi = euler_phi(n_val);
+                    
+                    // Find smallest primitive root
+                    for g in 2..n_val {
+                        if is_primitive_root(g, n_val, phi) {
+                            return vec![RuleApplication {
+                                result: Expr::Const(Rational::from_integer(g)),
+                                justification: format!("Primitive root: {} is smallest primitive root mod {}", g, n_val),
+                            }];
+                        }
+                    }
+                }
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "No primitive root exists for this modulus".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 4,
+        },
+        // Discrete logarithm (baby-step giant-step for small moduli)
+        Rule {
+            id: RuleId(129),
+            name: "discrete_log_bsgs",
+            category: RuleCategory::EquationSolving,
+            description: "Discrete log via baby-step giant-step",
+            is_applicable: |expr, _ctx| {
+                // Match: Equation { lhs: Pow(g, x), rhs: h } in modular context
+                // For now, just detect power expressions
+                matches!(expr, Expr::Pow(_, _))
+            },
+            apply: |expr, _ctx| {
+                // Baby-step giant-step is complex and needs modulus context
+                // Provide informational result
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Discrete log: Find x where g^x ≡ h (mod n) using baby-step giant-step".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 5,
+        },
+        // Hensel lifting for p-adic approximation
+        Rule {
+            id: RuleId(130),
+            name: "hensel_lift",
+            category: RuleCategory::EquationSolving,
+            description: "Hensel's lemma: lift solution mod p to mod p^k",
+            is_applicable: |expr, _ctx| {
+                // Match: Mod(f(x), p^k) patterns
+                matches!(expr, Expr::Mod(_, _))
+            },
+            apply: |expr, _ctx| {
+                // Hensel lifting requires derivative and iteration
+                // Provide informational result
+                vec![RuleApplication {
+                    result: expr.clone(),
+                    justification: "Hensel's lemma: Solution mod p lifts to mod p^k if f'(x) ≢ 0 (mod p)".to_string(),
+                }]
+            },
+            reversible: false,
+            cost: 4,
+        },
     ]
 }
 
@@ -1652,20 +2018,17 @@ fn chinese_remainder_theorem() -> Rule {
         domains: &[Domain::NumberTheory],
         requires: &[],
         is_applicable: |expr, _ctx| {
-            // Match system of Mod equations
-            matches!(expr, Expr::Equation { .. })
+            // Match system of Mod equations - for now just detect pattern
+            matches!(expr, Expr::Equation { .. } | Expr::Mod(_, _))
         },
         apply: |expr, _ctx| {
-            if let Expr::Equation { lhs, rhs } = expr {
-                return vec![RuleApplication {
-                    result: Expr::Equation { 
-                        lhs: lhs.clone(), 
-                        rhs: rhs.clone() 
-                    },
-                    justification: "CRT: System x ≡ a_i (mod m_i) has unique solution mod Π m_i for coprime m_i".to_string(),
-                }];
-            }
-            vec![]
+            // CRT is complex to implement generically
+            // Provide theorem statement for now
+            // A full implementation would need to parse a system of congruences
+            vec![RuleApplication {
+                result: expr.clone(),
+                justification: "CRT: System x ≡ a_i (mod m_i) has unique solution mod Π m_i for coprime m_i. Use extended GCD to compute.".to_string(),
+            }]
         },
         reversible: false,
         cost: 3,
@@ -2210,6 +2573,22 @@ fn mersenne_prime_condition() -> Rule {
 }
 
 // σ(n) = Σ d for d|n
+/// Computes the sum-of-divisors function σ(n) for small positive integer constants and otherwise
+/// produces a descriptive, non-evaluated result.
+///
+/// For an expression that is a positive integer constant less than 1000, the rule's `apply` returns
+/// a `Const` expression containing the integer σ(n) (the sum of all positive divisors of n) and a
+/// justification string. For any other expression the rule is applicable only as a descriptive
+/// transformation and returns the original expression with a generic justification.
+///
+/// # Examples
+///
+/// ```
+/// let rule = sum_of_divisors();
+/// let expr = Expr::Const(Rational::from_integer(6));
+/// let apps = (rule.apply)(&expr, &Context::default());
+/// assert_eq!(apps[0].result, Expr::Const(Rational::from_integer(12))); // 1+2+3+6 = 12
+/// ```
 fn sum_of_divisors() -> Rule {
     Rule {
         id: RuleId(726),
@@ -2219,10 +2598,31 @@ fn sum_of_divisors() -> Rule {
         domains: &[Domain::NumberTheory],
         requires: &[],
         is_applicable: |expr, _ctx| {
-            // Match: Const or Pow (for computing divisor sums)
-            matches!(expr, Expr::Const(_) | Expr::Pow(_, _))
+            // Match: Const (for computing divisor sums)
+            if let Expr::Const(n) = expr {
+                return n.is_positive() && n.is_integer() && n.numer() < 1000;
+            }
+            false
         },
         apply: |expr, _ctx| {
+            if let Expr::Const(n) = expr {
+                if n.is_integer() {
+                    let num = n.numer();
+                    if num > 0 && num < 1000 {
+                        // Compute sum of divisors
+                        let mut sum = 0i64;
+                        for d in 1..=num {
+                            if num % d == 0 {
+                                sum += d;
+                            }
+                        }
+                        return vec![RuleApplication {
+                            result: Expr::Const(Rational::from_integer(sum)),
+                            justification: format!("Sum of divisors: σ({}) = {} (sum of all divisors)", num, sum),
+                        }];
+                    }
+                }
+            }
             vec![RuleApplication {
                 result: expr.clone(),
                 justification: "Sum of divisors: σ(n) = Σ d for all d | n".to_string(),
@@ -2234,6 +2634,21 @@ fn sum_of_divisors() -> Rule {
 }
 
 // τ(n) = number of divisors
+/// Computes the number of positive divisors τ(n) for small positive integer constants.
+///
+/// This rule applies only when the expression is a positive integer constant less than 1000;
+/// in that case it returns a concrete constant equal to the count of all positive divisors of n.
+/// Otherwise the rule leaves the expression unchanged and provides a descriptive justification.
+///
+/// # Examples
+///
+/// ```
+/// // Example: τ(12) = 6 because divisors are 1,2,3,4,6,12
+/// let rule = number_of_divisors();
+/// let expr = Expr::Const(Rational::from_integer(12));
+/// let apps = (rule.apply)(&expr, &Default::default());
+/// assert_eq!(apps[0].result, Expr::Const(Rational::from_integer(6)));
+/// ```
 fn number_of_divisors() -> Rule {
     Rule {
         id: RuleId(727),
@@ -2243,9 +2658,30 @@ fn number_of_divisors() -> Rule {
         domains: &[Domain::NumberTheory],
         requires: &[],
         is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Const(_) | Expr::Pow(_, _))
+            if let Expr::Const(n) = expr {
+                return n.is_positive() && n.is_integer() && n.numer() < 1000;
+            }
+            false
         },
         apply: |expr, _ctx| {
+            if let Expr::Const(n) = expr {
+                if n.is_integer() {
+                    let num = n.numer();
+                    if num > 0 && num < 1000 {
+                        // Count divisors
+                        let mut count = 0i64;
+                        for d in 1..=num {
+                            if num % d == 0 {
+                                count += 1;
+                            }
+                        }
+                        return vec![RuleApplication {
+                            result: Expr::Const(Rational::from_integer(count)),
+                            justification: format!("Number of divisors: τ({}) = {} (count of all divisors)", num, count),
+                        }];
+                    }
+                }
+            }
             vec![RuleApplication {
                 result: expr.clone(),
                 justification: "Number of divisors: τ(n) counts divisors of n".to_string(),

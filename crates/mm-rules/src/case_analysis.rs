@@ -277,6 +277,23 @@ fn collect_variables(expr: &Expr) -> Vec<Symbol> {
     vars
 }
 
+/// Collects free variable symbols appearing in `expr` and appends them to `vars` if not already present.
+///
+/// Traverses `expr` recursively, adding each distinct free `Symbol` encountered to the mutable `vars` vector.
+/// Bound variables introduced by quantifiers, summations, integrals, or derivatives are not left in `vars`
+/// after processing their bodies (they are added for the scope and then removed).
+///
+/// # Examples
+///
+/// ```
+/// // Assuming constructors for Expr and Symbol exist:
+/// let x = Symbol::new("x");
+/// let y = Symbol::new("y");
+/// let expr = Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::Var(y)));
+/// let mut vars = Vec::new();
+/// collect_vars_recursive(&expr, &mut vars);
+/// assert!(vars.contains(&x) && vars.contains(&y));
+/// ```
 fn collect_vars_recursive(expr: &Expr, vars: &mut Vec<Symbol>) {
     match expr {
         Expr::Var(v) => {
