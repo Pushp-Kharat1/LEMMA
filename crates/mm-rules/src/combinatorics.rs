@@ -7,7 +7,7 @@
 //! Combinatorics rules for IMO-level problem solving.
 //! Includes counting principles, binomial coefficients, and generating functions.
 
-use crate::{Domain, Rule, RuleApplication, RuleCategory, RuleId};
+use crate::{Domain, Feature, Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
 /// Returns the complete set of combinatorics rules used by the solver.
@@ -956,7 +956,7 @@ fn binomial_alternating_sum() -> Rule {
         category: RuleCategory::Simplification,
         description: "Σ (-1)^k * C(n,k) = 0",
         domains: &[Domain::Combinatorics],
-        requires: &[],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
         apply: |_expr, _ctx| {
             vec![RuleApplication {
@@ -977,7 +977,7 @@ fn permutation_formula() -> Rule {
         category: RuleCategory::Simplification,
         description: "P(n,k) = n!/(n-k)!",
         domains: &[Domain::Combinatorics],
-        requires: &[],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Factorial(_)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -998,7 +998,7 @@ fn circular_permutation() -> Rule {
         category: RuleCategory::Simplification,
         description: "Circular permutations = (n-1)!",
         domains: &[Domain::Combinatorics],
-        requires: &[],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Factorial(_)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1019,7 +1019,7 @@ fn derangement_asymptotic() -> Rule {
         category: RuleCategory::Simplification,
         description: "D(n) ~ n!/e",
         domains: &[Domain::Combinatorics],
-        requires: &[],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Factorial(_)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1040,7 +1040,7 @@ fn fibonacci_addition() -> Rule {
         category: RuleCategory::Simplification,
         description: "F(m+n) = F(m)*F(n+1) + F(m-1)*F(n)",
         domains: &[Domain::Combinatorics],
-        requires: &[],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1061,7 +1061,7 @@ fn fibonacci_gcd() -> Rule {
         category: RuleCategory::Simplification,
         description: "gcd(F(m), F(n)) = F(gcd(m,n))",
         domains: &[Domain::Combinatorics],
-        requires: &[],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| matches!(expr, Expr::GCD(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1091,7 +1091,7 @@ fn lucas_numbers() -> Rule {
         category: RuleCategory::Simplification,
         description: "L(n) = F(n-1) + F(n+1)",
         domains: &[Domain::Combinatorics],
-        requires: &[],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1126,6 +1126,8 @@ fn permutation_with_repetition() -> Rule {
         name: "permutation_with_repetition",
         category: RuleCategory::Simplification,
         description: "Permutations with repetition: n^k",
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| {
             // Match n^k pattern
             if let Expr::Pow(_, exp) = expr {
@@ -1163,6 +1165,8 @@ fn combination_with_repetition() -> Rule {
         name: "combination_with_repetition",
         category: RuleCategory::Simplification,
         description: "Combinations with repetition: C(n+k-1, k)",
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| {
             // Match factorial division patterns
             matches!(expr, Expr::Div(_, _))
@@ -1170,7 +1174,8 @@ fn combination_with_repetition() -> Rule {
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Combinations with repetition: C(n+k-1, k) = (n+k-1)!/(k!(n-1)!)".to_string(),
+                justification: "Combinations with repetition: C(n+k-1, k) = (n+k-1)!/(k!(n-1)!)"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1200,13 +1205,14 @@ fn bell_number_recurrence() -> Rule {
         name: "bell_number_recurrence",
         category: RuleCategory::Simplification,
         description: "B(n+1) = Σ C(n,k)*B(k)",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Bell number recurrence: B(n+1) = Σ C(n,k)*B(k) for k=0..n".to_string(),
+                justification: "Bell number recurrence: B(n+1) = Σ C(n,k)*B(k) for k=0..n"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1233,6 +1239,8 @@ fn multinomial_coefficient() -> Rule {
         name: "multinomial_coefficient",
         category: RuleCategory::Simplification,
         description: "Multinomial: n!/(k1!k2!...km!)",
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| {
             // Match division with factorial
             if let Expr::Div(num, _) = expr {
@@ -1281,14 +1289,18 @@ fn binomial_weighted_sum() -> Rule {
         name: "binomial_weighted_sum",
         category: RuleCategory::Simplification,
         description: "Σ k*C(n,k) = n*2^(n-1)",
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| {
             // Match multiplication pattern
             if let Expr::Mul(left, right) = expr {
                 // Check for k * C(n,k) pattern or similar power of 2
-                if matches!(right.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2))) {
+                if matches!(right.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)))
+                {
                     return true;
                 }
-                if matches!(left.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2))) {
+                if matches!(left.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)))
+                {
                     return true;
                 }
             }
@@ -1328,9 +1340,9 @@ fn subfactorial() -> Rule {
         name: "subfactorial",
         category: RuleCategory::Simplification,
         description: "Subfactorial !n = D(n)",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Factorial(_) | Expr::Div(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Factorial(_) | Expr::Div(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
@@ -1359,9 +1371,9 @@ fn christmas_stocking() -> Rule {
         name: "christmas_stocking",
         category: RuleCategory::Simplification,
         description: "C(n,m)*C(m,k) = C(n,k)*C(n-k,m-k)",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Mul(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
@@ -1392,6 +1404,8 @@ fn binomial_squares_sum() -> Rule {
         name: "binomial_squares_sum",
         category: RuleCategory::Simplification,
         description: "Σ C(n,k)^2 = C(2n,n)",
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| {
             // Match division pattern for binomial coefficient
             matches!(expr, Expr::Div(_, _) | Expr::Pow(_, _))
@@ -1425,9 +1439,9 @@ fn rising_factorial() -> Rule {
         name: "rising_factorial",
         category: RuleCategory::Expansion,
         description: "Rising factorial (x)_n",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Mul(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
@@ -1473,9 +1487,9 @@ fn falling_factorial() -> Rule {
         name: "falling_factorial",
         category: RuleCategory::Expansion,
         description: "Falling factorial (x)^n",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Mul(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
@@ -1505,13 +1519,14 @@ fn legendre_formula() -> Rule {
         name: "legendre_formula",
         category: RuleCategory::NumberTheory,
         description: "Legendre: vp(n!) = Σ ⌊n/p^k⌋",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Floor(_) | Expr::Div(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Floor(_) | Expr::Div(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Legendre's formula: highest power of p dividing n! is Σ ⌊n/p^k⌋".to_string(),
+                justification: "Legendre's formula: highest power of p dividing n! is Σ ⌊n/p^k⌋"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1537,13 +1552,15 @@ fn kummer_theorem() -> Rule {
         name: "kummer_theorem",
         category: RuleCategory::NumberTheory,
         description: "Kummer: vp(C(m+n,m)) = carries in base p",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Div(_, _) | Expr::Mod(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Mod(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Kummer: vp(C(m+n,m)) equals number of carries when adding m and n in base p".to_string(),
+                justification:
+                    "Kummer: vp(C(m+n,m)) equals number of carries when adding m and n in base p"
+                        .to_string(),
             }]
         },
         reversible: false,
@@ -1569,6 +1586,8 @@ fn lucas_theorem() -> Rule {
         name: "lucas_theorem",
         category: RuleCategory::NumberTheory,
         description: "Lucas: C(m,n) mod p",
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| {
             if let Expr::Mod(inner, _) = expr {
                 return matches!(inner.as_ref(), Expr::Div(_, _));
@@ -1578,7 +1597,9 @@ fn lucas_theorem() -> Rule {
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Lucas' theorem: C(m,n) mod p = Π C(mi,ni) mod p where m,n in base p".to_string(),
+                justification:
+                    "Lucas' theorem: C(m,n) mod p = Π C(mi,ni) mod p where m,n in base p"
+                        .to_string(),
             }]
         },
         reversible: false,
@@ -1605,9 +1626,9 @@ fn burnside_lemma() -> Rule {
         name: "burnside_lemma",
         category: RuleCategory::Simplification,
         description: "Burnside: |X/G| = (1/|G|) Σ |X^g|",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Div(_, _) | Expr::Mul(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
@@ -1637,13 +1658,15 @@ fn polya_enumeration() -> Rule {
         name: "polya_enumeration",
         category: RuleCategory::Simplification,
         description: "Polya enumeration theorem",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Div(_, _) | Expr::Mul(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Polya enumeration: count inequivalent configurations under group action".to_string(),
+                justification:
+                    "Polya enumeration: count inequivalent configurations under group action"
+                        .to_string(),
             }]
         },
         reversible: false,
@@ -1669,6 +1692,8 @@ fn catalan_alternative() -> Rule {
         name: "catalan_alternative",
         category: RuleCategory::Simplification,
         description: "C_n = (2n)!/(n!(n+1)!)",
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| {
             if let Expr::Div(num, _) = expr {
                 return matches!(num.as_ref(), Expr::Factorial(_));
@@ -1705,9 +1730,9 @@ fn partition_into_parts() -> Rule {
         name: "partition_into_parts",
         category: RuleCategory::Simplification,
         description: "p(n,k) = p(n-1,k-1) + p(n-k,k)",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Add(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
@@ -1751,13 +1776,15 @@ fn pattern_avoidance() -> Rule {
         name: "pattern_avoidance",
         category: RuleCategory::Simplification,
         description: "Permutations avoiding pattern",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Factorial(_) | Expr::Div(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Factorial(_) | Expr::Div(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Pattern-avoiding permutations counted by Catalan or similar sequences".to_string(),
+                justification:
+                    "Pattern-avoiding permutations counted by Catalan or similar sequences"
+                        .to_string(),
             }]
         },
         reversible: false,
@@ -1785,13 +1812,14 @@ fn derangement_simple_recurrence() -> Rule {
         name: "derangement_simple_recurrence",
         category: RuleCategory::Simplification,
         description: "D(n) = n*D(n-1) + (-1)^n",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _))
-        },
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Derangement simple recurrence: D(n) = n*D(n-1) + (-1)^n".to_string(),
+                justification: "Derangement simple recurrence: D(n) = n*D(n-1) + (-1)^n"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1819,6 +1847,8 @@ fn fibonacci_generating_function() -> Rule {
         name: "fibonacci_generating_function",
         category: RuleCategory::Simplification,
         description: "Fibonacci GF: x/(1-x-x^2)",
+        domains: &[Domain::Combinatorics],
+        requires: &[Feature::Combinatorics],
         is_applicable: |expr, _ctx| {
             // Match division with polynomial
             if let Expr::Div(_, denom) = expr {

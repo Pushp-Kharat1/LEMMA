@@ -107,6 +107,14 @@ pub enum Feature {
     Equation,
     /// Expression contains an inequality.
     Inequality,
+    /// Expression involves limits.
+    Limit,
+    /// Expression involves vectors.
+    Vector,
+    /// Expression involves partial derivatives.
+    PartialDerivative,
+    /// Expression involves combinatorics.
+    Combinatorics,
 }
 
 /// Context for rule application.

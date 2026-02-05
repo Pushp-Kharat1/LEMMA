@@ -58,6 +58,8 @@ fn pythagorean_identity() -> Rule {
         id: RuleId(19),
         name: "pythagorean_identity",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "Pythagorean identity: sin²(x) + cos²(x) = 1",
         is_applicable: |expr, _ctx| {
             // Check for sin²(x) + cos²(x) pattern
@@ -106,6 +108,8 @@ fn sin_double_angle() -> Rule {
         id: RuleId(20),
         name: "sin_double_angle",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "Double angle: 2sin(x)cos(x) = sin(2x)",
         is_applicable: |expr, _ctx| {
             // Check for 2 * sin(x) * cos(x) pattern
@@ -156,6 +160,8 @@ fn cos_double_angle() -> Rule {
         id: RuleId(21),
         name: "cos_double_angle",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "Double angle: cos²(x) - sin²(x) = cos(2x)",
         is_applicable: |expr, _ctx| {
             // Check for cos²(x) - sin²(x) pattern
@@ -196,6 +202,8 @@ fn sin_zero() -> Rule {
         id: RuleId(22),
         name: "sin_zero",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(0) = 0",
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(inner) = expr {
@@ -228,6 +236,8 @@ fn cos_zero() -> Rule {
         id: RuleId(23),
         name: "cos_zero",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(0) = 1",
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(inner) = expr {
@@ -260,6 +270,8 @@ fn tan_zero() -> Rule {
         id: RuleId(24),
         name: "tan_zero",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan(0) = 0",
         is_applicable: |expr, _ctx| {
             if let Expr::Tan(inner) = expr {
@@ -317,6 +329,8 @@ fn sin_pi() -> Rule {
         id: RuleId(40),
         name: "sin_pi",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(π) = 0",
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
@@ -345,6 +359,8 @@ fn cos_pi() -> Rule {
         id: RuleId(41),
         name: "cos_pi",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(π) = -1",
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
@@ -373,6 +389,8 @@ fn sin_pi_over_2() -> Rule {
         id: RuleId(42),
         name: "sin_pi_over_2",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(π/2) = 1",
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
@@ -405,6 +423,8 @@ fn cos_pi_over_2() -> Rule {
         id: RuleId(43),
         name: "cos_pi_over_2",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(π/2) = 0",
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
@@ -437,6 +457,8 @@ fn sin_pi_over_4() -> Rule {
         id: RuleId(44),
         name: "sin_pi_over_4",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(π/4) = √2/2",
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
@@ -472,6 +494,8 @@ fn cos_pi_over_4() -> Rule {
         id: RuleId(45),
         name: "cos_pi_over_4",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(π/4) = √2/2",
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
@@ -507,6 +531,8 @@ fn sin_pi_over_6() -> Rule {
         id: RuleId(46),
         name: "sin_pi_over_6",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(π/6) = 1/2",
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
@@ -539,6 +565,8 @@ fn cos_pi_over_6() -> Rule {
         id: RuleId(47),
         name: "cos_pi_over_6",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(π/6) = √3/2",
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
@@ -574,6 +602,8 @@ fn sin_pi_over_3() -> Rule {
         id: RuleId(48),
         name: "sin_pi_over_3",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(π/3) = √3/2",
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
@@ -609,6 +639,8 @@ fn cos_pi_over_3() -> Rule {
         id: RuleId(49),
         name: "cos_pi_over_3",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(π/3) = 1/2",
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
@@ -645,6 +677,8 @@ fn tan_identity() -> Rule {
         id: RuleId(50),
         name: "tan_identity",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan(x) = sin(x)/cos(x)",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Tan(_)),
         apply: |expr, _ctx| {
@@ -669,6 +703,8 @@ fn sec_identity() -> Rule {
         id: RuleId(51),
         name: "sec_identity",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "1/cos(x) = sec(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Div(num, denom) = expr {
@@ -702,6 +738,8 @@ fn csc_identity() -> Rule {
         id: RuleId(52),
         name: "csc_identity",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "1/sin(x) = csc(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Div(num, denom) = expr {
@@ -734,6 +772,8 @@ fn cot_identity() -> Rule {
         id: RuleId(53),
         name: "cot_identity",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(x)/sin(x) = cot(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Div(num, denom) = expr {
@@ -773,6 +813,8 @@ fn sin_neg() -> Rule {
         id: RuleId(54),
         name: "sin_neg",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(-x) = -sin(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(arg) = expr {
@@ -801,6 +843,8 @@ fn cos_neg() -> Rule {
         id: RuleId(55),
         name: "cos_neg",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(-x) = cos(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(arg) = expr {
@@ -829,6 +873,8 @@ fn tan_neg() -> Rule {
         id: RuleId(56),
         name: "tan_neg",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan(-x) = -tan(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Tan(arg) = expr {
@@ -861,6 +907,8 @@ fn sin_sum_formula() -> Rule {
         id: RuleId(57),
         name: "sin_sum_formula",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "2·sin(x)·cos(x) = sin(2x)",
         is_applicable: |expr, _ctx| {
             // Pattern: 2 * sin(x) * cos(x)
@@ -917,6 +965,8 @@ fn cos_sum_formula() -> Rule {
         id: RuleId(58),
         name: "cos_sum_formula",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos²(x) - sin²(x) = cos(2x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Sub(left, right) = expr {
@@ -986,6 +1036,8 @@ fn cos_double_angle_2cos() -> Rule {
         id: RuleId(200),
         name: "cos_double_angle_2cos",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "2cos²(x) - 1 = cos(2x)",
         is_applicable: |expr, _ctx| {
             // Match: 2*cos²(x) - 1
@@ -1031,6 +1083,8 @@ fn cos_double_angle_2sin() -> Rule {
         id: RuleId(201),
         name: "cos_double_angle_2sin",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "1 - 2sin²(x) = cos(2x)",
         is_applicable: |expr, _ctx| {
             // Match: 1 - 2*sin²(x)
@@ -1076,6 +1130,8 @@ fn tan_double_angle() -> Rule {
         id: RuleId(202),
         name: "tan_double_angle",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan(2x) ↔ 2tan(x)/(1-tan²(x))",
         is_applicable: |expr, _ctx| {
             // Match tan(2x) where arg is 2*something
@@ -1127,6 +1183,8 @@ fn sin_triple_angle() -> Rule {
         id: RuleId(203),
         name: "sin_triple_angle",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(3x) = 3sin(x) - 4sin³(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(inner) = expr {
@@ -1177,6 +1235,8 @@ fn cos_triple_angle() -> Rule {
         id: RuleId(204),
         name: "cos_triple_angle",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(3x) = 4cos³(x) - 3cos(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(inner) = expr {
@@ -1227,6 +1287,8 @@ fn tan_sec_identity() -> Rule {
         id: RuleId(205),
         name: "tan_sec_identity",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "1 + tan²(x) = sec²(x) = 1/cos²(x)",
         is_applicable: |expr, _ctx| {
             // Match: 1 + tan²(x)
@@ -1270,6 +1332,8 @@ fn cot_csc_identity() -> Rule {
         id: RuleId(206),
         name: "cot_csc_identity",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "1 + cot²(x) = csc²(x) = 1/sin²(x)",
         is_applicable: |expr, _ctx| {
             // Match: 1 + (cos/sin)² - simplified check
@@ -1324,6 +1388,8 @@ fn sin_sin_product() -> Rule {
         id: RuleId(207),
         name: "sin_sin_product",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(a)sin(b) = (cos(a-b) - cos(a+b))/2",
         is_applicable: |expr, _ctx| {
             if let Expr::Mul(left, right) = expr {
@@ -1358,6 +1424,8 @@ fn cos_cos_product() -> Rule {
         id: RuleId(208),
         name: "cos_cos_product",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(a)cos(b) = (cos(a-b) + cos(a+b))/2",
         is_applicable: |expr, _ctx| {
             if let Expr::Mul(left, right) = expr {
@@ -1392,6 +1460,8 @@ fn sin_cos_product() -> Rule {
         id: RuleId(209),
         name: "sin_cos_product",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(a)cos(b) = (sin(a+b) + sin(a-b))/2",
         is_applicable: |expr, _ctx| {
             if let Expr::Mul(left, right) = expr {
@@ -1433,6 +1503,8 @@ fn sin_half_angle() -> Rule {
         id: RuleId(210),
         name: "sin_half_angle",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(x/2) = √((1-cos(x))/2)",
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(inner) = expr {
@@ -1476,6 +1548,8 @@ fn cos_half_angle() -> Rule {
         id: RuleId(211),
         name: "cos_half_angle",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(x/2) = √((1+cos(x))/2)",
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(inner) = expr {
@@ -1519,6 +1593,8 @@ fn sin_cos_cofunction() -> Rule {
         id: RuleId(212),
         name: "sin_cos_cofunction",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(π/2 - x) = cos(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Sin(inner) = expr {
@@ -1555,6 +1631,8 @@ fn cos_sin_cofunction() -> Rule {
         id: RuleId(213),
         name: "cos_sin_cofunction",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(π/2 - x) = sin(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Cos(inner) = expr {
@@ -1590,6 +1668,8 @@ fn tan_cot_cofunction() -> Rule {
         id: RuleId(214),
         name: "tan_cot_cofunction",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan(π/2 - x) = cot(x) = cos(x)/sin(x)",
         is_applicable: |expr, _ctx| {
             if let Expr::Tan(inner) = expr {
@@ -1689,6 +1769,8 @@ fn hyperbolic_sinh() -> Rule {
         id: RuleId(220),
         name: "hyperbolic_sinh",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sinh(x) = (e^x - e^(-x))/2",
         is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
         apply: |expr, _| {
@@ -1708,6 +1790,8 @@ fn hyperbolic_cosh() -> Rule {
         id: RuleId(221),
         name: "hyperbolic_cosh",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cosh(x) = (e^x + e^(-x))/2",
         is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
         apply: |expr, _| {
@@ -1727,6 +1811,8 @@ fn hyperbolic_tanh() -> Rule {
         id: RuleId(222),
         name: "hyperbolic_tanh",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tanh(x) = sinh(x)/cosh(x)",
         is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
         apply: |expr, _| {
@@ -1746,6 +1832,8 @@ fn sinh_identity() -> Rule {
         id: RuleId(223),
         name: "sinh_double",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sinh(2x) = 2sinh(x)cosh(x)",
         is_applicable: |expr, _| matches!(expr, Expr::Mul(_, _)),
         apply: |expr, _| {
@@ -1765,6 +1853,8 @@ fn cosh_identity() -> Rule {
         id: RuleId(224),
         name: "cosh_double",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cosh(2x) = cosh²(x) + sinh²(x)",
         is_applicable: |expr, _| matches!(expr, Expr::Add(_, _)),
         apply: |expr, _| {
@@ -1784,6 +1874,8 @@ fn sinh_cosh_identity() -> Rule {
         id: RuleId(225),
         name: "sinh_cosh_pythagorean",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cosh²(x) - sinh²(x) = 1",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sub(_, _))
@@ -1805,6 +1897,8 @@ fn sin_arcsin() -> Rule {
         id: RuleId(226),
         name: "sin_arcsin",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(arcsin(x)) = x",
         is_applicable: |expr, _| {
             if let Expr::Sin(inner) = expr {
@@ -1834,6 +1928,8 @@ fn cos_arccos() -> Rule {
         id: RuleId(227),
         name: "cos_arccos",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(arccos(x)) = x",
         is_applicable: |expr, _| {
             if let Expr::Cos(inner) = expr {
@@ -1863,6 +1959,8 @@ fn tan_arctan() -> Rule {
         id: RuleId(228),
         name: "tan_arctan",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan(arctan(x)) = x",
         is_applicable: |expr, _| {
             if let Expr::Tan(inner) = expr {
@@ -1892,6 +1990,8 @@ fn arcsin_arccos_sum() -> Rule {
         id: RuleId(229),
         name: "arcsin_arccos_sum",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "arcsin(x) + arccos(x) = π/2",
         is_applicable: |expr, _| {
             if let Expr::Add(left, right) = expr {
@@ -1921,6 +2021,8 @@ fn sin_sum_to_product() -> Rule {
         id: RuleId(230),
         name: "sin_sum_to_product",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sinA + sinB = 2sin((A+B)/2)cos((A-B)/2)",
         is_applicable: |expr, _| {
             if let Expr::Add(left, right) = expr {
@@ -1945,6 +2047,8 @@ fn cos_sum_to_product() -> Rule {
         id: RuleId(231),
         name: "cos_sum_to_product",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cosA + cosB = 2cos((A+B)/2)cos((A-B)/2)",
         is_applicable: |expr, _| {
             if let Expr::Add(left, right) = expr {
@@ -1969,6 +2073,8 @@ fn sin_diff_to_product() -> Rule {
         id: RuleId(232),
         name: "sin_diff_to_product",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sinA - sinB = 2cos((A+B)/2)sin((A-B)/2)",
         is_applicable: |expr, _| {
             if let Expr::Sub(left, right) = expr {
@@ -1993,6 +2099,8 @@ fn cos_diff_to_product() -> Rule {
         id: RuleId(233),
         name: "cos_diff_to_product",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cosA - cosB = -2sin((A+B)/2)sin((A-B)/2)",
         is_applicable: |expr, _| {
             if let Expr::Sub(left, right) = expr {
@@ -2017,6 +2125,8 @@ fn sin_squared_half() -> Rule {
         id: RuleId(234),
         name: "sin_squared_half",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin²(x/2) = (1 - cos(x))/2",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Pow(_, _))
@@ -2038,6 +2148,8 @@ fn cos_squared_half() -> Rule {
         id: RuleId(235),
         name: "cos_squared_half",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos²(x/2) = (1 + cos(x))/2",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Pow(_, _))
@@ -2059,6 +2171,8 @@ fn tan_half_sin() -> Rule {
         id: RuleId(236),
         name: "tan_half_sin",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan(x/2) = sin(x)/(1 + cos(x))",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Tan(_))
@@ -2080,6 +2194,8 @@ fn tan_half_cos() -> Rule {
         id: RuleId(237),
         name: "tan_half_cos",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan(x/2) = (1 - cos(x))/sin(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Tan(_))
@@ -2101,6 +2217,8 @@ fn sin_3x_expand() -> Rule {
         id: RuleId(238),
         name: "sin_3x_expand",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(3x) = 3sin(x) - 4sin³(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sin(_))
@@ -2122,6 +2240,8 @@ fn cos_3x_expand() -> Rule {
         id: RuleId(239),
         name: "cos_3x_expand",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(3x) = 4cos³(x) - 3cos(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Cos(_))
@@ -2143,6 +2263,8 @@ fn sin_4x_formula() -> Rule {
         id: RuleId(240),
         name: "sin_4x_formula",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(4x) = 4sin(x)cos(x)(1 - 2sin²(x))",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sin(_))
@@ -2164,6 +2286,8 @@ fn cos_4x_formula() -> Rule {
         id: RuleId(241),
         name: "cos_4x_formula",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(4x) = 8cos⁴(x) - 8cos²(x) + 1",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Cos(_))
@@ -2185,6 +2309,8 @@ fn cot_reciprocal() -> Rule {
         id: RuleId(242),
         name: "cot_reciprocal",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cot(x) = 1/tan(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Div(_, _))
@@ -2206,6 +2332,8 @@ fn sec_reciprocal() -> Rule {
         id: RuleId(243),
         name: "sec_reciprocal",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sec(x) = 1/cos(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Div(_, _))
@@ -2227,6 +2355,8 @@ fn csc_reciprocal() -> Rule {
         id: RuleId(244),
         name: "csc_reciprocal",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "csc(x) = 1/sin(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Div(_, _))
@@ -2248,6 +2378,8 @@ fn sin_neg_x() -> Rule {
         id: RuleId(245),
         name: "sin_neg_x",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(-x) = -sin(x)",
         is_applicable: |expr, _| {
             if let Expr::Sin(inner) = expr {
@@ -2277,6 +2409,8 @@ fn cos_neg_x() -> Rule {
         id: RuleId(246),
         name: "cos_neg_x",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(-x) = cos(x)",
         is_applicable: |expr, _| {
             if let Expr::Cos(inner) = expr {
@@ -2306,6 +2440,8 @@ fn tan_neg_x() -> Rule {
         id: RuleId(247),
         name: "tan_neg_x",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan(-x) = -tan(x)",
         is_applicable: |expr, _| {
             if let Expr::Tan(inner) = expr {
@@ -2335,6 +2471,8 @@ fn sin_pi_minus() -> Rule {
         id: RuleId(248),
         name: "sin_pi_minus",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(π - x) = sin(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sin(_))
@@ -2356,6 +2494,8 @@ fn cos_pi_minus() -> Rule {
         id: RuleId(249),
         name: "cos_pi_minus",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(π - x) = -cos(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Cos(_))
@@ -2377,6 +2517,8 @@ fn sin_pi_plus() -> Rule {
         id: RuleId(250),
         name: "sin_pi_plus",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(π + x) = -sin(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sin(_))
@@ -2398,6 +2540,8 @@ fn cos_pi_plus() -> Rule {
         id: RuleId(251),
         name: "cos_pi_plus",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(π + x) = -cos(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Cos(_))
@@ -2419,6 +2563,8 @@ fn sin_2pi_plus() -> Rule {
         id: RuleId(252),
         name: "sin_2pi_plus",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(2π + x) = sin(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sin(_))
@@ -2440,6 +2586,8 @@ fn cos_2pi_plus() -> Rule {
         id: RuleId(253),
         name: "cos_2pi_plus",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(2π + x) = cos(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Cos(_))
@@ -2461,6 +2609,8 @@ fn tan_pi_plus() -> Rule {
         id: RuleId(254),
         name: "tan_pi_plus",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan(π + x) = tan(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Tan(_))
@@ -2482,6 +2632,8 @@ fn sin_complementary() -> Rule {
         id: RuleId(255),
         name: "sin_complementary",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(π/2 - x) = cos(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sin(_))
@@ -2503,6 +2655,8 @@ fn cos_complementary() -> Rule {
         id: RuleId(256),
         name: "cos_complementary",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(π/2 - x) = sin(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Cos(_))
@@ -2524,6 +2678,8 @@ fn sin_supplementary() -> Rule {
         id: RuleId(257),
         name: "sin_supplementary",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin(π - x) = sin(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sin(_))
@@ -2545,6 +2701,8 @@ fn sin_squared_formula() -> Rule {
         id: RuleId(258),
         name: "sin_squared_formula",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin²(x) = (1 - cos(2x))/2",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Pow(_, _))
@@ -2566,6 +2724,8 @@ fn cos_squared_formula() -> Rule {
         id: RuleId(259),
         name: "cos_squared_formula",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos²(x) = (1 + cos(2x))/2",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Pow(_, _))
@@ -2587,6 +2747,8 @@ fn tan_squared_formula() -> Rule {
         id: RuleId(260),
         name: "tan_squared_formula",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "tan²(x) = (1 - cos(2x))/(1 + cos(2x))",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Pow(_, _))
@@ -2608,6 +2770,8 @@ fn sin_pow4() -> Rule {
         id: RuleId(261),
         name: "sin_pow4",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "sin⁴(x) = (3 - 4cos(2x) + cos(4x))/8",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Pow(_, _))
@@ -2629,6 +2793,8 @@ fn cos_pow4() -> Rule {
         id: RuleId(262),
         name: "cos_pow4",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos⁴(x) = (3 + 4cos(2x) + cos(4x))/8",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Pow(_, _))
@@ -2650,6 +2816,8 @@ fn triple_sin_formula() -> Rule {
         id: RuleId(263),
         name: "triple_sin_formula",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "3sin(x) - sin(3x) = 4sin³(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sub(_, _))
@@ -2671,6 +2839,8 @@ fn triple_cos_formula() -> Rule {
         id: RuleId(264),
         name: "triple_cos_formula",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "cos(3x) + 3cos(x) = 4cos³(x)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Add(_, _))
@@ -2692,6 +2862,8 @@ fn chebyshev_t2() -> Rule {
         id: RuleId(265),
         name: "chebyshev_t2",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "T_2(x) = 2x² - 1",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sub(_, _))
@@ -2713,6 +2885,8 @@ fn chebyshev_t3() -> Rule {
         id: RuleId(266),
         name: "chebyshev_t3",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "T_3(x) = 4x³ - 3x",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sub(_, _))
@@ -2734,6 +2908,8 @@ fn chebyshev_u2() -> Rule {
         id: RuleId(267),
         name: "chebyshev_u2",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "U_2(x) = 4x² - 1",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sub(_, _))
@@ -2755,6 +2931,8 @@ fn chebyshev_u3() -> Rule {
         id: RuleId(268),
         name: "chebyshev_u3",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "U_3(x) = 8x³ - 4x",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Sub(_, _))
@@ -2776,6 +2954,8 @@ fn prosthaphaeresis_1() -> Rule {
         id: RuleId(269),
         name: "prosthaphaeresis_1",
         category: RuleCategory::TrigIdentity,
+        domains: &[crate::rule::Domain::Trigonometry],
+        requires: &[crate::rule::Feature::Trig],
         description: "2cos(A)cos(B) = cos(A+B) + cos(A-B)",
         is_applicable: |expr, _| {
             matches!(expr, Expr::Mul(_, _))

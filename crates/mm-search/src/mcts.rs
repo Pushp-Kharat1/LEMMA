@@ -253,7 +253,7 @@ impl NeuralMCTS {
         let profile = mm_rules::analyze(&node.state);
 
         // GUARDRAIL: Filter rules by domain and features BEFORE NN scoring
-        let valid_rules = mm_rules::filter_rules(self.rules.all(), &profile, &node.state, &ctx);
+        let valid_rules = mm_rules::filter_rules(self.rules.all(), &profile);
 
         // Get policy priors from neural network (for all rules)
         let priors = self
@@ -375,7 +375,7 @@ impl NeuralMCTS {
 
         for _iteration in 0..MAX_ITERATIONS {
             // GUARDRAIL: Filter rules by domain and features
-            let applicable = mm_rules::filter_rules(self.rules.all(), &profile, &current, &ctx);
+            let applicable = mm_rules::filter_rules(self.rules.all(), &profile);
             if applicable.is_empty() {
                 break; // No more rules - we're done
             }
@@ -522,6 +522,7 @@ impl NeuralMCTS {
     /// This is the main entry point for solving problems like integrals of sums.
     pub fn progressive_solve(&self, expr: Expr) -> Solution {
         // 1. Try pattern match first (fast path for known forms)
+        /* TODO: Re-enable once patterns.rs returns solved Expression
         if let Some(result) = mm_rules::match_integral_pattern(&expr) {
             return Solution {
                 problem: expr.clone(),
@@ -536,6 +537,7 @@ impl NeuralMCTS {
                 verified: true,
             };
         }
+        */
 
         // 2. Check if this is an integral of a sum - decompose and solve each term
         if let Expr::Integral { expr: inner, var } = &expr {
@@ -549,7 +551,8 @@ impl NeuralMCTS {
                         .iter()
                         .map(|t| (t.clone(), mm_rules::solvability_score(t)))
                         .collect();
-                    scored.sort_by(|a, b| b.1.cmp(&a.1));
+                    scored
+                        .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
                     // Solve each term as a separate integral
                     let mut all_steps = Vec::new();
@@ -562,21 +565,23 @@ impl NeuralMCTS {
                         };
 
                         // Try pattern match on this term
+                        /* TODO: Re-enable
                         if let Some(result) = mm_rules::match_integral_pattern(&term_integral) {
                             all_steps.push(Step {
                                 before: term_integral.clone(),
                                 after: result.clone(),
                                 rule_id: RuleId(0),
                                 rule_name: "pattern_match",
-                                justification: format!("Pattern matched: ∫{:?}", term),
+                                justification: format!("Pattern matched: {:?} -> {:?}", term, result),
                             });
                             partial_results.push(result);
                         } else {
-                            // Fall back to regular simplify
-                            let term_solution = self.simplify(term_integral);
-                            all_steps.extend(term_solution.steps);
-                            partial_results.push(term_solution.result);
-                        }
+                        */
+                        // Fall back to regular simplify
+                        let term_solution = self.simplify(term_integral);
+                        all_steps.extend(term_solution.steps);
+                        partial_results.push(term_solution.result);
+                        // }
                     }
 
                     // Recombine results by addition

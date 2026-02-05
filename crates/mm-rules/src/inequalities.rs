@@ -7,7 +7,7 @@
 //! Inequality rules for IMO-level problem solving.
 //! Includes AM-GM, Cauchy-Schwarz, Jensen's, triangle inequality, and more.
 
-use crate::{Domain, Rule, RuleApplication, RuleCategory, RuleId};
+use crate::{Domain, Feature, Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
 /// Aggregates all available inequality rules into a single list.
@@ -834,7 +834,7 @@ fn qm_am_inequality() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "QM >= AM: √((a²+b²)/2) >= (a+b)/2",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| {
             // Match sqrt((a² + b²)/2) pattern
             if let Expr::Sqrt(inner) = expr {
@@ -892,7 +892,7 @@ fn hm_gm_inequality() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "HM <= GM: 2ab/(a+b) <= √(ab)",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| {
             // Match 2ab/(a+b) pattern
             if let Expr::Div(num, denom) = expr {
@@ -935,7 +935,7 @@ fn positive_square_root() -> Rule {
         category: RuleCategory::Simplification,
         description: "√a >= 0 for a >= 0",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Sqrt(_)),
         apply: |_expr, _ctx| vec![],
         reversible: false,
@@ -951,7 +951,7 @@ fn exp_positivity() -> Rule {
         category: RuleCategory::Simplification,
         description: "e^x > 0 for all x",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Exp(_)),
         apply: |_expr, _ctx| vec![],
         reversible: false,
@@ -967,7 +967,7 @@ fn abs_product() -> Rule {
         category: RuleCategory::Simplification,
         description: "|ab| = |a||b|",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| {
             if let Expr::Abs(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Mul(_, _));
@@ -1001,7 +1001,7 @@ fn abs_quotient() -> Rule {
         category: RuleCategory::Simplification,
         description: "|a/b| = |a|/|b|",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| {
             if let Expr::Abs(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Div(_, _));
@@ -1035,7 +1035,7 @@ fn abs_power() -> Rule {
         category: RuleCategory::Simplification,
         description: "|a^n| = |a|^n",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| {
             if let Expr::Abs(inner) = expr {
                 return matches!(inner.as_ref(), Expr::Pow(_, _));
@@ -1066,7 +1066,7 @@ fn add_to_both_sides() -> Rule {
         category: RuleCategory::EquationSolving,
         description: "Add same expression to both sides of equation",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. }),
         apply: |_expr, _ctx| vec![], // Needs c from context
         reversible: true,
@@ -1082,7 +1082,7 @@ fn mul_positive_both_sides() -> Rule {
         category: RuleCategory::EquationSolving,
         description: "Multiply both sides by positive expression",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. }),
         apply: |_expr, _ctx| vec![], // Needs c from context
         reversible: true,
@@ -1098,7 +1098,7 @@ fn sqrt_comparison() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "For a,b >= 0: a >= b => √a >= √b",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| {
             // Match a >= b where both could have sqrt
             matches!(expr, Expr::Gte(_, _) | Expr::Gt(_, _))
@@ -1128,7 +1128,7 @@ fn ln_comparison() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "For a,b > 0: a > b => ln(a) > ln(b)",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _)),
         apply: |expr, _ctx| {
             if let Expr::Gt(a, b) = expr {
@@ -1155,7 +1155,7 @@ fn exp_monotonic() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "a > b => e^a > e^b (exp is increasing)",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _)),
         apply: |expr, _ctx| {
             if let Expr::Gt(a, b) = expr {
@@ -1197,7 +1197,7 @@ fn ln_monotonic() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "a > b > 0 => ln(a) > ln(b) (ln is increasing)",
         domains: &[Domain::Inequalities],
-        requires: &[],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _)),
         apply: |expr, _ctx| {
             if let Expr::Gt(a, b) = expr {
@@ -1238,11 +1238,14 @@ fn holder_inequality() -> Rule {
         name: "holder_inequality",
         category: RuleCategory::Inequality,
         description: "Holder: (Σ|ab|)^p <= (Σ|a|^p)(Σ|b|^q), 1/p+1/q=1",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Holder's inequality: (Σ|ab|)^p <= (Σ|a|^p)(Σ|b|^q) where 1/p+1/q=1".to_string(),
+                justification: "Holder's inequality: (Σ|ab|)^p <= (Σ|a|^p)(Σ|b|^q) where 1/p+1/q=1"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1270,11 +1273,14 @@ fn jensen_convex() -> Rule {
         name: "jensen_convex",
         category: RuleCategory::Inequality,
         description: "Jensen (convex): f((x+y)/2) <= (f(x)+f(y))/2",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Add(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Jensen's inequality for convex f: f((x+y)/2) <= (f(x)+f(y))/2".to_string(),
+                justification: "Jensen's inequality for convex f: f((x+y)/2) <= (f(x)+f(y))/2"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1300,11 +1306,14 @@ fn jensen_concave() -> Rule {
         name: "jensen_concave",
         category: RuleCategory::Inequality,
         description: "Jensen (concave): f((x+y)/2) >= (f(x)+f(y))/2",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Add(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Jensen's inequality for concave f: f((x+y)/2) >= (f(x)+f(y))/2".to_string(),
+                justification: "Jensen's inequality for concave f: f((x+y)/2) >= (f(x)+f(y))/2"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1330,11 +1339,15 @@ fn jensen_weighted() -> Rule {
         name: "jensen_weighted",
         category: RuleCategory::Inequality,
         description: "Weighted Jensen: f(Σw_i·x_i) <= Σw_i·f(x_i)",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Weighted Jensen for convex f: f(Σw_i·x_i) <= Σw_i·f(x_i) where Σw_i=1".to_string(),
+                justification:
+                    "Weighted Jensen for convex f: f(Σw_i·x_i) <= Σw_i·f(x_i) where Σw_i=1"
+                        .to_string(),
             }]
         },
         reversible: false,
@@ -1363,11 +1376,15 @@ fn chebyshev_sum() -> Rule {
         name: "chebyshev_sum",
         category: RuleCategory::Inequality,
         description: "Chebyshev: (Σa)(Σb) <= n·Σab (same order)",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Chebyshev's inequality: (Σa)(Σb) <= n·Σab for similarly ordered sequences".to_string(),
+                justification:
+                    "Chebyshev's inequality: (Σa)(Σb) <= n·Σab for similarly ordered sequences"
+                        .to_string(),
             }]
         },
         reversible: false,
@@ -1393,11 +1410,14 @@ fn power_mean_inequality() -> Rule {
         name: "power_mean_inequality",
         category: RuleCategory::Inequality,
         description: "Power mean: M_p <= M_q for p <= q",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Div(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Power mean inequality: M_p(a1,...,an) <= M_q(a1,...,an) for p <= q".to_string(),
+                justification: "Power mean inequality: M_p(a1,...,an) <= M_q(a1,...,an) for p <= q"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1422,11 +1442,15 @@ fn muirhead_inequality() -> Rule {
         name: "muirhead_inequality",
         category: RuleCategory::Inequality,
         description: "Muirhead: [a,b] majorizes [c,d]",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Muirhead's inequality: symmetric sum [a,b] >= [c,d] if [a,b] majorizes [c,d]".to_string(),
+                justification:
+                    "Muirhead's inequality: symmetric sum [a,b] >= [c,d] if [a,b] majorizes [c,d]"
+                        .to_string(),
             }]
         },
         reversible: false,
@@ -1476,11 +1500,14 @@ fn schur_inequality() -> Rule {
         name: "schur_inequality",
         category: RuleCategory::Inequality,
         description: "Schur: Σx^r(x-y)(x-z) >= 0 for r>=0",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Schur's inequality: x^r(x-y)(x-z) + cyclic >= 0 for r>=0".to_string(),
+                justification: "Schur's inequality: x^r(x-y)(x-z) + cyclic >= 0 for r>=0"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1507,11 +1534,14 @@ fn nesbitt_inequality() -> Rule {
         name: "nesbitt_inequality",
         category: RuleCategory::Inequality,
         description: "Nesbitt: a/(b+c) + b/(a+c) + c/(a+b) >= 3/2",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Div(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: Expr::Div(Box::new(Expr::int(3)), Box::new(Expr::int(2))),
-                justification: "Nesbitt's inequality: a/(b+c) + b/(a+c) + c/(a+b) >= 3/2".to_string(),
+                justification: "Nesbitt's inequality: a/(b+c) + b/(a+c) + c/(a+b) >= 3/2"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1539,6 +1569,8 @@ fn rearrangement_inequality() -> Rule {
         name: "rearrangement_inequality",
         category: RuleCategory::Inequality,
         description: "Rearrangement: same order gives max sum",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1576,11 +1608,14 @@ fn young_inequality() -> Rule {
         name: "young_inequality",
         category: RuleCategory::Inequality,
         description: "Young: ab <= a^p/p + b^q/q, 1/p+1/q=1",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Young's inequality: ab <= a^p/p + b^q/q where 1/p+1/q=1".to_string(),
+                justification: "Young's inequality: ab <= a^p/p + b^q/q where 1/p+1/q=1"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1608,11 +1643,14 @@ fn minkowski_inequality() -> Rule {
         name: "minkowski_inequality",
         category: RuleCategory::Inequality,
         description: "Minkowski: ||a+b||_p <= ||a||_p + ||b||_p",
+        domains: &[Domain::Inequalities],
+        requires: &[Feature::Inequality],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: expr.clone(),
-                justification: "Minkowski's inequality: ||a+b||_p <= ||a||_p + ||b||_p for p>=1".to_string(),
+                justification: "Minkowski's inequality: ||a+b||_p <= ||a||_p + ||b||_p for p>=1"
+                    .to_string(),
             }]
         },
         reversible: false,

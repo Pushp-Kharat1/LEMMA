@@ -7,7 +7,7 @@
 //! Advanced polynomial rules for IMO-level problem solving.
 //! Includes Vieta's formulas, symmetric polynomials, partial fractions.
 
-use crate::{Domain, Rule, RuleApplication, RuleCategory, RuleId};
+use crate::{Domain, Feature, Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational};
 
 /// Collects the complete set of polynomial transformation and solving rules.
@@ -51,7 +51,7 @@ fn vieta_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "For ax² + bx + c = 0: r₁ + r₂ = -b/a",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Equation { .. }),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -69,7 +69,7 @@ fn vieta_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "For ax² + bx + c = 0: r₁ · r₂ = c/a",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Equation { .. }),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -87,7 +87,7 @@ fn vieta_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "For ax³ + bx² + cx + d = 0: r₁ + r₂ + r₃ = -b/a",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Equation { .. }),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -105,7 +105,7 @@ fn vieta_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "r₁r₂ + r₂r₃ + r₁r₃ = c/a",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -123,7 +123,7 @@ fn vieta_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "r₁ · r₂ · r₃ = -d/a",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -151,7 +151,7 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "e₁ = Σxᵢ (sum of variables)",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -168,7 +168,7 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "e₂ = Σxᵢxⱼ (sum of pairwise products)",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -186,7 +186,7 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "p₁ = e₁",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -203,7 +203,7 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "p₂ = e₁² - 2e₂",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Pow(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -220,7 +220,7 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "p₃ = e₁³ - 3e₁e₂ + 3e₃",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| {
                 matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _) | Expr::Pow(_, _))
             },
@@ -240,7 +240,7 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             category: RuleCategory::Simplification,
             description: "x² + y² = (x+y)² - 2xy",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| {
                 if let Expr::Add(a, b) = expr {
                     let a_sq = matches!(a.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2)));
@@ -278,7 +278,7 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             category: RuleCategory::Simplification,
             description: "x³ + y³ = (x+y)³ - 3xy(x+y)",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -296,7 +296,7 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
             category: RuleCategory::Factoring,
             description: "x³+y³+z³-3xyz = (x+y+z)(x²+y²+z²-xy-yz-zx)",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -334,7 +334,7 @@ fn factoring_rules() -> Vec<Rule> {
             category: RuleCategory::Factoring,
             description: "(x-a) | P(x) ⟺ P(a) = 0",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. } | Expr::Div(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -352,7 +352,7 @@ fn factoring_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "P(a) is remainder when dividing P(x) by (x-a)",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Add(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -372,7 +372,7 @@ fn factoring_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "P(x) = D(x)·Q(x) + R(x)",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| {
                 matches!(expr, Expr::Div(_, _) | Expr::Add(_, _) | Expr::Mul(_, _))
             },
@@ -392,7 +392,7 @@ fn factoring_rules() -> Vec<Rule> {
             category: RuleCategory::Simplification,
             description: "x² + bx = (x + b/2)² - b²/4",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| {
                 // Match pattern x² + bx
                 if let Expr::Add(a, b) = expr {
@@ -417,7 +417,8 @@ fn factoring_rules() -> Vec<Rule> {
                         let quarter_b_sq = Expr::Pow(Box::new(half_b), Box::new(Expr::int(2)));
                         return vec![RuleApplication {
                             result: Expr::Sub(Box::new(squared), Box::new(quarter_b_sq)),
-                            justification: "Complete the square: x² + bx = (x + b/2)² - (b/2)²".to_string(),
+                            justification: "Complete the square: x² + bx = (x + b/2)² - (b/2)²"
+                                .to_string(),
                         }];
                     }
                 }
@@ -433,7 +434,7 @@ fn factoring_rules() -> Vec<Rule> {
             category: RuleCategory::Factoring,
             description: "xⁿ - yⁿ = (x-y)(xⁿ⁻¹ + xⁿ⁻²y + ... + yⁿ⁻¹)",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| {
                 if let Expr::Sub(a, b) = expr {
                     if let (Expr::Pow(_, exp_a), Expr::Pow(_, exp_b)) = (a.as_ref(), b.as_ref()) {
@@ -450,7 +451,9 @@ fn factoring_rules() -> Vec<Rule> {
                         let diff = Expr::Sub(base_a.clone(), base_b.clone());
                         return vec![RuleApplication {
                             result: Expr::Mul(Box::new(diff), Box::new(expr.clone())),
-                            justification: "Difference of powers: xⁿ - yⁿ = (x-y)(xⁿ⁻¹ + xⁿ⁻²y + ... + yⁿ⁻¹)".to_string(),
+                            justification:
+                                "Difference of powers: xⁿ - yⁿ = (x-y)(xⁿ⁻¹ + xⁿ⁻²y + ... + yⁿ⁻¹)"
+                                    .to_string(),
                         }];
                     }
                 }
@@ -465,6 +468,8 @@ fn factoring_rules() -> Vec<Rule> {
             name: "diff_cubes",
             category: RuleCategory::Factoring,
             description: "a³ - b³ = (a-b)(a² + ab + b²)",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| {
                 if let Expr::Sub(a, b) = expr {
                     let a_cube = matches!(a.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(3)));
@@ -481,10 +486,14 @@ fn factoring_rules() -> Vec<Rule> {
                         let a_sq = Expr::Pow(base_a.clone(), Box::new(Expr::int(2)));
                         let ab = Expr::Mul(base_a.clone(), base_b.clone());
                         let b_sq = Expr::Pow(base_b.clone(), Box::new(Expr::int(2)));
-                        let sum = Expr::Add(Box::new(Expr::Add(Box::new(a_sq), Box::new(ab))), Box::new(b_sq));
+                        let sum = Expr::Add(
+                            Box::new(Expr::Add(Box::new(a_sq), Box::new(ab))),
+                            Box::new(b_sq),
+                        );
                         return vec![RuleApplication {
                             result: Expr::Mul(Box::new(diff), Box::new(sum)),
-                            justification: "Difference of cubes: a³ - b³ = (a-b)(a² + ab + b²)".to_string(),
+                            justification: "Difference of cubes: a³ - b³ = (a-b)(a² + ab + b²)"
+                                .to_string(),
                         }];
                     }
                 }
@@ -499,6 +508,8 @@ fn factoring_rules() -> Vec<Rule> {
             name: "sum_cubes",
             category: RuleCategory::Factoring,
             description: "a³ + b³ = (a+b)(a² - ab + b²)",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| {
                 if let Expr::Add(a, b) = expr {
                     let a_cube = matches!(a.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if *c == Rational::from_integer(3)));
@@ -515,10 +526,14 @@ fn factoring_rules() -> Vec<Rule> {
                         let a_sq = Expr::Pow(base_a.clone(), Box::new(Expr::int(2)));
                         let ab = Expr::Mul(base_a.clone(), base_b.clone());
                         let b_sq = Expr::Pow(base_b.clone(), Box::new(Expr::int(2)));
-                        let diff = Expr::Sub(Box::new(Expr::Sub(Box::new(a_sq), Box::new(ab))), Box::new(b_sq));
+                        let diff = Expr::Sub(
+                            Box::new(Expr::Sub(Box::new(a_sq), Box::new(ab))),
+                            Box::new(b_sq),
+                        );
                         return vec![RuleApplication {
                             result: Expr::Mul(Box::new(sum), Box::new(diff)),
-                            justification: "Sum of cubes: a³ + b³ = (a+b)(a² - ab + b²)".to_string(),
+                            justification: "Sum of cubes: a³ + b³ = (a+b)(a² - ab + b²)"
+                                .to_string(),
                         }];
                     }
                 }
@@ -533,13 +548,14 @@ fn factoring_rules() -> Vec<Rule> {
             name: "sophie_germain",
             category: RuleCategory::Factoring,
             description: "a⁴ + 4b⁴ = (a² + 2b² + 2ab)(a² + 2b² - 2ab)",
-            is_applicable: |expr, _ctx| {
-                matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _))
-            },
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
                     result: expr.clone(),
-                    justification: "Sophie Germain: a⁴ + 4b⁴ = (a² + 2b² + 2ab)(a² + 2b² - 2ab)".to_string(),
+                    justification: "Sophie Germain: a⁴ + 4b⁴ = (a² + 2b² + 2ab)(a² + 2b² - 2ab)"
+                        .to_string(),
                 }]
             },
             reversible: true,
@@ -551,11 +567,14 @@ fn factoring_rules() -> Vec<Rule> {
             name: "factor_by_grouping",
             category: RuleCategory::Factoring,
             description: "ax + ay + bx + by = (a+b)(x+y)",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
                     result: expr.clone(),
-                    justification: "Factoring by grouping: ax + ay + bx + by = (a+b)(x+y)".to_string(),
+                    justification: "Factoring by grouping: ax + ay + bx + by = (a+b)(x+y)"
+                        .to_string(),
                 }]
             },
             reversible: true,
@@ -567,6 +586,8 @@ fn factoring_rules() -> Vec<Rule> {
             name: "sum_odd_powers",
             category: RuleCategory::Factoring,
             description: "x^(2n+1) + y^(2n+1) = (x+y)·Q(x,y)",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -583,11 +604,14 @@ fn factoring_rules() -> Vec<Rule> {
             name: "diff_even_powers",
             category: RuleCategory::Factoring,
             description: "x^(2n) - y^(2n) = (x-y)(x+y)·Q(x,y)",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Pow(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
                     result: expr.clone(),
-                    justification: "Difference of even powers: x^(2n) - y^(2n) = (x²-y²)·Q(x,y)".to_string(),
+                    justification: "Difference of even powers: x^(2n) - y^(2n) = (x²-y²)·Q(x,y)"
+                        .to_string(),
                 }]
             },
             reversible: false,
@@ -599,9 +623,13 @@ fn factoring_rules() -> Vec<Rule> {
             name: "cyclotomic_factor",
             category: RuleCategory::Factoring,
             description: "x^n - 1 = Π Φ_d(x) for d|n",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| {
                 if let Expr::Sub(a, b) = expr {
-                    if matches!(a.as_ref(), Expr::Pow(_, _)) && matches!(b.as_ref(), Expr::Const(c) if c.is_one()) {
+                    if matches!(a.as_ref(), Expr::Pow(_, _))
+                        && matches!(b.as_ref(), Expr::Const(c) if c.is_one())
+                    {
                         return true;
                     }
                 }
@@ -622,6 +650,8 @@ fn factoring_rules() -> Vec<Rule> {
             name: "binomial_factor",
             category: RuleCategory::Factoring,
             description: "(x+y)^n expansion via binomial theorem",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| {
                 if let Expr::Pow(base, _) = expr {
                     return matches!(base.as_ref(), Expr::Add(_, _) | Expr::Sub(_, _));
@@ -643,9 +673,9 @@ fn factoring_rules() -> Vec<Rule> {
             name: "quadratic_substitution",
             category: RuleCategory::Factoring,
             description: "Biquadratic: x⁴ + bx² + c via u = x²",
-            is_applicable: |expr, _ctx| {
-                matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _))
-            },
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
                     result: expr.clone(),
@@ -661,11 +691,15 @@ fn factoring_rules() -> Vec<Rule> {
             name: "symmetric_factor",
             category: RuleCategory::Factoring,
             description: "Symmetric polynomial factorization",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
                     result: expr.clone(),
-                    justification: "Symmetric polynomial can be factored via elementary symmetric functions".to_string(),
+                    justification:
+                        "Symmetric polynomial can be factored via elementary symmetric functions"
+                            .to_string(),
                 }]
             },
             reversible: false,
@@ -677,11 +711,14 @@ fn factoring_rules() -> Vec<Rule> {
             name: "partial_fractions",
             category: RuleCategory::Simplification,
             description: "P(x)/Q(x) = Σ A_i/(x-r_i)^k",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
                     result: expr.clone(),
-                    justification: "Partial fraction decomposition: P(x)/Q(x) = Σ A_i/(x-r_i)^k".to_string(),
+                    justification: "Partial fraction decomposition: P(x)/Q(x) = Σ A_i/(x-r_i)^k"
+                        .to_string(),
                 }]
             },
             reversible: false,
@@ -693,6 +730,8 @@ fn factoring_rules() -> Vec<Rule> {
             name: "horner_method",
             category: RuleCategory::Simplification,
             description: "P(x) = (...((a_n·x + a_{n-1})x + ...)x + a_0",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -709,11 +748,14 @@ fn factoring_rules() -> Vec<Rule> {
             name: "synthetic_division",
             category: RuleCategory::Simplification,
             description: "Synthetic division by (x-a)",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
                     result: expr.clone(),
-                    justification: "Synthetic division: efficient division by linear factor".to_string(),
+                    justification: "Synthetic division: efficient division by linear factor"
+                        .to_string(),
                 }]
             },
             reversible: false,
@@ -725,6 +767,8 @@ fn factoring_rules() -> Vec<Rule> {
             name: "polynomial_long_division",
             category: RuleCategory::Simplification,
             description: "Long division algorithm for polynomials",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -741,6 +785,8 @@ fn factoring_rules() -> Vec<Rule> {
             name: "ruffini_rule",
             category: RuleCategory::Simplification,
             description: "Ruffini's rule for polynomial division",
+            domains: &[Domain::Algebra],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -768,7 +814,7 @@ fn rational_root_rules() -> Vec<Rule> {
             description:
                 "Rational roots of aₙxⁿ + ... + a₀ have form ±(factor of a₀)/(factor of aₙ)",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Equation { .. }),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -788,7 +834,7 @@ fn rational_root_rules() -> Vec<Rule> {
             category: RuleCategory::AlgebraicSolving,
             description: "Integer roots divide constant term",
             domains: &[Domain::Algebra],
-            requires: &[],
+            requires: &[Feature::Polynomial],
             is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Mod(_, _)),
             apply: |expr, _ctx| {
                 vec![RuleApplication {
@@ -848,7 +894,7 @@ fn quadratic_formula() -> Rule {
         category: RuleCategory::EquationSolving,
         description: "x = (-b ± √(b²-4ac)) / 2a",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. } | Expr::Sqrt(_)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -869,7 +915,7 @@ fn discriminant_sign() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "Δ > 0 ⟹ 2 real roots; Δ = 0 ⟹ 1 repeated; Δ < 0 ⟹ complex",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| {
             matches!(
                 expr,
@@ -895,7 +941,7 @@ fn discriminant_perfect_square() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "Δ = k² ⟹ rational roots",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Sqrt(_)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -916,7 +962,7 @@ fn cardano_formula() -> Rule {
         category: RuleCategory::EquationSolving,
         description: "Cardano's formula for x³ + px + q = 0",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Equation { .. }),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -937,7 +983,7 @@ fn cubic_discriminant() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "Cubic discriminant Δ = -4p³ - 27q²",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _) | Expr::Pow(_, _))
         },
@@ -960,7 +1006,7 @@ fn quartic_resolvent() -> Rule {
         category: RuleCategory::EquationSolving,
         description: "Resolvent cubic for quartic equations",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Equation { .. }),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -981,7 +1027,7 @@ fn descartes_rule() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "Number of positive roots ≤ sign changes",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| {
             matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _) | Expr::Lte(_, _))
         },
@@ -1004,7 +1050,7 @@ fn sturm_sequence() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "Sturm's theorem for counting real roots",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Derivative { expr: _, var: _ }),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1025,7 +1071,7 @@ fn resultant_definition() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "Res(f,g) = 0 ⟺ f and g share a root",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. } | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1046,7 +1092,7 @@ fn bezout_theorem() -> Rule {
         category: RuleCategory::Simplification,
         description: "f·u + g·v = gcd(f,g) for some polynomials u,v",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::GCD(_, _) | Expr::Add(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1068,7 +1114,7 @@ fn cauchy_bound() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "Cauchy bound on polynomial roots",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Abs(_) | Expr::Lte(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1089,7 +1135,7 @@ fn fujiwara_bound() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "Fujiwara bound on polynomial roots",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Abs(_) | Expr::Lte(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1110,7 +1156,7 @@ fn gauss_lucas_theorem() -> Rule {
         category: RuleCategory::AlgebraicSolving,
         description: "Critical points in convex hull of roots",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Derivative { expr: _, var: _ }),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1133,7 +1179,7 @@ fn lagrange_interpolation() -> Rule {
         category: RuleCategory::Simplification,
         description: "P(x) = Σ yᵢ Π(x-xⱼ)/(xᵢ-xⱼ)",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Product { .. } | Expr::Sum { .. }),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1154,7 +1200,7 @@ fn newton_interpolation() -> Rule {
         category: RuleCategory::Simplification,
         description: "Newton form of interpolating polynomial",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1175,7 +1221,7 @@ fn chebyshev_recurrence() -> Rule {
         category: RuleCategory::Simplification,
         description: "Chebyshev T_{n+1} = 2xT_n - T_{n-1}",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1196,7 +1242,7 @@ fn hermite_recurrence() -> Rule {
         category: RuleCategory::Simplification,
         description: "Hermite H_{n+1} = 2xH_n - 2nH_{n-1}",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1217,7 +1263,7 @@ fn legendre_recurrence() -> Rule {
         category: RuleCategory::Simplification,
         description: "Legendre (n+1)P_{n+1} = (2n+1)xP_n - nP_{n-1}",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {
@@ -1239,7 +1285,7 @@ fn laguerre_recurrence() -> Rule {
         category: RuleCategory::Simplification,
         description: "Laguerre L_{n+1} = (2n+1-x)L_n - n²L_{n-1}",
         domains: &[Domain::Algebra],
-        requires: &[],
+        requires: &[Feature::Polynomial],
         is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Mul(_, _)),
         apply: |expr, _ctx| {
             vec![RuleApplication {

@@ -7,6 +7,7 @@
 //! Calculus transformation rules (derivatives).
 
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
+use crate::rule::{Domain, Feature};
 use mm_core::Expr;
 
 /// Get all calculus rules.
@@ -38,6 +39,8 @@ fn power_rule() -> Rule {
         id: RuleId(11),
         name: "power_rule",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "Power rule: d/dx(x^n) = n·x^(n-1)",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -101,6 +104,8 @@ fn constant_rule() -> Rule {
         id: RuleId(12),
         name: "constant_rule",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "Constant rule: d/dx(c) = 0",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -134,6 +139,8 @@ fn sum_rule() -> Rule {
         id: RuleId(13),
         name: "sum_rule",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "Sum rule: d/dx(f + g) = f' + g'",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, .. } = expr {
@@ -175,6 +182,8 @@ fn product_rule() -> Rule {
         id: RuleId(14),
         name: "product_rule",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "Product rule: d/dx(fg) = f'g + fg'",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, .. } = expr {
@@ -223,6 +232,8 @@ fn quotient_rule() -> Rule {
         name: "quotient_rule",
         category: RuleCategory::Derivative,
         description: "Quotient rule: d/dx(f/g) = (f'g - fg') / g²",
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, .. } = expr {
                 return matches!(inner.as_ref(), Expr::Div(_, _));
@@ -273,6 +284,8 @@ fn chain_rule_sin() -> Rule {
         id: RuleId(15),
         name: "sin_chain_rule",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "Sine chain rule: d/dx(sin(g)) = cos(g) * g'",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -326,6 +339,8 @@ fn chain_rule_cos() -> Rule {
         id: RuleId(16),
         name: "cos_chain_rule",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "Cosine chain rule: d/dx(cos(g)) = -sin(g) * g'",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -379,6 +394,8 @@ fn exp_rule() -> Rule {
         id: RuleId(17),
         name: "exp_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "Exponential derivative: d/dx(e^x) = e^x",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -419,6 +436,8 @@ fn ln_rule() -> Rule {
         id: RuleId(18),
         name: "ln_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "Natural log derivative: d/dx(ln(x)) = 1/x",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -489,6 +508,8 @@ fn chain_rule_tan() -> Rule {
         id: RuleId(400),
         name: "chain_rule_tan",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(tan(g(x))) = sec²(g(x)) * g'(x) = g'(x)/cos²(g(x))",
         is_applicable: |expr, ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -529,6 +550,8 @@ fn chain_rule_exp() -> Rule {
         id: RuleId(401),
         name: "chain_rule_exp",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(e^g(x)) = e^g(x) * g'(x)",
         is_applicable: |expr, ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -567,6 +590,8 @@ fn chain_rule_ln() -> Rule {
         id: RuleId(402),
         name: "chain_rule_ln",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(ln(g(x))) = g'(x)/g(x)",
         is_applicable: |expr, ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -605,6 +630,8 @@ fn inverse_trig_deriv_arcsin() -> Rule {
         id: RuleId(403),
         name: "inverse_trig_deriv_arcsin",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(arcsin(x)) = 1/√(1-x²)",
         is_applicable: |expr, ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -652,6 +679,8 @@ fn diff_rule() -> Rule {
         id: RuleId(406),
         name: "diff_rule",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(f - g) = f' - g'",
         is_applicable: |expr, ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -694,6 +723,8 @@ fn constant_multiple_rule() -> Rule {
         id: RuleId(407),
         name: "constant_multiple_rule",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(c*f) = c*f' where c is constant",
         is_applicable: |expr, ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -740,6 +771,8 @@ fn constant_base_exp_simple() -> Rule {
         id: RuleId(408),
         name: "constant_base_exp_simple",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(a^x) = a^x·ln(a) where a is constant",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -786,6 +819,8 @@ fn constant_base_exp_chain() -> Rule {
         id: RuleId(409),
         name: "constant_base_exp_chain",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(a^f(x)) = a^f(x)·ln(a)·f'(x) where a is constant",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -841,6 +876,8 @@ fn sqrt_chain_rule() -> Rule {
         id: RuleId(476),
         name: "sqrt_chain_rule",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(√f) = f'/(2√f)",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -884,6 +921,8 @@ fn general_power_rule() -> Rule {
         id: RuleId(475),
         name: "general_power_rule",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(f^n) = n·f^(n-1)·f' where n is constant",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -940,6 +979,8 @@ fn log_base_simple() -> Rule {
         id: RuleId(411),
         name: "log_base_simple",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(log_a(x)) = 1/(x·ln(a))",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -988,6 +1029,8 @@ fn log_base_chain() -> Rule {
         id: RuleId(412),
         name: "log_base_chain",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(log_a(f)) = f'/(f·ln(a))",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -1038,6 +1081,8 @@ fn sec_derivative() -> Rule {
         id: RuleId(472),
         name: "sec_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(sec(f)) = f'·sec(f)·tan(f) where sec(f) = 1/cos(f)",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -1093,6 +1138,8 @@ fn csc_derivative() -> Rule {
         id: RuleId(473),
         name: "csc_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(csc(f)) = -f'·csc(f)·cot(f) where csc(f) = 1/sin(f)",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -1148,6 +1195,8 @@ fn cot_derivative() -> Rule {
         id: RuleId(474),
         name: "cot_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(cot(f)) = -f'/sin²(f) where cot(f) = cos(f)/sin(f)",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -1200,6 +1249,8 @@ fn arcsin_derivative() -> Rule {
         id: RuleId(413),
         name: "arcsin_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(arcsin(f)) = f'/√(1-f²)",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -1252,6 +1303,8 @@ fn arccos_derivative() -> Rule {
         id: RuleId(414),
         name: "arccos_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(arccos(f)) = -f'/√(1-f²)",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -1307,6 +1360,8 @@ fn arctan_derivative() -> Rule {
         id: RuleId(415),
         name: "arctan_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(arctan(f)) = f'/(1+f²)",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, var } = expr {
@@ -1356,6 +1411,8 @@ fn arccot_derivative() -> Rule {
         id: RuleId(416),
         name: "arccot_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(arccot(f)) = -f'/(1+f²)",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, .. } = expr {
@@ -1416,6 +1473,8 @@ fn arcsec_derivative() -> Rule {
         id: RuleId(417),
         name: "arcsec_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(arcsec(f)) = f'/(|f|√(f²-1))",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, .. } = expr {
@@ -1484,6 +1543,8 @@ fn arccsc_derivative() -> Rule {
         id: RuleId(418),
         name: "arccsc_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(arccsc(f)) = -f'/(|f|√(f²-1))",
         is_applicable: |expr, _ctx| {
             if let Expr::Derivative { expr: inner, .. } = expr {
@@ -1728,6 +1789,8 @@ fn integral_constant_multiple() -> Rule {
         id: RuleId(419),
         name: "integral_constant_multiple",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫k·f(x) dx = k·∫f(x) dx",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -1766,6 +1829,8 @@ fn integral_power() -> Rule {
         id: RuleId(420),
         name: "integral_power",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x^n dx = x^(n+1)/(n+1) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -1828,6 +1893,8 @@ fn integral_constant() -> Rule {
         id: RuleId(421),
         name: "integral_constant",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫k dx = kx + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -1860,6 +1927,8 @@ fn integral_sum() -> Rule {
         id: RuleId(422),
         name: "integral_sum",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫(f+g) dx = ∫f dx + ∫g dx",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, .. } = expr {
@@ -1899,6 +1968,8 @@ fn integral_difference() -> Rule {
         id: RuleId(427),
         name: "integral_difference",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫(f-g) dx = ∫f dx - ∫g dx",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, .. } = expr {
@@ -1939,6 +2010,8 @@ fn integral_exp() -> Rule {
         id: RuleId(423),
         name: "integral_exp",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫e^x dx = e^x + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -1968,6 +2041,8 @@ fn integral_ln() -> Rule {
         id: RuleId(424),
         name: "integral_ln",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫1/x dx = ln|x| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2001,6 +2076,8 @@ fn integral_sin() -> Rule {
         id: RuleId(425),
         name: "integral_sin",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫sin(x) dx = -cos(x) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2032,6 +2109,8 @@ fn integral_cos() -> Rule {
         id: RuleId(426),
         name: "integral_cos",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫cos(x) dx = sin(x) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2063,6 +2142,8 @@ fn integral_tan() -> Rule {
         id: RuleId(428),
         name: "integral_tan",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫tan(x) dx = -ln|cos(x)| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2096,6 +2177,8 @@ fn integral_sec2() -> Rule {
         id: RuleId(429),
         name: "integral_sec2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫sec²(x) dx = tan(x) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2135,6 +2218,8 @@ fn integral_csc2() -> Rule {
         id: RuleId(430),
         name: "integral_csc2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫csc²(x) dx = -cot(x) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2177,6 +2262,8 @@ fn integral_sinh() -> Rule {
         id: RuleId(431),
         name: "integral_sinh",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫sinh(x) dx = cosh(x) + C",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
@@ -2194,6 +2281,8 @@ fn integral_cosh() -> Rule {
         id: RuleId(432),
         name: "integral_cosh",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫cosh(x) dx = sinh(x) + C",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
@@ -2211,6 +2300,8 @@ fn integration_by_parts() -> Rule {
         id: RuleId(433),
         name: "integration_by_parts",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x·e^x dx = x·e^x - e^x + C (simplified pattern)",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2255,6 +2346,8 @@ fn u_substitution() -> Rule {
         id: RuleId(434),
         name: "u_substitution",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫2x·e^(x²) dx = e^(x²) + C (chain rule pattern)",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2298,6 +2391,8 @@ fn partial_fractions() -> Rule {
         id: RuleId(435),
         name: "partial_fractions",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫1/(x²-1) dx = (1/2)ln|(x-1)/(x+1)| + C (partial fractions)",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2358,6 +2453,8 @@ fn trig_substitution() -> Rule {
         id: RuleId(436),
         name: "trig_substitution",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫1/√(1-x²) dx = arcsin(x) + C (trig substitution)",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2405,6 +2502,8 @@ fn integral_cot() -> Rule {
         id: RuleId(441),
         name: "integral_cot",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫cot(x) dx = ln|sin(x)| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2440,6 +2539,8 @@ fn integral_sec() -> Rule {
         id: RuleId(442),
         name: "integral_sec",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫sec(x) dx = ln|sec(x) + tan(x)| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2488,6 +2589,8 @@ fn integral_csc() -> Rule {
         id: RuleId(443),
         name: "integral_csc",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫csc(x) dx = -ln|csc(x) + cot(x)| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2537,6 +2640,8 @@ fn integral_sec_tan() -> Rule {
         id: RuleId(444),
         name: "integral_sec_tan",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫sec(x)tan(x) dx = sec(x) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2579,6 +2684,8 @@ fn integral_inv_sqrt_a2_minus_x2() -> Rule {
         id: RuleId(445),
         name: "integral_inv_sqrt_a2_minus_x2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫1/√(a²-x²) dx = arcsin(x/a) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2646,6 +2753,8 @@ fn integral_inv_a2_plus_x2() -> Rule {
         id: RuleId(446),
         name: "integral_inv_a2_plus_x2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫1/(a²+x²) dx = (1/a)arctan(x/a) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2707,6 +2816,8 @@ fn integral_inv_x_sqrt_x2_minus_a2() -> Rule {
         id: RuleId(447),
         name: "integral_inv_x_sqrt_x2_minus_a2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫1/(x√(x²-a²)) dx = (1/a)arcsec(|x|/a) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2755,6 +2866,8 @@ fn integral_x_sin() -> Rule {
         id: RuleId(448),
         name: "integral_x_sin",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x·sin(x) dx = -x·cos(x) + sin(x) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2799,6 +2912,8 @@ fn integral_x_cos() -> Rule {
         id: RuleId(449),
         name: "integral_x_cos",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x·cos(x) dx = x·sin(x) + cos(x) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2843,6 +2958,8 @@ fn integral_ln_x() -> Rule {
         id: RuleId(450),
         name: "integral_ln_x",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫ln(x) dx = x·ln(x) - x + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2882,6 +2999,8 @@ fn integral_x_exp_ax() -> Rule {
         id: RuleId(451),
         name: "integral_x_exp_ax",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x·e^(ax) dx = (e^(ax)/a²)(ax-1) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2931,6 +3050,8 @@ fn integral_x_over_x2_plus_a2() -> Rule {
         id: RuleId(452),
         name: "integral_x_over_x2_plus_a2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x/(x²+a²) dx = (1/2)ln(x²+a²) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -2971,6 +3092,8 @@ fn integral_x_over_x2_minus_a2() -> Rule {
         id: RuleId(453),
         name: "integral_x_over_x2_minus_a2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x/(x²-a²) dx = (1/2)ln|x²-a²| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3012,6 +3135,8 @@ fn integral_exp_ax() -> Rule {
         id: RuleId(454),
         name: "integral_exp_ax",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫e^(ax) dx = (1/a)e^(ax) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3054,6 +3179,8 @@ fn integral_one_over_x2_minus_a2() -> Rule {
         id: RuleId(455),
         name: "integral_one_over_x2_minus_a2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫1/(x²-a²) dx = (1/2a)ln|(x-a)/(x+a)| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3122,6 +3249,8 @@ fn integral_sin_squared() -> Rule {
         id: RuleId(456),
         name: "integral_sin_squared",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫sin²(x) dx = x/2 - sin(2x)/4 + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3166,6 +3295,8 @@ fn integral_cos_squared() -> Rule {
         id: RuleId(457),
         name: "integral_cos_squared",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫cos²(x) dx = x/2 + sin(2x)/4 + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3210,6 +3341,8 @@ fn integral_tan_squared() -> Rule {
         id: RuleId(458),
         name: "integral_tan_squared",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫tan²(x) dx = tan(x) - x + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3253,6 +3386,8 @@ fn integral_sec_cubed() -> Rule {
         id: RuleId(459),
         name: "integral_sec_cubed",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫sec³(x) dx = (1/2)[sec(x)tan(x) + ln|sec(x)+tan(x)|] + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3307,6 +3442,8 @@ fn integral_x2_sin() -> Rule {
         id: RuleId(460),
         name: "integral_x2_sin",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x²·sin(x) dx = -x²·cos(x) + 2x·sin(x) + 2cos(x) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3366,6 +3503,8 @@ fn integral_x2_cos() -> Rule {
         id: RuleId(461),
         name: "integral_x2_cos",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x²·cos(x) dx = x²·sin(x) + 2x·cos(x) - 2sin(x) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3425,6 +3564,8 @@ fn integral_exp_sin() -> Rule {
         id: RuleId(462),
         name: "integral_exp_sin",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫e^x·sin(x) dx = (e^x/2)(sin(x) - cos(x)) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3475,6 +3616,8 @@ fn integral_exp_cos() -> Rule {
         id: RuleId(463),
         name: "integral_exp_cos",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫e^x·cos(x) dx = (e^x/2)(sin(x) + cos(x)) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3527,6 +3670,8 @@ fn integral_sqrt_a2_minus_x2() -> Rule {
         id: RuleId(464),
         name: "integral_sqrt_a2_minus_x2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫√(a²-x²) dx = (x/2)√(a²-x²) + (a²/2)arcsin(x/a) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3578,6 +3723,8 @@ fn integral_sqrt_x2_plus_a2() -> Rule {
         id: RuleId(465),
         name: "integral_sqrt_x2_plus_a2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫√(x²+a²) dx = (x/2)√(x²+a²) + (a²/2)ln|x+√(x²+a²)| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3635,6 +3782,8 @@ fn integral_sqrt_x2_minus_a2() -> Rule {
         id: RuleId(466),
         name: "integral_sqrt_x2_minus_a2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫√(x²-a²) dx = (x/2)√(x²-a²) - (a²/2)ln|x+√(x²-a²)| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3689,6 +3838,8 @@ fn integral_x_sqrt_a2_minus_x2() -> Rule {
         id: RuleId(467),
         name: "integral_x_sqrt_a2_minus_x2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x·√(a²-x²) dx = -(1/3)(a²-x²)^(3/2) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3736,6 +3887,8 @@ fn integral_inv_sqrt_x2_plus_a2() -> Rule {
         id: RuleId(468),
         name: "integral_inv_sqrt_x2_plus_a2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫1/√(x²+a²) dx = ln|x+√(x²+a²)| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3783,6 +3936,8 @@ fn integral_inv_sqrt_x2_minus_a2() -> Rule {
         id: RuleId(469),
         name: "integral_inv_sqrt_x2_minus_a2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫1/√(x²-a²) dx = ln|x+√(x²-a²)| + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3832,6 +3987,8 @@ fn integral_x_over_sqrt_x2_plus_a2() -> Rule {
         id: RuleId(470),
         name: "integral_x_over_sqrt_x2_plus_a2",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫x/√(x²+a²) dx = √(x²+a²) + C",
         is_applicable: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
@@ -3877,6 +4034,8 @@ fn limit_constant() -> Rule {
         id: RuleId(500),
         name: "limit_constant",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "lim c = c",
         is_applicable: |expr, _| matches!(expr, Expr::Const(_)),
         apply: |expr, _| {
@@ -3894,6 +4053,8 @@ fn limit_sum() -> Rule {
         id: RuleId(501),
         name: "limit_sum",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "lim(f+g) = lim f + lim g",
         is_applicable: |expr, _| matches!(expr, Expr::Add(_, _)),
         apply: |expr, _| {
@@ -3911,6 +4072,8 @@ fn limit_product() -> Rule {
         id: RuleId(502),
         name: "limit_product",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "lim(fg) = lim f · lim g",
         is_applicable: |expr, _| matches!(expr, Expr::Mul(_, _)),
         apply: |expr, _| {
@@ -3928,6 +4091,8 @@ fn limit_quotient() -> Rule {
         id: RuleId(503),
         name: "limit_quotient",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "lim(f/g) = lim f / lim g",
         is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
         apply: |expr, _| {
@@ -3945,6 +4110,8 @@ fn limit_power() -> Rule {
         id: RuleId(504),
         name: "limit_power",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "lim(f^n) = (lim f)^n",
         is_applicable: |expr, _| matches!(expr, Expr::Pow(_, _)),
         apply: |expr, _| {
@@ -3962,6 +4129,8 @@ fn limit_lhopital() -> Rule {
         id: RuleId(505),
         name: "limit_lhopital",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "L'Hôpital's rule for 0/0 or ∞/∞",
         is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
         apply: |expr, _| {
@@ -3979,6 +4148,8 @@ fn limit_squeeze() -> Rule {
         id: RuleId(506),
         name: "limit_squeeze",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "Squeeze theorem",
         is_applicable: |expr, _| matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _)),
         apply: |expr, _| {
@@ -3996,6 +4167,8 @@ fn taylor_exp() -> Rule {
         id: RuleId(507),
         name: "taylor_exp",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "e^x = Σ x^n/n!",
         is_applicable: |expr, _| matches!(expr, Expr::Exp(_)),
         apply: |expr, _| {
@@ -4013,6 +4186,8 @@ fn taylor_sin() -> Rule {
         id: RuleId(508),
         name: "taylor_sin",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "sin(x) = Σ (-1)^n x^(2n+1)/(2n+1)!",
         is_applicable: |expr, _| matches!(expr, Expr::Sin(_)),
         apply: |expr, _| {
@@ -4030,6 +4205,8 @@ fn taylor_cos() -> Rule {
         id: RuleId(509),
         name: "taylor_cos",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "cos(x) = Σ (-1)^n x^(2n)/(2n)!",
         is_applicable: |expr, _| matches!(expr, Expr::Cos(_)),
         apply: |expr, _| {
@@ -4047,6 +4224,8 @@ fn taylor_ln() -> Rule {
         id: RuleId(510),
         name: "taylor_ln",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "ln(1+x) = Σ (-1)^(n+1) x^n/n",
         is_applicable: |expr, _| matches!(expr, Expr::Ln(_)),
         apply: |expr, _| {
@@ -4064,6 +4243,8 @@ fn maclaurin_1mx() -> Rule {
         id: RuleId(511),
         name: "maclaurin_1mx",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "1/(1-x) = Σ x^n",
         is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
         apply: |expr, _| {
@@ -4081,6 +4262,8 @@ fn geometric_series() -> Rule {
         id: RuleId(448),
         name: "geometric_series",
         category: RuleCategory::Simplification,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Limit],
         description: "Σ ar^n = a/(1-r) for |r|<1",
         is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
         apply: |expr, _| {
@@ -4098,6 +4281,8 @@ fn power_series_diff() -> Rule {
         id: RuleId(449),
         name: "power_series_diff",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::Derivative],
         description: "d/dx(Σa_n x^n) = Σ n·a_n x^(n-1)",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4115,6 +4300,8 @@ fn power_series_int() -> Rule {
         id: RuleId(450),
         name: "power_series_int",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral],
         description: "∫(Σa_n x^n)dx = Σ a_n x^(n+1)/(n+1)",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
@@ -4132,6 +4319,8 @@ fn partial_x() -> Rule {
         id: RuleId(451),
         name: "partial_x",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::PartialDerivative],
         description: "∂f/∂x partial derivative",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4149,6 +4338,8 @@ fn partial_y() -> Rule {
         id: RuleId(452),
         name: "partial_y",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::PartialDerivative],
         description: "∂f/∂y partial derivative",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4166,6 +4357,8 @@ fn partial_z() -> Rule {
         id: RuleId(453),
         name: "partial_z",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::PartialDerivative],
         description: "∂f/∂z partial derivative",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4184,6 +4377,10 @@ fn gradient() -> Rule {
         name: "gradient",
         category: RuleCategory::Derivative,
         description: "∇f = (∂f/∂x, ∂f/∂y, ∂f/∂z)",
+        // Corrected: Gradient is Differential Calculus
+        domains: &[Domain::CalculusDiff], 
+        // Corrected: Gradient needs Partial Derivatives and Vectors, NOT Integrals
+        requires: &[Feature::PartialDerivative, Feature::Vector], 
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
             vec![RuleApplication {
@@ -4200,6 +4397,8 @@ fn divergence_vec() -> Rule {
         id: RuleId(455),
         name: "divergence_vec",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::PartialDerivative, Feature::Vector],
         description: "∇·F divergence of vector field",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4217,6 +4416,8 @@ fn curl_vec() -> Rule {
         id: RuleId(456),
         name: "curl_vec",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::PartialDerivative, Feature::Vector],
         description: "∇×F curl of vector field",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4234,6 +4435,8 @@ fn laplacian() -> Rule {
         id: RuleId(457),
         name: "laplacian",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::PartialDerivative, Feature::Vector],
         description: "∇²f = ∂²f/∂x² + ∂²f/∂y² + ∂²f/∂z²",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4251,6 +4454,8 @@ fn chain_multivariable() -> Rule {
         id: RuleId(458),
         name: "chain_multivariable",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::PartialDerivative, Feature::Vector],
         description: "Multivariable chain rule",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4268,6 +4473,8 @@ fn implicit_diff() -> Rule {
         id: RuleId(459),
         name: "implicit_diff",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::PartialDerivative, Feature::Vector],
         description: "Implicit differentiation",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4285,6 +4492,8 @@ fn total_differential() -> Rule {
         id: RuleId(460),
         name: "total_differential",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::PartialDerivative, Feature::Vector],
         description: "df = ∂f/∂x dx + ∂f/∂y dy",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4302,6 +4511,8 @@ fn directional_derivative() -> Rule {
         id: RuleId(461),
         name: "directional_derivative",
         category: RuleCategory::Derivative,
+        domains: &[Domain::CalculusDiff],
+        requires: &[Feature::PartialDerivative, Feature::Vector],
         description: "D_u f = ∇f · u",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
@@ -4319,6 +4530,8 @@ fn double_integral() -> Rule {
         id: RuleId(462),
         name: "double_integral",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral, Feature::Vector],
         description: "∬∬f dA double integral",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
@@ -4336,6 +4549,8 @@ fn triple_integral() -> Rule {
         id: RuleId(463),
         name: "triple_integral",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral, Feature::Vector],
         description: "∭∭∭f dV triple integral",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
@@ -4353,6 +4568,8 @@ fn line_integral() -> Rule {
         id: RuleId(464),
         name: "line_integral",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral, Feature::Vector],
         description: "∫_C F·dr line integral",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
@@ -4370,6 +4587,8 @@ fn surface_integral() -> Rule {
         id: RuleId(465),
         name: "surface_integral",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral, Feature::Vector],
         description: "∬∬_S F·dS surface integral",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
@@ -4387,6 +4606,8 @@ fn greens_theorem() -> Rule {
         id: RuleId(466),
         name: "greens_theorem",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral, Feature::Vector],
         description: "Green's theorem: ∮_C = ∬∬_D",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
@@ -4404,6 +4625,8 @@ fn stokes_theorem() -> Rule {
         id: RuleId(467),
         name: "stokes_theorem",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral, Feature::Vector],
         description: "Stokes' theorem",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
@@ -4421,6 +4644,8 @@ fn divergence_theorem() -> Rule {
         id: RuleId(468),
         name: "divergence_theorem",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral, Feature::Vector],
         description: "Divergence theorem",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
@@ -4438,6 +4663,8 @@ fn jacobian_transform() -> Rule {
         id: RuleId(469),
         name: "jacobian_transform",
         category: RuleCategory::Integral,
+        domains: &[Domain::CalculusInt],
+        requires: &[Feature::Integral, Feature::Vector],
         description: "Jacobian coordinate transform",
         is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
         apply: |expr, _| {
