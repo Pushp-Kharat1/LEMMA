@@ -166,4 +166,20 @@ impl Bank {
             .unwrap_or_else(|_| ".".to_string());
         std::path::PathBuf::from(home).join(".lemma_bank.json")
     }
+
+    /// Get current credit balance.
+    pub fn total_credits(&self) -> u64 {
+        self.credits
+    }
+
+    /// Get total problems solved (approximated from lifetime earnings).
+    pub fn problems_solved(&self) -> u64 {
+        // Rough estimate: average savings per problem is ~50 credits
+        self.lifetime_earnings / 50
+    }
+
+    /// Get total net savings (earnings - spent).
+    pub fn total_savings(&self) -> i64 {
+        self.lifetime_earnings as i64 - self.lifetime_spent as i64
+    }
 }

@@ -46,5 +46,6 @@ pub use guardrail::{
 };
 pub use patterns::match_integral_pattern;
 pub use rule::{
-    Domain, Feature, Rule, RuleApplication, RuleCategory, RuleContext, RuleId, RuleSet,
+    standard_rules, Domain, Feature, Rule, RuleApplication, RuleCategory, RuleContext, RuleId,
+    RuleSet,
 };

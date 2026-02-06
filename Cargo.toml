@@ -52,3 +52,21 @@ mm-search = { path = "crates/mm-search" }
 mm-brain = { path = "crates/mm-brain" }
 mm-solver = { path = "crates/mm-solver" }
 mm-boink = { path = "crates/mm-boink" }
+
+# Root package for examples
+[package]
+name = "lemma"
+version.workspace = true
+edition.workspace = true
+
+[[example]]
+name = "boink_demo"
+path = "examples/boink_demo.rs"
+
+[dependencies]
+mm-core = { path = "crates/mm-core" }
+mm-rules = { path = "crates/mm-rules" }
+mm-verifier = { path = "crates/mm-verifier" }
+mm-search = { path = "crates/mm-search" }
+mm-boink = { path = "crates/mm-boink" }
+
