@@ -171,68 +171,13 @@ fn main() {
 }
 ```
 
----
-
-## Rule Categories (550+)
-
-### Core Infrastructure
-
-LEMMA includes a **guardrail system** that filters rules by problem domain:
-- `guardrail.rs` - Analyzes problems and filters applicable rules
-- `patterns.rs` - Advanced pattern matching for integral forms
-
-### Algebra (40+ rules)
-| Rule | Transformation |
-|------|---------------|
-| `constant_fold` | `2 + 3 -> 5` |
-| `identity_add_zero` | `x + 0 -> x` |
-| `identity_mul_one` | `x * 1 -> x` |
-| `zero_mul` | `x * 0 -> 0` |
-| `collect_like_terms` | `2x + 3x -> 5x` |
-| `distribute` | `a(b + c) -> ab + ac` |
-| `factor_common` | `ab + ac -> a(b + c)` |
-| `difference_of_squares` | `a^2 - b^2 -> (a+b)(a-b)` |
-| `perfect_square_sum` | `a^2 + 2ab + b^2 -> (a+b)^2` |
-| `perfect_square_diff` | `a^2 - 2ab + b^2 -> (a-b)^2` |
-| `power_of_one` | `x^1 -> x` |
-| `power_of_zero` | `x^0 -> 1` |
-| `power_add` | `x^a * x^b -> x^(a+b)` |
-| `power_mul` | `(x^a)^b -> x^(ab)` |
-
-### Calculus (9 rules)
-| Rule | Transformation |
-|------|---------------|
-| `power_rule` | `d/dx(x^n) -> n*x^(n-1)` |
-| `constant_rule` | `d/dx(c) -> 0` |
-| `sum_rule` | `d/dx(f+g) -> f' + g'` |
-| `product_rule` | `d/dx(fg) -> f'g + fg'` |
-| `quotient_rule` | `d/dx(f/g) -> (f'g - fg')/g^2` |
-| `sin_derivative` | `d/dx(sin x) -> cos x` |
-| `cos_derivative` | `d/dx(cos x) -> -sin x` |
-| `exp_rule` | `d/dx(e^x) -> e^x` |
-| `ln_rule` | `d/dx(ln x) -> 1/x` |
-
-### Trigonometry (6 rules)
-| Rule | Transformation |
-|------|---------------|
-| `pythagorean_identity` | `sin^2(x) + cos^2(x) -> 1` |
-| `sin_double_angle` | `2*sin(x)*cos(x) -> sin(2x)` |
-| `cos_double_angle` | `cos^2(x) - sin^2(x) -> cos(2x)` |
-| `sin_zero` | `sin(0) -> 0` |
-| `cos_zero` | `cos(0) -> 1` |
-| `tan_zero` | `tan(0) -> 0` |
-
-### Equation Solving (4 rules)
-| Rule | Transformation |
-|------|---------------|
-| `cancel_addition` | `x + a = b -> x = b - a` |
-| `cancel_multiplication` | `ax = b -> x = b/a` |
-| `linear_solve` | `ax + b = 0 -> x = -b/a` |
-| `quadratic_formula` | `ax^2 + bx + c = 0 -> ...` |
-
----
-
 ## Benchmark Results
+
+## Evaluation Notice (Research Integrity Update){Edited on 6 Feb 2026}
+An internal audit identified issues in earlier evaluation scripts and neural-rule integration that invalidated previous competitive benchmark claims.
+Those historical results are deprecated.
+Current verified performance is documented in the Benchmark section below.
+See Issue #8 for technical details and remediation work.
 
 ### Basic Benchmark (21 tests)
 ```
