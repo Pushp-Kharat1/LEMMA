@@ -63,6 +63,10 @@ edition.workspace = true
 name = "boink_demo"
 path = "examples/boink_demo.rs"
 
+[[example]]
+name = "jee_test"
+path = "examples/jee_test.rs"
+
 [dependencies]
 mm-core = { path = "crates/mm-core" }
 mm-rules = { path = "crates/mm-rules" }
