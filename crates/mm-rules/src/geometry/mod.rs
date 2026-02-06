@@ -715,3 +715,116 @@ fn is_squared(expr: &Expr) -> bool {
     }
     false
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::rule::RuleSet;
+    use mm_core::SymbolTable;
+
+    fn setup() -> (SymbolTable, RuleSet) {
+        let symbols = SymbolTable::new();
+        let mut rules = RuleSet::new();
+        for rule in geometry_rules() {
+            rules.add(rule);
+        }
+        (symbols, rules)
+    }
+
+    #[test]
+    fn test_geometry_rules_count() {
+        let rules = geometry_rules();
+        println!("\n=== GEOMETRY RULES SUMMARY ===");
+        println!("Total geometry rules: {}", rules.len());
+        for rule in &rules {
+            println!("  [{}] {}", rule.id, rule.name);
+        }
+        assert_eq!(rules.len(), 25, "Should have exactly 25 geometry rules");
+    }
+
+    #[test]
+    fn test_distance_formula() {
+        let (_symbols, rules) = setup();
+        let ctx = RuleContext::default();
+
+        // √(3² + 4²)
+        let distance = Expr::Sqrt(Box::new(Expr::Add(
+            Box::new(Expr::Pow(
+                Box::new(Expr::Const(3.into())),
+                Box::new(Expr::Const(2.into())),
+            )),
+            Box::new(Expr::Pow(
+                Box::new(Expr::Const(4.into())),
+                Box::new(Expr::Const(2.into())),
+            )),
+        )));
+
+        let applicable = rules.applicable(&distance, &ctx);
+        println!("Distance √(3²+4²) detected by {} rules", applicable.len());
+
+        let has_distance = applicable.iter().any(|r| r.name == "distance_formula");
+        assert!(has_distance, "distance_formula rule should fire");
+    }
+
+    #[test]
+    fn test_hyperbola_focal_difference() {
+        let (mut symbols, rules) = setup();
+        let ctx = RuleContext::default();
+
+        let sp = symbols.intern("SP");
+        let sp2 = symbols.intern("SP2");
+
+        // |SP - SP2|
+        let focal_diff = Expr::Abs(Box::new(Expr::Sub(
+            Box::new(Expr::Var(sp)),
+            Box::new(Expr::Var(sp2)),
+        )));
+
+        let applicable = rules.applicable(&focal_diff, &ctx);
+        println!("|SP - SP'| detected by {} rules", applicable.len());
+
+        let has_focal = applicable
+            .iter()
+            .any(|r| r.name == "hyperbola_focal_difference");
+        assert!(has_focal, "hyperbola_focal_difference rule should fire");
+    }
+
+    #[test]
+    fn test_centroid_formula() {
+        let (mut symbols, rules) = setup();
+        let ctx = RuleContext::default();
+
+        let x1 = symbols.intern("x1");
+        let x2 = symbols.intern("x2");
+
+        // (x1 + x2) / 3
+        let centroid_x = Expr::Div(
+            Box::new(Expr::Add(Box::new(Expr::Var(x1)), Box::new(Expr::Var(x2)))),
+            Box::new(Expr::Const(3.into())),
+        );
+
+        let applicable = rules.applicable(&centroid_x, &ctx);
+        println!("Centroid (x+y)/3 detected by {} rules", applicable.len());
+
+        let has_centroid = applicable.iter().any(|r| r.name == "triangle_centroid");
+        assert!(has_centroid, "triangle_centroid rule should fire");
+    }
+
+    #[test]
+    fn test_ellipse_eccentricity() {
+        let (_symbols, rules) = setup();
+        let ctx = RuleContext::default();
+
+        // √(1 - 0.5) pattern
+        let eccentricity = Expr::Sqrt(Box::new(Expr::Sub(
+            Box::new(Expr::Const(1.into())),
+            Box::new(Expr::Const(mm_core::Rational::new(1, 2))),
+        )));
+
+        let applicable = rules.applicable(&eccentricity, &ctx);
+        println!("√(1-x) detected by {} rules", applicable.len());
+
+        let has_ecc = applicable.iter().any(|r| r.name == "ellipse_eccentricity");
+        assert!(has_ecc, "ellipse_eccentricity rule should fire");
+    }
+}
