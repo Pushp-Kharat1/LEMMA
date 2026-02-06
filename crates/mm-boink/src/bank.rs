@@ -146,4 +146,24 @@ impl Bank {
     pub fn load(json: &str) -> Option<Self> {
         serde_json::from_str(json).ok()
     }
+
+    /// Save bank state to a file.
+    pub fn save_to_file(&self, path: &std::path::Path) -> std::io::Result<()> {
+        let json = self.save();
+        std::fs::write(path, json)
+    }
+
+    /// Load bank state from a file.
+    pub fn load_from_file(path: &std::path::Path) -> Option<Self> {
+        let json = std::fs::read_to_string(path).ok()?;
+        Self::load(&json)
+    }
+
+    /// Get the default bank file path (in user's home directory).
+    pub fn default_path() -> std::path::PathBuf {
+        let home = std::env::var("USERPROFILE")
+            .or_else(|_| std::env::var("HOME"))
+            .unwrap_or_else(|_| ".".to_string());
+        std::path::PathBuf::from(home).join(".lemma_bank.json")
+    }
 }

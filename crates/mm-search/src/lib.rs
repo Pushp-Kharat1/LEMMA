@@ -16,6 +16,7 @@
 //! - [`MCTS`] - Legacy MCTS (delegates to NeuralMCTS)
 
 pub mod beam;
+pub mod boink_mcts;
 pub mod bridge;
 pub mod deep_mcts;
 pub mod mcts;
@@ -92,5 +93,6 @@ impl Default for SearchConfig {
 }
 
 pub use beam::BeamSearch;
+pub use boink_mcts::{BoinkMCTS, BoinkStats};
 pub use deep_mcts::{DeepMCTS, DeepMCTSConfig, DeepNode, SearchStats};
 pub use mcts::{MCTSConfig, MCTSNode, NeuralMCTS, MCTS};
