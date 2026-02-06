@@ -401,8 +401,13 @@ pub fn standard_rules() -> RuleSet {
         rules.add(rule);
     }
 
+    // Add geometry rules - 25 stubs (Conic Sections, Coordinate Geometry)
+    for rule in crate::geometry::geometry_rules() {
+        rules.add(rule);
+    }
+
     // DELETED pure-stub modules (had 0 working rules):
-    // complex.rs, logarithm.rs, sequences.rs, geometry.rs, modular.rs, functional.rs
+    // complex.rs, logarithm.rs, sequences.rs, modular.rs, functional.rs
     // These were created as stubs and never implemented - now deleted.
 
     rules

@@ -29,6 +29,7 @@ pub struct ProblemProfile {
     pub has_polynomials: bool,
     pub has_equations: bool,
     pub has_logic: bool,
+    pub has_geometry: bool,
 
     // Complexity metrics
     pub complexity: u32,
@@ -220,6 +221,9 @@ fn build_domain_list(profile: &mut ProblemProfile) {
     }
     if profile.has_polynomials {
         profile.domains.push(Domain::Algebra);
+    }
+    if profile.has_geometry {
+        profile.domains.push(Domain::Geometry);
     }
 
     // Default: always allow Algebra if nothing specific
