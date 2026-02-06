@@ -18,7 +18,7 @@ A research prototype exploring neural-guided symbolic mathematics in Rust. Inspi
 ### What LEMMA IS:
 - A **research prototype** exploring hybrid neural-symbolic reasoning
 - A **proof of concept** for AlphaProof-style mathematical search
-- **450+ verified transformation rules** for IMO-level mathematics
+- **550+ verified transformation rules** for IMO-level mathematics
 - An **MCTS engine** guided by a neural policy network
 - A **learning project** for anyone interested in symbolic AI
 
@@ -51,10 +51,10 @@ A research prototype exploring neural-guided symbolic mathematics in Rust. Inspi
 | Category | Count | Examples |
 |----------|-------|----------|
 | **Integration** | 9 | `∫x^n dx → x^(n+1)/(n+1)` |
-| **Number Theory** | 50+ | Divisibility, GCD, parity |
-| **Inequalities** | 30+ | AM-GM, Cauchy-Schwarz |
-| **Combinatorics** | 30+ | Binomial, Pascal, Catalan |
-| **Polynomials** | 30+ | Vieta's, symmetric polys |
+| **Number Theory** | 80+ | Divisibility, GCD, modular arithmetic |
+| **Inequalities** | 40+ | AM-GM, Cauchy-Schwarz, Triangle |
+| **Combinatorics** | 50+ | Binomial, Pascal, Catalan, generating functions |
+| **Polynomials** | 40+ | Vieta's, symmetric polys, factoring |
 
 ---
 
@@ -75,7 +75,7 @@ A research prototype exploring neural-guided symbolic mathematics in Rust. Inspi
                                  v
                   +-----------------------------+
                   |       Rule Library          |
-                  |  (450+ verified transforms) |
+                  |  (550+ verified transforms) |
                   +--------------+--------------+
                                  |
                                  v
@@ -98,12 +98,12 @@ Unlike LLMs that predict text statistically, LEMMA:
 
 | Crate | Purpose | Lines of Code |
 |-------|---------|---------------|
-| `mm-core` | Expression AST, parsing, evaluation | ~1,200 |
-| `mm-rules` | 220+ transformation rules | ~5,000 |
-| `mm-verifier` | Numerical and symbolic verification | ~400 |
-| `mm-search` | Beam search, Neural MCTS | ~800 |
-| `mm-brain` | Transformer network (Candle) | ~1,000 |
-| `mm-solver` | Unified API | ~300 |
+| `mm-core` | Expression AST, parsing, evaluation | ~3,700 |
+| `mm-rules` | 550+ transformation rules | ~22,700 |
+| `mm-verifier` | Numerical and symbolic verification | ~600 |
+| `mm-search` | Beam search, Neural MCTS | ~1,800 |
+| `mm-brain` | Transformer network (Candle) | ~2,400 |
+| `mm-solver` | Unified API | ~1,400 |
 
 ---
 
@@ -173,9 +173,15 @@ fn main() {
 
 ---
 
-## Rule Categories (220+)
+## Rule Categories (550+)
 
-### Algebra (14 rules)
+### Core Infrastructure
+
+LEMMA includes a **guardrail system** that filters rules by problem domain:
+- `guardrail.rs` - Analyzes problems and filters applicable rules
+- `patterns.rs` - Advanced pattern matching for integral forms
+
+### Algebra (40+ rules)
 | Rule | Transformation |
 |------|---------------|
 | `constant_fold` | `2 + 3 -> 5` |

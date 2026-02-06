@@ -9,6 +9,7 @@ members = [
     "crates/mm-solver",
     "crates/mm-macro",
     "crates/mm-synth",
+    "crates/mm-boink",
 ]
 
 [workspace.package]
@@ -50,3 +51,4 @@ mm-verifier = { path = "crates/mm-verifier" }
 mm-search = { path = "crates/mm-search" }
 mm-brain = { path = "crates/mm-brain" }
 mm-solver = { path = "crates/mm-solver" }
+mm-boink = { path = "crates/mm-boink" }

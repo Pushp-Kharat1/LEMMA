@@ -1,0 +1,13 @@
+[package]
+name = "mm-boink"
+version = "0.1.0"
+edition = "2021"
+authors = ["Pushp Kharat <kharatpushp16@outlook.com>"]
+description = "BOINK - Budget-Optimized Inference with Neural Knowledge for LEMMA"
+license = "MPL-2.0"
+
+[dependencies]
+mm-core = { path = "../mm-core" }
+mm-rules = { path = "../mm-rules" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
