@@ -26,6 +26,7 @@ pub mod calculus;
 pub mod case_analysis;
 pub mod combinatorics;
 pub mod equations;
+pub mod geometry;
 pub mod guardrail;
 pub mod induction;
 pub mod inequalities;

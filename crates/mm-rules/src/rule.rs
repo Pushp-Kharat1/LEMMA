@@ -78,6 +78,8 @@ pub enum Domain {
     Inequalities,
     /// Equation solving.
     Equations,
+    /// Coordinate and synthetic geometry (conics, circles, triangles).
+    Geometry,
 }
 
 /// AST features required for a rule to apply.
@@ -115,6 +117,8 @@ pub enum Feature {
     PartialDerivative,
     /// Expression involves combinatorics.
     Combinatorics,
+    /// Expression involves conic sections (parabola, ellipse, hyperbola).
+    ConicSection,
 }
 
 /// Context for rule application.
