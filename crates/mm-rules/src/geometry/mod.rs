@@ -312,6 +312,8 @@ fn circle_rules() -> Vec<Rule> {
 
 fn coordinate_rules() -> Vec<Rule> {
     vec![
+        // Distance formula: √((x₂-x₁)² + (y₂-y₁)²)
+        // This rule matches √(a² + b²) and evaluates when a, b are constants
         Rule {
             id: RuleId(5401),
             name: "distance_formula",
@@ -319,8 +321,51 @@ fn coordinate_rules() -> Vec<Rule> {
             description: "Distance: d = √((x₂-x₁)² + (y₂-y₁)²)",
             domains: &[Domain::Geometry],
             requires: &[],
-            is_applicable: |_expr, _ctx| true,
-            apply: |_expr, _ctx| vec![],
+            is_applicable: |expr, _ctx| {
+                // Match pattern: Sqrt(Add(Pow(a, 2), Pow(b, 2)))
+                if let Expr::Sqrt(inner) = expr {
+                    if let Expr::Add(left, right) = inner.as_ref() {
+                        // Check if both are squares
+                        let left_is_square = matches!(left.as_ref(), 
+                            Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(n) if *n == 2.into()));
+                        let right_is_square = matches!(right.as_ref(), 
+                            Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(n) if *n == 2.into()));
+                        return left_is_square && right_is_square;
+                    }
+                }
+                false
+            },
+            apply: |expr, _ctx| {
+                // Extract √(a² + b²) and try to evaluate
+                if let Expr::Sqrt(inner) = expr {
+                    if let Expr::Add(left, right) = inner.as_ref() {
+                        if let (Expr::Pow(a, _), Expr::Pow(b, _)) = (left.as_ref(), right.as_ref())
+                        {
+                            // If both bases are constants, compute the distance
+                            if let (Expr::Const(val_a), Expr::Const(val_b)) =
+                                (a.as_ref(), b.as_ref())
+                            {
+                                let a_sq = val_a.clone() * val_a.clone();
+                                let b_sq = val_b.clone() * val_b.clone();
+                                let sum = a_sq + b_sq;
+                                // Return as simplified sqrt if we can't reduce further
+                                return vec![RuleApplication {
+                                    result: Expr::Sqrt(Box::new(Expr::Const(sum))),
+                                    justification: "Applied distance formula: √(a² + b²)"
+                                        .to_string(),
+                                }];
+                            }
+                            // For sub-expressions like (x-y)², just acknowledge the pattern
+                            return vec![RuleApplication {
+                                result: expr.clone(),
+                                justification: "Recognized distance formula pattern √(Δx² + Δy²)"
+                                    .to_string(),
+                            }];
+                        }
+                    }
+                }
+                vec![]
+            },
             reversible: true,
             cost: 1,
         },
