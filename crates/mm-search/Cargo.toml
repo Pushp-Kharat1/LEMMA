@@ -11,6 +11,7 @@ mm-core = { path = "../mm-core" }
 mm-rules = { path = "../mm-rules" }
 mm-verifier = { path = "../mm-verifier" }
 mm-brain = { path = "../mm-brain" }
+mm-boink = { path = "../mm-boink" }
 rand.workspace = true
 rand_chacha.workspace = true
 thiserror.workspace = true

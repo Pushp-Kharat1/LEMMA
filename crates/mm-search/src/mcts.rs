@@ -245,15 +245,15 @@ impl NeuralMCTS {
     }
 
     /// Expand a node by adding children for all valid actions.
-    /// Uses the guardrail to filter rules by domain/features before expansion.
+    /// Uses BOINK guardrail to filter rules by domain/features before expansion.
     fn expand(&self, node: &mut MCTSNode) {
         let ctx = RuleContext::default();
 
-        // GUARDRAIL: Analyze the problem to get domains/features
-        let profile = mm_rules::analyze(&node.state);
+        // BOINK: Enhanced domain analysis (detects all Expr types)
+        let profile = mm_boink::analyze(&node.state);
 
-        // GUARDRAIL: Filter rules by domain and features BEFORE NN scoring
-        let valid_rules = mm_rules::filter_rules(self.rules.all(), &profile);
+        // BOINK: Filter rules by domain - prevents NumberTheory on Calculus!
+        let valid_rules = mm_boink::filter_rules(self.rules.all(), &profile);
 
         // Get policy priors from neural network (for all rules)
         let priors = self
@@ -370,12 +370,12 @@ impl NeuralMCTS {
         let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
         seen.insert(format!("{:?}", current));
 
-        // GUARDRAIL: Analyze the problem once to get domains/features
-        let profile = mm_rules::analyze(&expr);
+        // BOINK: Enhanced domain analysis once to get domains/features
+        let profile = mm_boink::analyze(&expr);
 
         for _iteration in 0..MAX_ITERATIONS {
-            // GUARDRAIL: Filter rules by domain and features
-            let applicable = mm_rules::filter_rules(self.rules.all(), &profile);
+            // BOINK: Filter rules by domain - prevents wrong-domain matches!
+            let applicable = mm_boink::filter_rules(self.rules.all(), &profile);
             if applicable.is_empty() {
                 break; // No more rules - we're done
             }
