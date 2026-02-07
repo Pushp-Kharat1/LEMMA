@@ -266,11 +266,11 @@ Mozilla Public License 2.0 - see [LICENSE](LICENSE)
 ## Insights From the Creator :-
 ### LEMMA is a neuro-symbolic reasoning architecture prototype that *explores*:
 
-1)rule-based symbolic transformation
-2)domain-aware rule gating
-3)credit-constrained search control
-4)reinforcement-style meta-reward feedback
-5)hybrid symbolic + learned policy guidance
+1) rule-based symbolic transformation
+2) domain-aware rule gating
+3) credit-constrained search control
+4) reinforcement-style meta-reward feedback
+5) hybrid symbolic + learned policy guidance
 
 It is *NOT*:
 1) a CAS
@@ -279,6 +279,7 @@ It is *NOT*:
 4) a theorem prover 
 5) a Magic Box
 .... yet
+
 It’s a research platform/Prototype for studying/Understanding how symbolic systems can be guided, constrained, and optimized Through Neural Guidance.
 
 ---
