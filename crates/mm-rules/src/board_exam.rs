@@ -41,6 +41,7 @@ pub enum QuadraticRoots {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let a = Rational::from(1);
 /// let b = Rational::from(-5);
 /// let c = Rational::from(6);
@@ -66,6 +67,7 @@ pub fn discriminant(a: Rational, b: Rational, c: Rational) -> Rational {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let roots = solve_quadratic(Rational::from(1), Rational::from(-5), Rational::from(6));
 /// match roots {
 ///     QuadraticRoots::TwoReal(r1, r2) => {
@@ -129,6 +131,7 @@ pub fn solve_quadratic(a: Rational, b: Rational, c: Rational) -> QuadraticRoots 
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// assert_eq!(int_sqrt(16), Some(4));
 /// assert_eq!(int_sqrt(15), None);
 /// assert_eq!(int_sqrt(0), Some(0));
@@ -156,6 +159,7 @@ fn int_sqrt(n: i64) -> Option<i64> {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let s = sum_of_roots(Rational::from(1), Rational::from(-5), Rational::from(6)); // roots 2 and 3
 /// assert_eq!(s, Rational::from(5));
 /// ```
@@ -179,6 +183,7 @@ pub fn sum_of_roots(a: Rational, b: Rational, _c: Rational) -> Rational {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let prod = product_of_roots(Rational::from(1), Rational::from(-5), Rational::from(6));
 /// assert_eq!(prod, Rational::from(6)); // roots 2 and 3 -> product 6
 /// ```
@@ -198,6 +203,7 @@ pub fn product_of_roots(a: Rational, _b: Rational, c: Rational) -> Rational {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let a = Rational::from(2); // first term
 /// let d = Rational::from(3); // common difference
 /// let t4 = ap_nth_term(a, d, 4); // 2 + (4-1)*3 = 11
@@ -216,6 +222,7 @@ pub fn ap_nth_term(a: Rational, d: Rational, n: i64) -> Rational {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let a = Rational::from(1);
 /// let d = Rational::from(1);
 /// let sum = ap_sum(a, d, 10);
@@ -239,6 +246,7 @@ pub fn ap_sum_with_last(first: Rational, last: Rational, n: i64) -> Rational {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let d = ap_common_difference(Rational::from(2), Rational::from(8), 1, 3);
 /// assert_eq!(d, Rational::from(3)); // sequence: 2, 5, 8,...
 /// ```
@@ -260,6 +268,7 @@ pub fn ap_common_difference(term_m: Rational, term_n: Rational, m: i64, n: i64) 
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let term = gp_nth_term(2.into(), 3.into(), 4);
 /// assert_eq!(term, 54.into()); // 2 * 3^(4-1) = 54
 /// ```
@@ -275,6 +284,7 @@ pub fn gp_nth_term(a: Rational, r: Rational, n: i64) -> Rational {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let a = Rational::from(1);
 /// let r = Rational::from(2);
 /// assert_eq!(gp_sum(a, r, 4), Some(Rational::from(15))); // 1 + 2 + 4 + 8 = 15
@@ -307,6 +317,7 @@ pub fn gp_sum(a: Rational, r: Rational, n: i64) -> Option<Rational> {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let sum = gp_sum_infinite(Rational::from(1), Rational::from(1) / Rational::from(2));
 /// assert_eq!(sum, Some(Rational::from(2)));
 /// ```
@@ -335,6 +346,7 @@ pub fn gp_sum_infinite(a: Rational, r: Rational) -> Option<Rational> {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// // For GP 2, 6, 18,... term_1 = 2, term_3 = 18 so r = 3
 /// let r = gp_common_ratio(Rational::new(2, 1), Rational::new(18, 1), 1, 3);
 /// assert_eq!(r, Some(Rational::new(3, 1)));
@@ -391,6 +403,7 @@ pub fn gp_common_ratio(term_m: Rational, term_n: Rational, m: i64, n: i64) -> Op
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let x = Symbol::from("x");
 /// // ∫ x^2 dx = x^3 / 3
 /// let expr = Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)));
@@ -493,6 +506,7 @@ pub fn integrate(expr: &Expr, var: Symbol) -> Option<Expr> {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// let x = Symbol::from("x");
 /// let expr = Expr::Add(Box::new(Expr::Var(x.clone())), Box::new(Expr::Const(Rational::from(1))));
 /// assert!(contains_var(&expr, x));
@@ -518,6 +532,7 @@ fn contains_var(expr: &Expr, var: Symbol) -> bool {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// // ∫_0^2 x dx = 2
 /// let x = Symbol::from("x");
 /// let expr = Expr::Var(x.clone());

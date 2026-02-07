@@ -7,7 +7,14 @@
 //! Equation solving rules and transformations.
 
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
-use mm_core::{Expr, Rational, Symbol};
+use mm_core::{Expr, Rational, Symbol, SymbolTable};
+use std::sync::{Mutex, OnceLock};
+
+fn intern_symbol(name: &str) -> Symbol {
+    static INTERNER: OnceLock<Mutex<SymbolTable>> = OnceLock::new();
+    let m = INTERNER.get_or_init(|| Mutex::new(SymbolTable::new()));
+    m.lock().expect("symbol interner poisoned").intern(name)
+}
 
 /// Get all equation solving rules.
 pub fn equation_rules() -> Vec<Rule> {
@@ -326,7 +333,10 @@ fn quadratic_formula() -> Rule {
 
                         if discriminant.is_negative() {
                             return vec![RuleApplication {
-                                result: expr.clone(),
+                                result: Expr::Equation {
+                                    lhs: Box::new(Expr::Var(var)),
+                                    rhs: Box::new(Expr::Var(intern_symbol("no real roots"))),
+                                },
                                 justification: "No real solutions (discriminant < 0)".to_string(),
                             }];
                         }

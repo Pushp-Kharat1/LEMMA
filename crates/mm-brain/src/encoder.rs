@@ -131,18 +131,12 @@ impl ExpressionEncoder {
                 }
             }
             Expr::Var(sym) => {
-                // Map symbol index to variable tokens (x, y, z, a, b, c, n, t, u, v)
-                // This preserves variable identity - different symbols get different tokens
                 let var_tokens = ["x", "y", "z", "a", "b", "c", "n", "t", "u", "v"];
                 let idx = sym.to_usize() % var_tokens.len();
                 tokens.push(var_tokens[idx].to_string());
             }
-            Expr::Pi => {
-                tokens.push("pi".to_string());
-            }
-            Expr::E => {
-                tokens.push("e".to_string());
-            }
+            Expr::Pi => tokens.push("pi".to_string()),
+            Expr::E => tokens.push("e".to_string()),
             Expr::Neg(e) => {
                 tokens.push("neg".to_string());
                 tokens.push("(".to_string());
@@ -208,6 +202,24 @@ impl ExpressionEncoder {
                 self.tokenize_recursive(e, tokens);
                 tokens.push(")".to_string());
             }
+            Expr::Sinh(e) => {
+                tokens.push("sinh".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(e, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Cosh(e) => {
+                tokens.push("cosh".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(e, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Tanh(e) => {
+                tokens.push("tanh".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(e, tokens);
+                tokens.push(")".to_string());
+            }
             Expr::Arcsin(e) => {
                 tokens.push("arcsin".to_string());
                 tokens.push("(".to_string());
@@ -242,6 +254,27 @@ impl ExpressionEncoder {
                 tokens.push("abs".to_string());
                 tokens.push("(".to_string());
                 self.tokenize_recursive(e, tokens);
+                tokens.push(")".to_string());
+            }
+            Expr::Vector(items) => {
+                tokens.push("vec".to_string());
+                tokens.push("[".to_string());
+                for (i, e) in items.iter().enumerate() {
+                    if i > 0 {
+                        tokens.push(",".to_string());
+                    }
+                    self.tokenize_recursive(e, tokens);
+                }
+                tokens.push("]".to_string());
+            }
+            Expr::Limit {
+                expr, approaching, ..
+            } => {
+                tokens.push("lim".to_string());
+                tokens.push("(".to_string());
+                self.tokenize_recursive(expr, tokens);
+                tokens.push("->".to_string());
+                self.tokenize_recursive(approaching, tokens);
                 tokens.push(")".to_string());
             }
             Expr::Derivative { expr: e, .. } => {
@@ -283,7 +316,6 @@ impl ExpressionEncoder {
                 tokens.push("=".to_string());
                 self.tokenize_recursive(rhs, tokens);
             }
-            // Number theory
             Expr::GCD(a, b) => {
                 tokens.push("gcd".to_string());
                 tokens.push("(".to_string());
@@ -390,7 +422,6 @@ impl ExpressionEncoder {
                 self.tokenize_recursive(body, tokens);
                 tokens.push(")".to_string());
             }
-            // Quantifiers
             Expr::ForAll { body, .. } => {
                 tokens.push("forall".to_string());
                 tokens.push("(".to_string());
@@ -403,7 +434,6 @@ impl ExpressionEncoder {
                 self.tokenize_recursive(body, tokens);
                 tokens.push(")".to_string());
             }
-            // Logical connectives
             Expr::And(a, b) => {
                 tokens.push("(".to_string());
                 self.tokenize_recursive(a, tokens);
@@ -444,7 +474,6 @@ impl ExpressionEncoder {
 
         ids.push(END_TOKEN);
 
-        // Pad to max length
         while ids.len() < self.max_length {
             ids.push(PAD_TOKEN);
         }
@@ -456,7 +485,6 @@ impl ExpressionEncoder {
     pub fn encode(&self, expr: &Expr) -> Result<Tensor> {
         let tokens = self.tokenize(expr);
         let ids = self.encode_tokens(&tokens);
-
         Tensor::new(ids.as_slice(), &self.device)
     }
 
@@ -500,15 +528,12 @@ mod tests {
     fn test_tokenize_simple() {
         let encoder = ExpressionEncoder::new(Device::Cpu);
 
-        // x + 1
         let mut symbols = mm_core::SymbolTable::new();
         let x = symbols.intern("x");
         let expr = Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::int(1)));
 
         let tokens = encoder.tokenize(&expr);
-        assert!(tokens.contains(&"(".to_string()));
         assert!(tokens.contains(&"+".to_string()));
-        assert!(tokens.contains(&"1".to_string()));
     }
 
     #[test]

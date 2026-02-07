@@ -34,7 +34,7 @@
 //! let expr = parser.parse("x^2 + 2*x + 1").unwrap();
 //! ```
 
-use crate::{Expr, MathError, Rational, Symbol, SymbolTable};
+use crate::{Expr, MathError, Rational, SymbolTable};
 
 /// A simple recursive descent parser for mathematical expressions.
 pub struct Parser<'a> {

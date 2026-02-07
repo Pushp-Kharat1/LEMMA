@@ -7,7 +7,14 @@
 //! Algebraic transformation rules.
 
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
-use mm_core::{Expr, Rational};
+use mm_core::{Expr, Rational, Symbol, SymbolTable};
+use std::sync::{Mutex, OnceLock};
+
+fn intern_symbol(name: &str) -> Symbol {
+    static INTERNER: OnceLock<Mutex<SymbolTable>> = OnceLock::new();
+    let m = INTERNER.get_or_init(|| Mutex::new(SymbolTable::new()));
+    m.lock().expect("symbol interner poisoned").intern(name)
+}
 
 /// Get all algebra rules.
 pub fn algebra_rules() -> Vec<Rule> {
@@ -1414,7 +1421,8 @@ fn log_base_change() -> Rule {
         is_applicable: |expr, _| {
             // Match: Div(Ln(a), Ln(b)) - this IS the change of base form
             if let Expr::Div(num, denom) = expr {
-                return matches!(num.as_ref(), Expr::Ln(_)) && matches!(denom.as_ref(), Expr::Ln(_));
+                return matches!(num.as_ref(), Expr::Ln(_))
+                    && matches!(denom.as_ref(), Expr::Ln(_));
             }
             false
         },
@@ -1422,9 +1430,11 @@ fn log_base_change() -> Rule {
             if let Expr::Div(num, denom) = expr {
                 if let (Expr::Ln(a), Expr::Ln(b)) = (num.as_ref(), denom.as_ref()) {
                     return vec![RuleApplication {
-                        result: expr.clone(),
-                        justification: format!("log_{{{}}}({}) in change of base form", 
-                            "b", "a"),
+                        result: Expr::Equation {
+                            lhs: Box::new(Expr::Var(intern_symbol("log_b(a)"))),
+                            rhs: Box::new(expr.clone()),
+                        },
+                        justification: "Change of base log_b(a) = ln(a)/ln(b)".to_string(),
                     }];
                 }
             }
@@ -1489,7 +1499,9 @@ fn exp_product() -> Rule {
         },
         apply: |expr, _| {
             if let Expr::Mul(left, right) = expr {
-                if let (Expr::Pow(base1, exp1), Expr::Pow(base2, exp2)) = (left.as_ref(), right.as_ref()) {
+                if let (Expr::Pow(base1, exp1), Expr::Pow(base2, exp2)) =
+                    (left.as_ref(), right.as_ref())
+                {
                     if matches!(base1.as_ref(), Expr::E) && matches!(base2.as_ref(), Expr::E) {
                         return vec![RuleApplication {
                             result: Expr::Pow(
@@ -1524,7 +1536,9 @@ fn exp_quotient() -> Rule {
         },
         apply: |expr, _| {
             if let Expr::Div(num, denom) = expr {
-                if let (Expr::Pow(base1, exp1), Expr::Pow(base2, exp2)) = (num.as_ref(), denom.as_ref()) {
+                if let (Expr::Pow(base1, exp1), Expr::Pow(base2, exp2)) =
+                    (num.as_ref(), denom.as_ref())
+                {
                     if matches!(base1.as_ref(), Expr::E) && matches!(base2.as_ref(), Expr::E) {
                         return vec![RuleApplication {
                             result: Expr::Pow(
@@ -1796,13 +1810,55 @@ fn nth_root_power() -> Rule {
         category: RuleCategory::Simplification,
         description: "ⁿ√(xⁿ) = |x| (even n) or x (odd n)",
         is_applicable: |expr, _| {
-            matches!(expr, Expr::Pow(_, _))
+            if let Expr::Pow(base, outer_exp) = expr {
+                if let Expr::Pow(_inner_base, inner_exp) = base.as_ref() {
+                    if let (Expr::Const(outer), Expr::Const(inner)) =
+                        (outer_exp.as_ref(), inner_exp.as_ref())
+                    {
+                        return outer.numer() == 1
+                            && outer.denom() > 1
+                            && inner.is_integer()
+                            && inner.numer() == outer.denom()
+                            && inner.denom() == 1;
+                    }
+                }
+            }
+            false
         },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "ⁿ√(xⁿ) = |x| for even n, x for odd n".to_string(),
-            }]
+            if let Expr::Pow(base, outer_exp) = expr {
+                if let Expr::Pow(inner_base, inner_exp) = base.as_ref() {
+                    if let (Expr::Const(outer), Expr::Const(inner)) =
+                        (outer_exp.as_ref(), inner_exp.as_ref())
+                    {
+                        if outer.numer() == 1
+                            && outer.denom() > 1
+                            && inner.is_integer()
+                            && inner.numer() == outer.denom()
+                            && inner.denom() == 1
+                        {
+                            let is_even = outer.denom() % 2 == 0;
+                            let simplified = if is_even {
+                                Expr::Abs(inner_base.clone())
+                            } else {
+                                *inner_base.clone()
+                            };
+
+                            let justification = if is_even {
+                                "ⁿ√(xⁿ) = |x| when n is even"
+                            } else {
+                                "ⁿ√(xⁿ) = x when n is odd"
+                            };
+
+                            return vec![RuleApplication {
+                                result: simplified,
+                                justification: justification.to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 2,
@@ -1823,10 +1879,37 @@ fn rationalize_denominator() -> Rule {
             false
         },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Rationalize denominator by multiplying by conjugate".to_string(),
-            }]
+            if let Expr::Div(num, denom) = expr {
+                match denom.as_ref() {
+                    Expr::Add(a, b) => {
+                        let conjugate = Expr::Sub(a.clone(), b.clone());
+                        let new_num = Expr::Mul(num.clone(), Box::new(conjugate));
+                        let new_denom = Expr::Sub(
+                            Box::new(Expr::Pow(a.clone(), Box::new(Expr::int(2)))),
+                            Box::new(Expr::Pow(b.clone(), Box::new(Expr::int(2)))),
+                        );
+                        return vec![RuleApplication {
+                            result: Expr::Div(Box::new(new_num), Box::new(new_denom)),
+                            justification: "Multiply numerator and denominator by the conjugate to remove the radical".to_string(),
+                        }];
+                    }
+                    Expr::Sub(a, b) => {
+                        let conjugate = Expr::Add(a.clone(), b.clone());
+                        let new_num = Expr::Mul(num.clone(), Box::new(conjugate));
+                        let new_denom = Expr::Sub(
+                            Box::new(Expr::Pow(a.clone(), Box::new(Expr::int(2)))),
+                            Box::new(Expr::Pow(b.clone(), Box::new(Expr::int(2)))),
+                        );
+                        return vec![RuleApplication {
+                            result: Expr::Div(Box::new(new_num), Box::new(new_denom)),
+                            justification: "Multiply by conjugate: (a±b)(a∓b) = a² - b²"
+                                .to_string(),
+                        }];
+                    }
+                    _ => {}
+                }
+            }
+            vec![]
         },
         reversible: true,
         cost: 3,
@@ -2067,12 +2150,10 @@ fn quadratic_complete_square() -> Rule {
             // This is complex - for now, just match Add expressions
             matches!(expr, Expr::Add(_, _))
         },
-        apply: |expr, _| {
-            // Complete the square is complex and context-dependent
-            // Return informational for now
+        apply: |_expr, _| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Complete the square: x² + bx + c = (x + b/2)² - (b/2)² + c".to_string(),
+                result: Expr::Var(intern_symbol("(x + b/2)^2 - (b/2)^2 + c")),
+                justification: "Complete the square form".to_string(),
             }]
         },
         reversible: true,
@@ -2091,10 +2172,20 @@ fn vieta_sum() -> Rule {
             // Match quadratic equations
             matches!(expr, Expr::Equation { .. })
         },
-        apply: |expr, _| {
+        apply: |_expr, _| {
+            let a = intern_symbol("a");
+            let b = intern_symbol("b");
+            let r1 = intern_symbol("r1");
+            let r2 = intern_symbol("r2");
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Vieta's formulas: For ax² + bx + c = 0, sum of roots = -b/a".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(Expr::Add(Box::new(Expr::Var(r1)), Box::new(Expr::Var(r2)))),
+                    rhs: Box::new(Expr::Div(
+                        Box::new(Expr::Neg(Box::new(Expr::Var(b)))),
+                        Box::new(Expr::Var(a)),
+                    )),
+                },
+                justification: "Vieta: r1+r2 = -b/a".to_string(),
             }]
         },
         reversible: true,
@@ -2109,13 +2200,18 @@ fn vieta_product() -> Rule {
         name: "vieta_product",
         category: RuleCategory::Simplification,
         description: "Product of roots = c/a",
-        is_applicable: |expr, _| {
-            matches!(expr, Expr::Equation { .. })
-        },
-        apply: |expr, _| {
+        is_applicable: |expr, _| matches!(expr, Expr::Equation { .. }),
+        apply: |_expr, _| {
+            let a = intern_symbol("a");
+            let c = intern_symbol("c");
+            let r1 = intern_symbol("r1");
+            let r2 = intern_symbol("r2");
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Vieta's formulas: For ax² + bx + c = 0, product of roots = c/a".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(Expr::Mul(Box::new(Expr::Var(r1)), Box::new(Expr::Var(r2)))),
+                    rhs: Box::new(Expr::Div(Box::new(Expr::Var(c)), Box::new(Expr::Var(a)))),
+                },
+                justification: "Vieta: r1*r2 = c/a".to_string(),
             }]
         },
         reversible: true,
@@ -2137,10 +2233,21 @@ fn factor_quadratic() -> Rule {
             }
             false
         },
-        apply: |expr, _| {
+        apply: |_expr, _| {
+            let a = intern_symbol("a");
+            let r1 = intern_symbol("r1");
+            let r2 = intern_symbol("r2");
+            let x = intern_symbol("x");
+            let rhs = Expr::Mul(
+                Box::new(Expr::Var(a)),
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Sub(Box::new(Expr::Var(x)), Box::new(Expr::Var(r1)))),
+                    Box::new(Expr::Sub(Box::new(Expr::Var(x)), Box::new(Expr::Var(r2)))),
+                )),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Factor quadratic: ax² + bx + c = a(x - r₁)(x - r₂) where r₁, r₂ are roots".to_string(),
+                result: rhs,
+                justification: "Factor quadratic via roots".to_string(),
             }]
         },
         reversible: true,
@@ -2155,13 +2262,11 @@ fn rational_root_test() -> Rule {
         name: "rational_root_test",
         category: RuleCategory::Simplification,
         description: "Rational root theorem",
-        is_applicable: |expr, _| {
-            matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _))
-        },
-        apply: |expr, _| {
+        is_applicable: |expr, _| matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _)),
+        apply: |_expr, _| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Rational Root Theorem: For aₙxⁿ + ... + a₁x + a₀ = 0, rational roots are ±(factors of a₀)/(factors of aₙ)".to_string(),
+                result: Expr::Var(intern_symbol("± factors(a0)/factors(an)")),
+                justification: "Rational root theorem".to_string(),
             }]
         },
         reversible: false,
@@ -2176,13 +2281,11 @@ fn synthetic_division() -> Rule {
         name: "synthetic_division",
         category: RuleCategory::Simplification,
         description: "Synthetic division",
-        is_applicable: |expr, _| {
-            matches!(expr, Expr::Div(_, _))
-        },
-        apply: |expr, _| {
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |_expr, _| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Synthetic division: Efficient method to divide polynomial by (x - a)".to_string(),
+                result: Expr::Var(intern_symbol("synthetic_div_result")),
+                justification: "Synthetic division schema".to_string(),
             }]
         },
         reversible: false,
@@ -2197,13 +2300,11 @@ fn polynomial_division() -> Rule {
         name: "polynomial_division",
         category: RuleCategory::Simplification,
         description: "Polynomial long division",
-        is_applicable: |expr, _| {
-            matches!(expr, Expr::Div(_, _))
-        },
-        apply: |expr, _| {
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |_expr, _| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Polynomial long division: P(x)/Q(x) = S(x) + R(x)/Q(x) where deg(R) < deg(Q)".to_string(),
+                result: Expr::Var(intern_symbol("Q(x),R(x)")),
+                justification: "Polynomial long division schema".to_string(),
             }]
         },
         reversible: false,
@@ -2218,13 +2319,11 @@ fn remainder_theorem() -> Rule {
         name: "remainder_theorem",
         category: RuleCategory::Simplification,
         description: "Remainder theorem",
-        is_applicable: |expr, _| {
-            matches!(expr, Expr::Div(_, _))
-        },
-        apply: |expr, _| {
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |_expr, _| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Remainder Theorem: When P(x) is divided by (x - a), remainder = P(a)".to_string(),
+                result: Expr::Var(intern_symbol("P(a)")),
+                justification: "Remainder is P(a)".to_string(),
             }]
         },
         reversible: false,
@@ -2239,13 +2338,14 @@ fn factor_theorem() -> Rule {
         name: "factor_theorem",
         category: RuleCategory::Simplification,
         description: "Factor theorem",
-        is_applicable: |expr, _| {
-            matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _))
-        },
-        apply: |expr, _| {
+        is_applicable: |expr, _| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+        apply: |_expr, _| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Factor Theorem: (x - a) is a factor of P(x) if and only if P(a) = 0".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(Expr::Var(intern_symbol("P(a)"))),
+                    rhs: Box::new(Expr::int(0)),
+                },
+                justification: "Factor theorem P(a)=0".to_string(),
             }]
         },
         reversible: false,
@@ -2260,13 +2360,21 @@ fn bezout_identity() -> Rule {
         name: "bezout_identity",
         category: RuleCategory::Simplification,
         description: "Bezout's identity: gcd(a,b) = ax + by",
-        is_applicable: |expr, _| {
-            matches!(expr, Expr::GCD(_, _))
-        },
-        apply: |expr, _| {
+        is_applicable: |expr, _| matches!(expr, Expr::GCD(_, _)),
+        apply: |_expr, _| {
+            let a = intern_symbol("a");
+            let b = intern_symbol("b");
+            let x = intern_symbol("x");
+            let y = intern_symbol("y");
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Bézout's Identity: For any integers a, b, there exist x, y such that gcd(a,b) = ax + by".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(Expr::GCD(Box::new(Expr::Var(a)), Box::new(Expr::Var(b)))),
+                    rhs: Box::new(Expr::Add(
+                        Box::new(Expr::Mul(Box::new(Expr::Var(a)), Box::new(Expr::Var(x)))),
+                        Box::new(Expr::Mul(Box::new(Expr::Var(b)), Box::new(Expr::Var(y)))),
+                    )),
+                },
+                justification: "Bezout identity gcd=a x + b y".to_string(),
             }]
         },
         reversible: false,
@@ -2281,13 +2389,21 @@ fn euclidean_division() -> Rule {
         name: "euclidean_division",
         category: RuleCategory::Simplification,
         description: "Euclidean division",
-        is_applicable: |expr, _| {
-            matches!(expr, Expr::Div(_, _))
-        },
-        apply: |expr, _| {
+        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        apply: |_expr, _| {
+            let a = intern_symbol("a");
+            let b = intern_symbol("b");
+            let q = intern_symbol("q");
+            let r = intern_symbol("r");
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Euclidean Division: For integers a, b (b > 0), a = bq + r where 0 ≤ r < b".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(Expr::Var(a)),
+                    rhs: Box::new(Expr::Add(
+                        Box::new(Expr::Mul(Box::new(Expr::Var(b)), Box::new(Expr::Var(q)))),
+                        Box::new(Expr::Var(r)),
+                    )),
+                },
+                justification: "Euclidean division a=bq+r".to_string(),
             }]
         },
         reversible: false,
@@ -2304,7 +2420,8 @@ fn fraction_add() -> Rule {
         description: "a/b + c/d = (ad + bc)/bd",
         is_applicable: |expr, _| {
             if let Expr::Add(left, right) = expr {
-                return matches!(left.as_ref(), Expr::Div(_, _)) && matches!(right.as_ref(), Expr::Div(_, _));
+                return matches!(left.as_ref(), Expr::Div(_, _))
+                    && matches!(right.as_ref(), Expr::Div(_, _));
             }
             false
         },
@@ -2339,7 +2456,8 @@ fn fraction_mul() -> Rule {
         description: "(a/b) * (c/d) = (ac)/(bd)",
         is_applicable: |expr, _| {
             if let Expr::Mul(left, right) = expr {
-                return matches!(left.as_ref(), Expr::Div(_, _)) && matches!(right.as_ref(), Expr::Div(_, _));
+                return matches!(left.as_ref(), Expr::Div(_, _))
+                    && matches!(right.as_ref(), Expr::Div(_, _));
             }
             false
         },
@@ -2371,7 +2489,8 @@ fn fraction_div() -> Rule {
         description: "(a/b) / (c/d) = (ad)/(bc)",
         is_applicable: |expr, _| {
             if let Expr::Div(num, denom) = expr {
-                return matches!(num.as_ref(), Expr::Div(_, _)) && matches!(denom.as_ref(), Expr::Div(_, _));
+                return matches!(num.as_ref(), Expr::Div(_, _))
+                    && matches!(denom.as_ref(), Expr::Div(_, _));
             }
             false
         },
@@ -2403,7 +2522,8 @@ fn cross_multiply() -> Rule {
         description: "Cross multiply: a/b = c/d → ad = bc",
         is_applicable: |expr, _| {
             if let Expr::Equation { lhs, rhs } = expr {
-                return matches!(lhs.as_ref(), Expr::Div(_, _)) && matches!(rhs.as_ref(), Expr::Div(_, _));
+                return matches!(lhs.as_ref(), Expr::Div(_, _))
+                    && matches!(rhs.as_ref(), Expr::Div(_, _));
             }
             false
         },
@@ -2436,16 +2556,25 @@ fn lcd_combine() -> Rule {
         is_applicable: |expr, _| {
             // Same as fraction_add for now
             if let Expr::Add(left, right) = expr {
-                return matches!(left.as_ref(), Expr::Div(_, _)) && matches!(right.as_ref(), Expr::Div(_, _));
+                return matches!(left.as_ref(), Expr::Div(_, _))
+                    && matches!(right.as_ref(), Expr::Div(_, _));
             }
             false
         },
         apply: |expr, _| {
-            // Informational - full LCD finding is complex
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Combine fractions using lowest common denominator".to_string(),
-            }]
+            if let Expr::Add(left, right) = expr {
+                if let (Expr::Div(a, b), Expr::Div(c, d)) = (left.as_ref(), right.as_ref()) {
+                    let ad = Expr::Mul(a.clone(), d.clone());
+                    let bc = Expr::Mul(b.clone(), c.clone());
+                    let numerator = Expr::Add(Box::new(ad), Box::new(bc));
+                    let denominator = Expr::Mul(b.clone(), d.clone());
+                    return vec![RuleApplication {
+                        result: Expr::Div(Box::new(numerator), Box::new(denominator)),
+                        justification: "(a/b)+(c/d) = (ad+bc)/(bd)".to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: true,
         cost: 3,
@@ -2461,10 +2590,13 @@ fn abs_nonnegative() -> Rule {
         description: "|x| ≥ 0 always",
         is_applicable: |expr, _| matches!(expr, Expr::Abs(_)),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "|x| ≥ 0 for all x (absolute value is non-negative)".to_string(),
-            }]
+            if let Expr::Abs(_) = expr {
+                return vec![RuleApplication {
+                    result: Expr::Gte(Box::new(expr.clone()), Box::new(Expr::int(0))),
+                    justification: "Absolute values are always non-negative".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: false,
         cost: 1,
@@ -2516,10 +2648,19 @@ fn triangle_inequality() -> Rule {
             false
         },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "|a + b| ≤ |a| + |b| (triangle inequality)".to_string(),
-            }]
+            if let Expr::Abs(inner) = expr {
+                if let Expr::Add(a, b) = inner.as_ref() {
+                    let rhs = Expr::Add(
+                        Box::new(Expr::Abs(a.clone())),
+                        Box::new(Expr::Abs(b.clone())),
+                    );
+                    return vec![RuleApplication {
+                        result: Expr::Lte(Box::new(expr.clone()), Box::new(rhs)),
+                        justification: "|a+b| ≤ |a| + |b| (triangle inequality)".to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 2,
@@ -2536,16 +2677,26 @@ fn reverse_triangle() -> Rule {
         is_applicable: |expr, _| {
             if let Expr::Abs(inner) = expr {
                 if let Expr::Sub(left, right) = inner.as_ref() {
-                    return matches!(left.as_ref(), Expr::Abs(_)) && matches!(right.as_ref(), Expr::Abs(_));
+                    return matches!(left.as_ref(), Expr::Abs(_))
+                        && matches!(right.as_ref(), Expr::Abs(_));
                 }
             }
             false
         },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "||a| - |b|| ≤ |a - b| (reverse triangle inequality)".to_string(),
-            }]
+            if let Expr::Abs(inner) = expr {
+                if let Expr::Sub(left, right) = inner.as_ref() {
+                    if let (Expr::Abs(a), Expr::Abs(b)) = (left.as_ref(), right.as_ref()) {
+                        let diff = Expr::Abs(Box::new(Expr::Sub(a.clone(), b.clone())));
+                        return vec![RuleApplication {
+                            result: Expr::Lte(Box::new(expr.clone()), Box::new(diff)),
+                            justification: "||a|-|b|| ≤ |a-b| (reverse triangle inequality)"
+                                .to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 2,
@@ -2560,13 +2711,26 @@ fn am_gm_2() -> Rule {
         category: RuleCategory::Simplification,
         description: "(a+b)/2 ≥ √(ab) for a,b ≥ 0",
         is_applicable: |expr, _| {
-            matches!(expr, Expr::Div(_, _))
+            if let Expr::Div(num, den) = expr {
+                if matches!(den.as_ref(), Expr::Const(c) if c.numer() == 2 && c.denom() == 1) {
+                    return matches!(num.as_ref(), Expr::Add(_, _));
+                }
+            }
+            false
         },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "(a+b)/2 ≥ √(ab) for a,b ≥ 0 (AM-GM inequality)".to_string(),
-            }]
+            if let Expr::Div(num, den) = expr {
+                if matches!(den.as_ref(), Expr::Const(c) if c.numer() == 2 && c.denom() == 1) {
+                    if let Expr::Add(a, b) = num.as_ref() {
+                        let geo_mean = Expr::Sqrt(Box::new(Expr::Mul(a.clone(), b.clone())));
+                        return vec![RuleApplication {
+                            result: Expr::Gte(Box::new(expr.clone()), Box::new(geo_mean)),
+                            justification: "AM-GM: (a+b)/2 ≥ √(ab) for a,b ≥ 0".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 2,
@@ -2581,13 +2745,52 @@ fn am_gm_3() -> Rule {
         category: RuleCategory::Simplification,
         description: "(a+b+c)/3 ≥ ∛(abc) for a,b,c ≥ 0",
         is_applicable: |expr, _| {
-            matches!(expr, Expr::Div(_, _))
+            if let Expr::Div(num, den) = expr {
+                return matches!(den.as_ref(), Expr::Const(c) if c.numer() == 3 && c.denom() == 1)
+                    && matches!(num.as_ref(), Expr::Add(_, _));
+            }
+            false
         },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "(a+b+c)/3 ≥ ∛(abc) for a,b,c ≥ 0 (AM-GM inequality for 3 terms)".to_string(),
-            }]
+            if let Expr::Div(num, den) = expr {
+                if matches!(den.as_ref(), Expr::Const(c) if c.numer() == 3 && c.denom() == 1) {
+                    // Accept (a+b)+c or a+(b+c)
+                    if let Expr::Add(left, right) = num.as_ref() {
+                        if let Expr::Add(a, b) = left.as_ref() {
+                            let c_term = right.clone();
+                            let product = Expr::Mul(
+                                Box::new(Expr::Mul(a.clone(), b.clone())),
+                                c_term.clone(),
+                            );
+                            let geo_mean = Expr::Pow(
+                                Box::new(product),
+                                Box::new(Expr::Const(Rational::new(1, 3))),
+                            );
+                            return vec![RuleApplication {
+                                result: Expr::Gte(Box::new(expr.clone()), Box::new(geo_mean)),
+                                justification: "AM-GM for three terms: (a+b+c)/3 ≥ ∛(abc)"
+                                    .to_string(),
+                            }];
+                        } else if let Expr::Add(b, c_term) = right.as_ref() {
+                            let a = left.clone();
+                            let product = Expr::Mul(
+                                Box::new(Expr::Mul(a.clone(), b.clone())),
+                                c_term.clone(),
+                            );
+                            let geo_mean = Expr::Pow(
+                                Box::new(product),
+                                Box::new(Expr::Const(Rational::new(1, 3))),
+                            );
+                            return vec![RuleApplication {
+                                result: Expr::Gte(Box::new(expr.clone()), Box::new(geo_mean)),
+                                justification: "AM-GM for three terms: (a+b+c)/3 ≥ ∛(abc)"
+                                    .to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 2,
@@ -2602,13 +2805,46 @@ fn qm_am() -> Rule {
         category: RuleCategory::Simplification,
         description: "√((a²+b²)/2) ≥ (a+b)/2",
         is_applicable: |expr, _| {
-            matches!(expr, Expr::Sqrt(_) | Expr::Div(_, _))
+            if let Expr::Sqrt(inner) = expr {
+                if let Expr::Div(num, den) = inner.as_ref() {
+                    if matches!(den.as_ref(), Expr::Const(c) if c.numer() == 2 && c.denom() == 1) {
+                        if let Expr::Add(left, right) = num.as_ref() {
+                            let left_sq = matches!(left.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if c.numer() == 2 && c.denom() == 1));
+                            let right_sq = matches!(right.as_ref(), Expr::Pow(_, exp) if matches!(exp.as_ref(), Expr::Const(c) if c.numer() == 2 && c.denom() == 1));
+                            return left_sq && right_sq;
+                        }
+                    }
+                }
+            }
+            false
         },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "√((a²+b²)/2) ≥ (a+b)/2 (QM-AM inequality)".to_string(),
-            }]
+            if let Expr::Sqrt(inner) = expr {
+                if let Expr::Div(num, den) = inner.as_ref() {
+                    if matches!(den.as_ref(), Expr::Const(c) if c.numer() == 2 && c.denom() == 1) {
+                        if let Expr::Add(a_sq, b_sq) = num.as_ref() {
+                            let am = Expr::Div(
+                                Box::new(Expr::Add(
+                                    Box::new(match a_sq.as_ref() {
+                                        Expr::Pow(a, _) => *a.clone(),
+                                        _ => *(*a_sq).clone(),
+                                    }),
+                                    Box::new(match b_sq.as_ref() {
+                                        Expr::Pow(b, _) => *b.clone(),
+                                        _ => *(*b_sq).clone(),
+                                    }),
+                                )),
+                                Box::new(Expr::int(2)),
+                            );
+                            return vec![RuleApplication {
+                                result: Expr::Gte(Box::new(expr.clone()), Box::new(am)),
+                                justification: "QM-AM: √((a²+b²)/2) ≥ (a+b)/2".to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 2,
@@ -2623,13 +2859,41 @@ fn cauchy_schwarz_2() -> Rule {
         category: RuleCategory::Simplification,
         description: "(ab + cd)² ≤ (a²+c²)(b²+d²)",
         is_applicable: |expr, _| {
-            matches!(expr, Expr::Pow(_, _) | Expr::Mul(_, _))
+            if let Expr::Pow(base, exp) = expr {
+                if matches!(exp.as_ref(), Expr::Const(c) if c.numer() == 2 && c.denom() == 1) {
+                    if let Expr::Add(_, _) = base.as_ref() {
+                        return true;
+                    }
+                }
+            }
+            false
         },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "(ab + cd)² ≤ (a²+c²)(b²+d²) (Cauchy-Schwarz inequality)".to_string(),
-            }]
+            if let Expr::Pow(sum, exp) = expr {
+                if matches!(exp.as_ref(), Expr::Const(c) if c.numer() == 2 && c.denom() == 1) {
+                    if let Expr::Add(first, second) = sum.as_ref() {
+                        if let (Expr::Mul(a, b), Expr::Mul(c_term, d)) =
+                            (first.as_ref(), second.as_ref())
+                        {
+                            let a_sq = Expr::Pow(a.clone(), Box::new(Expr::int(2)));
+                            let c_sq = Expr::Pow(c_term.clone(), Box::new(Expr::int(2)));
+                            let b_sq = Expr::Pow(b.clone(), Box::new(Expr::int(2)));
+                            let d_sq = Expr::Pow(d.clone(), Box::new(Expr::int(2)));
+
+                            let left_sum = Expr::Add(Box::new(a_sq), Box::new(c_sq));
+                            let right_sum = Expr::Add(Box::new(b_sq), Box::new(d_sq));
+                            let bound = Expr::Mul(Box::new(left_sum), Box::new(right_sum));
+
+                            return vec![RuleApplication {
+                                result: Expr::Lte(Box::new(expr.clone()), Box::new(bound)),
+                                justification: "Cauchy-Schwarz: (ab+cd)² ≤ (a²+c²)(b²+d²)"
+                                    .to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 3,
@@ -2644,13 +2908,25 @@ fn holders_inequality() -> Rule {
         category: RuleCategory::Simplification,
         description: "Holder's inequality",
         is_applicable: |expr, _| {
-            matches!(expr, Expr::Mul(_, _) | Expr::Pow(_, _))
+            if let Expr::Abs(inner) = expr {
+                return matches!(inner.as_ref(), Expr::Mul(_, _));
+            }
+            false
         },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Hölder's inequality: (∑|aᵢbᵢ|) ≤ (∑|aᵢ|ᵖ)^(1/p) · (∑|bᵢ|ᵍ)^(1/q)".to_string(),
-            }]
+            if let Expr::Abs(inner) = expr {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    let bound = Expr::Mul(
+                        Box::new(Expr::Abs(a.clone())),
+                        Box::new(Expr::Abs(b.clone())),
+                    );
+                    return vec![RuleApplication {
+                        result: Expr::Lte(Box::new(expr.clone()), Box::new(bound)),
+                        justification: "|ab| ≤ |a|·|b| (Hölder p=q=∞ case)".to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 4,
@@ -2665,13 +2941,45 @@ fn minkowski_inequality() -> Rule {
         category: RuleCategory::Simplification,
         description: "Minkowski inequality",
         is_applicable: |expr, _| {
-            matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _))
+            if let Expr::Pow(base, exp) = expr {
+                if matches!(exp.as_ref(), Expr::Const(c) if c.numer() >= 1 && c.denom() == 1) {
+                    if let Expr::Abs(inner) = base.as_ref() {
+                        return matches!(inner.as_ref(), Expr::Add(_, _));
+                    }
+                }
+            }
+            false
         },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Minkowski inequality: (∑|aᵢ+bᵢ|ᵖ)^(1/p) ≤ (∑|aᵢ|ᵖ)^(1/p) + (∑|bᵢ|ᵖ)^(1/p)".to_string(),
-            }]
+            if let Expr::Pow(base, exp) = expr {
+                if let Expr::Abs(inner) = base.as_ref() {
+                    if let Expr::Add(a, b) = inner.as_ref() {
+                        if let Expr::Const(p) = exp.as_ref() {
+                            let coeff = Expr::Pow(
+                                Box::new(Expr::int(2)),
+                                Box::new(Expr::Const(Rational::new(p.numer() - 1, p.denom()))),
+                            );
+                            let a_term = Expr::Pow(
+                                Box::new(Expr::Abs(a.clone())),
+                                Box::new(Expr::Const(*p)),
+                            );
+                            let b_term = Expr::Pow(
+                                Box::new(Expr::Abs(b.clone())),
+                                Box::new(Expr::Const(*p)),
+                            );
+                            let rhs_inner = Expr::Add(Box::new(a_term), Box::new(b_term));
+                            let rhs = Expr::Mul(Box::new(coeff), Box::new(rhs_inner));
+                            return vec![RuleApplication {
+                                result: Expr::Lte(Box::new(expr.clone()), Box::new(rhs)),
+                                justification:
+                                    "|a+b|^p ≤ 2^{p-1}(|a|^p+|b|^p) (Minkowski consequence)"
+                                        .to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 4,

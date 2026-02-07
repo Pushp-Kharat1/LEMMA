@@ -11,7 +11,7 @@
 //!
 //! For example: `x + 1` and `1 + x` both canonicalize to the same form.
 
-use crate::{Expr, Factor, Rational, Symbol, Term};
+use crate::{Expr, Factor, Rational, Term};
 use std::collections::HashMap;
 
 impl Expr {
@@ -75,12 +75,21 @@ impl Expr {
             Expr::Sin(e) => Expr::Sin(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Cos(e) => Expr::Cos(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Tan(e) => Expr::Tan(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Sinh(e) => Expr::Sinh(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Cosh(e) => Expr::Cosh(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Tanh(e) => Expr::Tanh(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Arcsin(e) => Expr::Arcsin(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Arccos(e) => Expr::Arccos(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Arctan(e) => Expr::Arctan(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Ln(e) => Expr::Ln(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Exp(e) => Expr::Exp(Box::new(e.canonicalize_with_depth(depth))),
             Expr::Abs(e) => Expr::Abs(Box::new(e.canonicalize_with_depth(depth))),
+            Expr::Vector(items) => Expr::Vector(
+                items
+                    .iter()
+                    .map(|e| e.canonicalize_with_depth(depth))
+                    .collect(),
+            ),
 
             // Binary operations
             Expr::Add(a, b) => Expr::Add(
@@ -132,6 +141,15 @@ impl Expr {
             Expr::Integral { expr, var } => Expr::Integral {
                 expr: Box::new(expr.canonicalize_with_depth(depth)),
                 var: *var,
+            },
+            Expr::Limit {
+                expr,
+                var,
+                approaching,
+            } => Expr::Limit {
+                expr: Box::new(expr.canonicalize_with_depth(depth)),
+                var: *var,
+                approaching: Box::new(approaching.canonicalize_with_depth(depth)),
             },
 
             // Equation

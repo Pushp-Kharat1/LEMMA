@@ -8,7 +8,7 @@
 //!
 //! Evaluates expressions to floating-point values given variable bindings.
 
-use crate::{Expr, Rational, Symbol};
+use crate::{Expr, Symbol};
 use std::collections::HashMap;
 
 /// Environment mapping variables to their values.
@@ -81,6 +81,9 @@ impl Expr {
             Expr::Sin(e) => e.evaluate(env).map(|x| x.sin()),
             Expr::Cos(e) => e.evaluate(env).map(|x| x.cos()),
             Expr::Tan(e) => e.evaluate(env).map(|x| x.tan()),
+            Expr::Sinh(e) => e.evaluate(env).map(|x| x.sinh()),
+            Expr::Cosh(e) => e.evaluate(env).map(|x| x.cosh()),
+            Expr::Tanh(e) => e.evaluate(env).map(|x| x.tanh()),
             Expr::Arcsin(e) => e.evaluate(env).map(|x| x.asin()),
             Expr::Arccos(e) => e.evaluate(env).map(|x| x.acos()),
             Expr::Arctan(e) => e.evaluate(env).map(|x| x.atan()),
@@ -94,6 +97,9 @@ impl Expr {
             }
             Expr::Exp(e) => e.evaluate(env).map(|x| x.exp()),
             Expr::Abs(e) => e.evaluate(env).map(|x| x.abs()),
+
+            // Vector evaluation not supported in scalar environment
+            Expr::Vector(_) => None,
 
             Expr::Add(a, b) => {
                 let va = a.evaluate(env)?;
@@ -144,7 +150,7 @@ impl Expr {
             }
 
             // Calculus expressions can't be directly evaluated
-            Expr::Derivative { .. } | Expr::Integral { .. } => None,
+            Expr::Derivative { .. } | Expr::Integral { .. } | Expr::Limit { .. } => None,
 
             // Equations return the difference (lhs - rhs)
             // Useful for checking if a solution satisfies the equation
@@ -352,6 +358,9 @@ impl Expr {
             | Expr::Sin(e)
             | Expr::Cos(e)
             | Expr::Tan(e)
+            | Expr::Sinh(e)
+            | Expr::Cosh(e)
+            | Expr::Tanh(e)
             | Expr::Arcsin(e)
             | Expr::Arccos(e)
             | Expr::Arctan(e)
@@ -359,6 +368,11 @@ impl Expr {
             | Expr::Exp(e)
             | Expr::Abs(e) => {
                 e.collect_vars(vars);
+            }
+            Expr::Vector(items) => {
+                for e in items {
+                    e.collect_vars(vars);
+                }
             }
             Expr::Add(a, b)
             | Expr::Sub(a, b)
@@ -381,6 +395,17 @@ impl Expr {
             }
             Expr::Derivative { expr, var } | Expr::Integral { expr, var } => {
                 expr.collect_vars(vars);
+                if !vars.contains(var) {
+                    vars.push(*var);
+                }
+            }
+            Expr::Limit {
+                expr,
+                var,
+                approaching,
+            } => {
+                expr.collect_vars(vars);
+                approaching.collect_vars(vars);
                 if !vars.contains(var) {
                     vars.push(*var);
                 }

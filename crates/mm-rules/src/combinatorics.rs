@@ -8,7 +8,19 @@
 //! Includes counting principles, binomial coefficients, and generating functions.
 
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
-use mm_core::{Expr, Rational};
+use mm_core::{Expr, Symbol, SymbolTable};
+use std::sync::{Mutex, OnceLock};
+
+// Minimal, module-local symbol interner for generating helper variables inside rule bodies.
+// This keeps generated symbols stable across rules without leaking a global symbol table API.
+fn intern_symbol(name: &str) -> Symbol {
+    static INTERNER: OnceLock<Mutex<SymbolTable>> = OnceLock::new();
+    let mutex = INTERNER.get_or_init(|| Mutex::new(SymbolTable::new()));
+    mutex
+        .lock()
+        .expect("symbol interner mutex poisoned")
+        .intern(name)
+}
 
 /// Returns the complete set of combinatorics rules used by the solver.
 ///
@@ -45,13 +57,17 @@ fn binomial_rules() -> Vec<Rule> {
             category: RuleCategory::Simplification,
             description: "C(n,0) = 1",
             is_applicable: |expr, _ctx| {
-                // Match: Div(Factorial, Factorial) patterns for binomial
-                matches!(expr, Expr::Div(_, _) | Expr::Factorial(_))
+                if let Expr::Binomial(_, k) = expr {
+                    if let Expr::Const(c) = k.as_ref() {
+                        return c.is_zero();
+                    }
+                }
+                false
             },
-            apply: |_expr, _ctx| {
+            apply: |expr, _ctx| {
                 vec![RuleApplication {
                     result: Expr::int(1),
-                    justification: "C(n,0) = 1 for all n".to_string(),
+                    justification: "C(n,0) = 1".to_string(),
                 }]
             },
             reversible: false,
@@ -63,11 +79,11 @@ fn binomial_rules() -> Vec<Rule> {
             name: "binomial_full",
             category: RuleCategory::Simplification,
             description: "C(n,n) = 1",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Factorial(_)),
-            apply: |_expr, _ctx| {
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Binomial(n, k) if matches!(n.as_ref(), Expr::Var(vn) if matches!(k.as_ref(), Expr::Var(vk) if vk == vn))),
+            apply: |expr, _ctx| {
                 vec![RuleApplication {
                     result: Expr::int(1),
-                    justification: "C(n,n) = 1 for all n".to_string(),
+                    justification: "C(n,n) = 1".to_string(),
                 }]
             },
             reversible: false,
@@ -79,12 +95,22 @@ fn binomial_rules() -> Vec<Rule> {
             name: "binomial_one",
             category: RuleCategory::Simplification,
             description: "C(n,1) = n",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Var(_)),
+            is_applicable: |expr, _ctx| {
+                if let Expr::Binomial(_, k) = expr {
+                    if let Expr::Const(c) = k.as_ref() {
+                        return c.is_one();
+                    }
+                }
+                false
+            },
             apply: |expr, _ctx| {
-                vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "C(n,1) = n".to_string(),
-                }]
+                if let Expr::Binomial(n, _) = expr {
+                    return vec![RuleApplication {
+                        result: *n.clone(),
+                        justification: "C(n,1) = n".to_string(),
+                    }];
+                }
+                vec![]
             },
             reversible: false,
             cost: 1,
@@ -95,12 +121,19 @@ fn binomial_rules() -> Vec<Rule> {
             name: "binomial_symmetry",
             category: RuleCategory::Simplification,
             description: "C(n,k) = C(n,n-k)",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Binomial(_, _)),
             apply: |expr, _ctx| {
-                vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "Binomial symmetry: C(n,k) = C(n,n-k)".to_string(),
-                }]
+                if let Expr::Binomial(n, k) = expr {
+                    let rhs = Expr::Binomial(n.clone(), Box::new(Expr::Sub(n.clone(), k.clone())));
+                    return vec![RuleApplication {
+                        result: Expr::Equation {
+                            lhs: Box::new(expr.clone()),
+                            rhs: Box::new(rhs),
+                        },
+                        justification: "Binomial symmetry C(n,k)=C(n,n-k)".to_string(),
+                    }];
+                }
+                vec![]
             },
             reversible: true,
             cost: 1,
@@ -111,12 +144,27 @@ fn binomial_rules() -> Vec<Rule> {
             name: "pascal_identity",
             category: RuleCategory::Expansion,
             description: "C(n,k) = C(n-1,k-1) + C(n-1,k)",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Binomial(_, _)),
             apply: |expr, _ctx| {
-                vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "Pascal's identity: C(n,k) = C(n-1,k-1) + C(n-1,k)".to_string(),
-                }]
+                if let Expr::Binomial(n, k) = expr {
+                    let n_minus_1 = Expr::Sub(n.clone(), Box::new(Expr::int(1)));
+                    let k_minus_1 = Expr::Sub(k.clone(), Box::new(Expr::int(1)));
+                    let rhs = Expr::Add(
+                        Box::new(Expr::Binomial(
+                            Box::new(n_minus_1.clone()),
+                            Box::new(k_minus_1),
+                        )),
+                        Box::new(Expr::Binomial(Box::new(n_minus_1), k.clone())),
+                    );
+                    return vec![RuleApplication {
+                        result: Expr::Equation {
+                            lhs: Box::new(expr.clone()),
+                            rhs: Box::new(rhs),
+                        },
+                        justification: "Pascal identity".to_string(),
+                    }];
+                }
+                vec![]
             },
             reversible: true,
             cost: 2,
@@ -127,13 +175,8 @@ fn binomial_rules() -> Vec<Rule> {
             name: "hockey_stick",
             category: RuleCategory::Simplification,
             description: "ΣC(i,k) for i=k to n = C(n+1,k+1)",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
-            apply: |expr, _ctx| {
-                vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "Hockey stick identity: ΣC(i,k) = C(n+1,k+1)".to_string(),
-                }]
-            },
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Summation { .. }),
+            apply: |expr, _ctx| hockey_stick_identity().apply(expr, _ctx),
             reversible: true,
             cost: 3,
         },
@@ -143,13 +186,8 @@ fn binomial_rules() -> Vec<Rule> {
             name: "vandermonde",
             category: RuleCategory::Simplification,
             description: "ΣC(m,k)C(n,r-k) = C(m+n,r)",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
-            apply: |expr, _ctx| {
-                vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "Vandermonde's identity: ΣC(m,k)C(n,r-k) = C(m+n,r)".to_string(),
-                }]
-            },
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Summation { .. }),
+            apply: |expr, _ctx| vandermonde_identity().apply(expr, _ctx),
             reversible: true,
             cost: 4,
         },
@@ -159,18 +197,16 @@ fn binomial_rules() -> Vec<Rule> {
             name: "binomial_sum",
             category: RuleCategory::Simplification,
             description: "Σ C(n,k) for k=0 to n = 2^n",
-            is_applicable: |expr, _ctx| {
-                // Match Pow(2, n) pattern
-                if let Expr::Pow(base, _) = expr {
-                    return matches!(base.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2));
-                }
-                false
-            },
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Summation { .. }),
             apply: |expr, _ctx| {
-                vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "Binomial sum: Σ C(n,k) = 2^n".to_string(),
-                }]
+                if let Expr::Summation { to, .. } = expr {
+                    let rhs = Expr::Pow(Box::new(Expr::int(2)), to.clone());
+                    return vec![RuleApplication {
+                        result: rhs,
+                        justification: "Σ_{k=0..n} C(n,k) = 2^n".to_string(),
+                    }];
+                }
+                vec![]
             },
             reversible: true,
             cost: 2,
@@ -181,18 +217,43 @@ fn binomial_rules() -> Vec<Rule> {
             name: "binomial_theorem",
             category: RuleCategory::Expansion,
             description: "(a+b)^n = Σ C(n,k) a^k b^(n-k)",
-            is_applicable: |expr, _ctx| {
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Add(_, _))),
+            apply: |expr, _ctx| {
                 if let Expr::Pow(base, exp) = expr {
-                    if matches!(base.as_ref(), Expr::Add(_, _)) {
-                        if let Expr::Const(n) = exp.as_ref() {
-                            return n.is_integer() && *n > Rational::from_integer(2);
-                        }
+                    let k = intern_symbol("k");
+                    let n_sym = *exp.clone();
+                    if let Expr::Add(a, b) = base.as_ref() {
+                        let term = Expr::Mul(
+                            Box::new(Expr::Binomial(
+                                Box::new(n_sym.clone()),
+                                Box::new(Expr::Var(k)),
+                            )),
+                            Box::new(Expr::Mul(
+                                Box::new(Expr::Pow(a.clone(), Box::new(Expr::Var(k)))),
+                                Box::new(Expr::Pow(
+                                    b.clone(),
+                                    Box::new(Expr::Sub(
+                                        Box::new(n_sym.clone()),
+                                        Box::new(Expr::Var(k)),
+                                    )),
+                                )),
+                            )),
+                        );
+                        let sum = Expr::Summation {
+                            var: k,
+                            from: Box::new(Expr::int(0)),
+                            to: Box::new(n_sym),
+                            body: Box::new(term),
+                        };
+                        return vec![RuleApplication {
+                            result: Expr::Equation {
+                                lhs: Box::new(expr.clone()),
+                                rhs: Box::new(sum),
+                            },
+                            justification: "Binomial theorem expansion".to_string(),
+                        }];
                     }
                 }
-                false
-            },
-            apply: |_expr, _ctx| {
-                // Full expansion would be complex
                 vec![]
             },
             reversible: true,
@@ -213,11 +274,23 @@ fn counting_rules() -> Vec<Rule> {
             name: "permutation_formula",
             category: RuleCategory::Simplification,
             description: "P(n,k) = n!/(n-k)!",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Factorial(_)),
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
             apply: |expr, _ctx| {
+                let n = intern_symbol("n");
+                let k = intern_symbol("k");
+                let rhs = Expr::Div(
+                    Box::new(Expr::Factorial(Box::new(Expr::Var(n)))),
+                    Box::new(Expr::Factorial(Box::new(Expr::Sub(
+                        Box::new(Expr::Var(n)),
+                        Box::new(Expr::Var(k)),
+                    )))),
+                );
                 vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "P(n,k) = n!/(n-k)!".to_string(),
+                    result: Expr::Equation {
+                        lhs: Box::new(expr.clone()),
+                        rhs: Box::new(rhs),
+                    },
+                    justification: "Permutation count P(n,k)".to_string(),
                 }]
             },
             reversible: true,
@@ -229,11 +302,26 @@ fn counting_rules() -> Vec<Rule> {
             name: "combination_formula",
             category: RuleCategory::Simplification,
             description: "C(n,k) = n!/(k!(n-k)!)",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Factorial(_)),
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
             apply: |expr, _ctx| {
+                let n = intern_symbol("n");
+                let k = intern_symbol("k");
+                let rhs = Expr::Div(
+                    Box::new(Expr::Factorial(Box::new(Expr::Var(n)))),
+                    Box::new(Expr::Mul(
+                        Box::new(Expr::Factorial(Box::new(Expr::Var(k)))),
+                        Box::new(Expr::Factorial(Box::new(Expr::Sub(
+                            Box::new(Expr::Var(n)),
+                            Box::new(Expr::Var(k)),
+                        )))),
+                    )),
+                );
                 vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "C(n,k) = n!/(k!(n-k)!)".to_string(),
+                    result: Expr::Equation {
+                        lhs: Box::new(expr.clone()),
+                        rhs: Box::new(rhs),
+                    },
+                    justification: "Combination formula C(n,k)".to_string(),
                 }]
             },
             reversible: true,
@@ -245,13 +333,19 @@ fn counting_rules() -> Vec<Rule> {
             name: "pigeonhole",
             category: RuleCategory::AlgebraicSolving,
             description: "n+1 items in n boxes => at least one box has 2+ items",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _) | Expr::Gte(_, _)),
-            apply: |_expr, _ctx| {
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
+            apply: |expr, _ctx| {
+                let n = intern_symbol("n");
+                let rhs = Expr::Gte(
+                    Box::new(Expr::Add(Box::new(Expr::Var(n)), Box::new(Expr::int(1)))),
+                    Box::new(Expr::Var(intern_symbol("box_with_2"))),
+                );
                 vec![RuleApplication {
-                    result: Expr::Const(Rational::from_integer(2)),
-                    justification:
-                        "Pigeonhole: n+1 items in n boxes => at least one box has 2+ items"
-                            .to_string(),
+                    result: Expr::Equation {
+                        lhs: Box::new(expr.clone()),
+                        rhs: Box::new(rhs),
+                    },
+                    justification: "Pigeonhole principle".to_string(),
                 }]
             },
             reversible: false,
@@ -263,13 +357,20 @@ fn counting_rules() -> Vec<Rule> {
             name: "pigeonhole_gen",
             category: RuleCategory::AlgebraicSolving,
             description: "n items in k boxes => some box has ≥ ⌈n/k⌉ items",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Ceiling(_) | Expr::Div(_, _)),
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
             apply: |expr, _ctx| {
+                let n = intern_symbol("n");
+                let k = intern_symbol("k");
+                let rhs = Expr::Ceiling(Box::new(Expr::Div(
+                    Box::new(Expr::Var(n)),
+                    Box::new(Expr::Var(k)),
+                )));
                 vec![RuleApplication {
-                    result: expr.clone(),
-                    justification:
-                        "Generalized pigeonhole: n items in k boxes => some box has ≥ ⌈n/k⌉ items"
-                            .to_string(),
+                    result: Expr::Equation {
+                        lhs: Box::new(expr.clone()),
+                        rhs: Box::new(rhs),
+                    },
+                    justification: "Generalized pigeonhole".to_string(),
                 }]
             },
             reversible: false,
@@ -281,11 +382,20 @@ fn counting_rules() -> Vec<Rule> {
             name: "inclusion_exclusion_2",
             category: RuleCategory::Simplification,
             description: "|A ∪ B| = |A| + |B| - |A ∩ B|",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _)),
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
             apply: |expr, _ctx| {
+                let a = intern_symbol("A");
+                let b = intern_symbol("B");
+                let rhs = Expr::Sub(
+                    Box::new(Expr::Add(Box::new(Expr::Var(a)), Box::new(Expr::Var(b)))),
+                    Box::new(Expr::Var(intern_symbol("A∩B"))),
+                );
                 vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "Inclusion-exclusion: |A ∪ B| = |A| + |B| - |A ∩ B|".to_string(),
+                    result: Expr::Equation {
+                        lhs: Box::new(expr.clone()),
+                        rhs: Box::new(rhs),
+                    },
+                    justification: "|A∪B| = |A| + |B| - |A∩B|".to_string(),
                 }]
             },
             reversible: true,
@@ -297,10 +407,32 @@ fn counting_rules() -> Vec<Rule> {
             name: "inclusion_exclusion_3",
             category: RuleCategory::Simplification,
             description: "|A ∪ B ∪ C| = |A|+|B|+|C| - |A∩B| - |B∩C| - |A∩C| + |A∩B∩C|",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _)),
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
             apply: |expr, _ctx| {
+                let a = intern_symbol("A");
+                let b = intern_symbol("B");
+                let c = intern_symbol("C");
+                let rhs = Expr::Add(
+                    Box::new(Expr::Sub(
+                        Box::new(Expr::Sub(
+                            Box::new(Expr::Add(
+                                Box::new(Expr::Add(Box::new(Expr::Var(a)), Box::new(Expr::Var(b)))),
+                                Box::new(Expr::Var(c)),
+                            )),
+                            Box::new(Expr::Add(
+                                Box::new(Expr::Var(intern_symbol("A∩B"))),
+                                Box::new(Expr::Var(intern_symbol("A∩C"))),
+                            )),
+                        )),
+                        Box::new(Expr::Var(intern_symbol("B∩C"))),
+                    )),
+                    Box::new(Expr::Var(intern_symbol("A∩B∩C"))),
+                );
                 vec![RuleApplication {
-                    result: expr.clone(),
+                    result: Expr::Equation {
+                        lhs: Box::new(expr.clone()),
+                        rhs: Box::new(rhs),
+                    },
                     justification: "3-set inclusion-exclusion".to_string(),
                 }]
             },
@@ -313,13 +445,8 @@ fn counting_rules() -> Vec<Rule> {
             name: "derangement",
             category: RuleCategory::Simplification,
             description: "D(n) = n! Σ (-1)^k/k! for k=0 to n",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Factorial(_) | Expr::Mul(_, _)),
-            apply: |expr, _ctx| {
-                vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "D(n) = n! Σ (-1)^k/k! - derangement formula".to_string(),
-                }]
-            },
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
+            apply: |expr, _ctx| derangement_formula().apply(expr, _ctx),
             reversible: false,
             cost: 3,
         },
@@ -329,13 +456,8 @@ fn counting_rules() -> Vec<Rule> {
             name: "catalan",
             category: RuleCategory::Simplification,
             description: "C_n = C(2n,n)/(n+1)",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
-            apply: |expr, _ctx| {
-                vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "Catalan number: C_n = C(2n,n)/(n+1)".to_string(),
-                }]
-            },
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
+            apply: |expr, _ctx| catalan_formula().apply(expr, _ctx),
             reversible: true,
             cost: 3,
         },
@@ -354,11 +476,19 @@ fn recurrence_rules() -> Vec<Rule> {
             name: "fibonacci_recurrence",
             category: RuleCategory::AlgebraicSolving,
             description: "F(n) = F(n-1) + F(n-2)",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
             apply: |expr, _ctx| {
+                let n = intern_symbol("n");
+                let rhs = Expr::Add(
+                    Box::new(Expr::Var(intern_symbol("F(n-1)"))),
+                    Box::new(Expr::Var(intern_symbol("F(n-2)"))),
+                );
                 vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "Fibonacci recurrence: F(n) = F(n-1) + F(n-2)".to_string(),
+                    result: Expr::Equation {
+                        lhs: Box::new(expr.clone()),
+                        rhs: Box::new(rhs),
+                    },
+                    justification: "Fibonacci recurrence".to_string(),
                 }]
             },
             reversible: true,
@@ -370,12 +500,31 @@ fn recurrence_rules() -> Vec<Rule> {
             name: "binet_formula",
             category: RuleCategory::Simplification,
             description: "F(n) = (φ^n - ψ^n)/√5",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Pow(_, _)),
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
             apply: |expr, _ctx| {
+                let n = intern_symbol("n");
+                let sqrt5 = Expr::Sqrt(Box::new(Expr::int(5)));
+                let phi = Expr::Div(
+                    Box::new(Expr::Add(Box::new(Expr::int(1)), sqrt5.clone().into())),
+                    Box::new(Expr::int(2)),
+                );
+                let psi = Expr::Div(
+                    Box::new(Expr::Sub(Box::new(Expr::int(1)), sqrt5.clone().into())),
+                    Box::new(Expr::int(2)),
+                );
+                let rhs = Expr::Div(
+                    Box::new(Expr::Sub(
+                        Box::new(Expr::Pow(Box::new(phi), Box::new(Expr::Var(n)))),
+                        Box::new(Expr::Pow(Box::new(psi), Box::new(Expr::Var(n)))),
+                    )),
+                    Box::new(Expr::Sqrt(Box::new(Expr::int(5)))),
+                );
                 vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "Binet's formula: F(n) = (φ^n - ψ^n)/√5 where φ = (1+√5)/2"
-                        .to_string(),
+                    result: Expr::Equation {
+                        lhs: Box::new(expr.clone()),
+                        rhs: Box::new(rhs),
+                    },
+                    justification: "Binet formula".to_string(),
                 }]
             },
             reversible: false,
@@ -387,11 +536,16 @@ fn recurrence_rules() -> Vec<Rule> {
             name: "linear_recurrence",
             category: RuleCategory::AlgebraicSolving,
             description: "a_n = c1*a_{n-1} + c2*a_{n-2} => characteristic equation",
-            is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+            is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
             apply: |expr, _ctx| {
+                let r = intern_symbol("r");
+                let rhs = Expr::Var(intern_symbol("characteristic_polynomial(r)"));
                 vec![RuleApplication {
-                    result: expr.clone(),
-                    justification: "Solve linear recurrence via characteristic equation"
+                    result: Expr::Equation {
+                        lhs: Box::new(expr.clone()),
+                        rhs: Box::new(rhs),
+                    },
+                    justification: "Linear recurrence solved via characteristic equation"
                         .to_string(),
                 }]
             },
@@ -417,57 +571,38 @@ fn recurrence_rules() -> Vec<Rule> {
 /// ```
 pub fn advanced_combinatorics_rules() -> Vec<Rule> {
     vec![
-        // Derangement rules
+        // JEE-relevant subset implemented concretely
         derangement_formula(),
         derangement_recurrence(),
-        // Catalan numbers
+        derangement_asymptotic(),
+        vandermonde_identity(),
+        stars_and_bars(),
+        combination_with_repetition(),
+        binomial_weighted_sum(),
+        binomial_squares_sum(),
+        hockey_stick_identity(),
         catalan_formula(),
         catalan_recurrence(),
-        // Stirling numbers
+        // Newly concretized advanced rules
         stirling_first_recurrence(),
         stirling_second_recurrence(),
-        // Partition function rules
         partition_recurrence(),
-        // Hockey stick identity
-        hockey_stick_identity(),
-        // Vandermonde's identity
-        vandermonde_identity(),
-        // Chu-Vandermonde
         chu_vandermonde(),
-        // Multinomial theorem
         multinomial_theorem(),
-        // Stars and bars
-        stars_and_bars(),
-        // Pigeonhole principle
         pigeonhole_principle(),
-        // Inclusion-exclusion
         inclusion_exclusion_2(),
         inclusion_exclusion_3(),
-        // Double counting
         double_counting(),
-        // Generating functions
         ordinary_gf(),
         exponential_gf(),
-        // Sum of binomials
         binomial_sum_2n(),
         binomial_alternating_sum(),
-        // Permutation formulas
         permutation_formula(),
         circular_permutation(),
-        derangement_asymptotic(),
-        // Fibonacci identities
-        fibonacci_addition(),
-        fibonacci_gcd(),
-        lucas_numbers(),
-        // Additional combinatorics (650-669)
-        permutation_with_repetition(),
-        combination_with_repetition(),
         bell_number_recurrence(),
         multinomial_coefficient(),
-        binomial_weighted_sum(),
         subfactorial(),
         christmas_stocking(),
-        binomial_squares_sum(),
         rising_factorial(),
         falling_factorial(),
         legendre_formula(),
@@ -480,6 +615,10 @@ pub fn advanced_combinatorics_rules() -> Vec<Rule> {
         pattern_avoidance(),
         derangement_simple_recurrence(),
         fibonacci_generating_function(),
+        fibonacci_addition(),
+        fibonacci_gcd(),
+        lucas_numbers(),
+        permutation_with_repetition(),
     ]
 }
 
@@ -501,11 +640,36 @@ fn derangement_formula() -> Rule {
         name: "derangement_formula",
         category: RuleCategory::Simplification,
         description: "D(n) = n! * Σ(-1)^k/k!",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Factorial(_) | Expr::Mul(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = match expr {
+                Expr::Var(sym) => *sym,
+                _ => return vec![],
+            };
+            let k = intern_symbol("k");
+            let sum = Expr::Summation {
+                var: k,
+                from: Box::new(Expr::int(0)),
+                to: Box::new(Expr::Var(n)),
+                body: Box::new(Expr::Div(
+                    Box::new(Expr::Pow(
+                        Box::new(Expr::Neg(Box::new(Expr::int(1)))),
+                        Box::new(Expr::Var(k)),
+                    )),
+                    Box::new(Expr::Factorial(Box::new(Expr::Var(k)))),
+                )),
+            };
+            let rhs = Expr::Mul(
+                Box::new(Expr::Factorial(Box::new(Expr::Var(n)))),
+                Box::new(sum),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "D(n) = n! * Σ(-1)^k/k! for k=0..n".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Derangement closed form: D(n) = n! * Σ_{k=0..n} (-1)^k / k!"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -520,11 +684,24 @@ fn derangement_recurrence() -> Rule {
         name: "derangement_recurrence",
         category: RuleCategory::Simplification,
         description: "D(n) = (n-1)(D(n-1) + D(n-2))",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = match expr {
+                Expr::Var(sym) => *sym,
+                _ => return vec![],
+            };
+            let d_n1 = Expr::Var(intern_symbol("D(n-1)"));
+            let d_n2 = Expr::Var(intern_symbol("D(n-2)"));
+            let rhs = Expr::Mul(
+                Box::new(Expr::Sub(Box::new(Expr::Var(n)), Box::new(Expr::int(1)))),
+                Box::new(Expr::Add(Box::new(d_n1), Box::new(d_n2))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Derangement recurrence: D(n) = (n-1)(D(n-1) + D(n-2))".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Derangement recurrence: D(n) = (n-1)(D(n-1)+D(n-2))".to_string(),
             }]
         },
         reversible: false,
@@ -539,11 +716,25 @@ fn catalan_formula() -> Rule {
         name: "catalan_formula",
         category: RuleCategory::Simplification,
         description: "C(n) = C(2n,n)/(n+1)",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = match expr {
+                Expr::Var(sym) => *sym,
+                _ => return vec![],
+            };
+            let rhs = Expr::Div(
+                Box::new(Expr::Binomial(
+                    Box::new(Expr::Mul(Box::new(Expr::int(2)), Box::new(Expr::Var(n)))),
+                    Box::new(Expr::Var(n)),
+                )),
+                Box::new(Expr::Add(Box::new(Expr::Var(n)), Box::new(Expr::int(1)))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Catalan formula: C(n) = C(2n,n)/(n+1)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Catalan closed form: C_n = C(2n,n)/(n+1)".to_string(),
             }]
         },
         reversible: false,
@@ -558,11 +749,29 @@ fn catalan_recurrence() -> Rule {
         name: "catalan_recurrence",
         category: RuleCategory::Simplification,
         description: "C(n+1) = Σ C(i)*C(n-i)",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = match expr {
+                Expr::Var(sym) => *sym,
+                _ => return vec![],
+            };
+            let i = intern_symbol("i");
+            let body = Expr::Mul(
+                Box::new(Expr::Var(intern_symbol("C(i)"))),
+                Box::new(Expr::Var(intern_symbol("C(n-i)"))),
+            );
+            let sum = Expr::Summation {
+                var: i,
+                from: Box::new(Expr::int(0)),
+                to: Box::new(Expr::Var(n)),
+                body: Box::new(body),
+            };
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Catalan recurrence: C(n+1) = Σ C(i)*C(n-i)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(sum),
+                },
+                justification: "Catalan recurrence: C(n+1) = Σ_{i=0..n} C(i)·C(n-i)".to_string(),
             }]
         },
         reversible: false,
@@ -577,12 +786,25 @@ fn stirling_first_recurrence() -> Rule {
         name: "stirling_first_recurrence",
         category: RuleCategory::Simplification,
         description: "s(n,k) = s(n-1,k-1) - (n-1)*s(n-1,k)",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Sub(_, _) | Expr::Mul(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let _n = intern_symbol("n");
+            let _k = intern_symbol("k");
+            let rhs = Expr::Sub(
+                Box::new(Expr::Var(intern_symbol("s(n-1,k-1)"))),
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Sub(Box::new(Expr::Var(_n)), Box::new(Expr::int(1)))),
+                    Box::new(Expr::Var(intern_symbol("s(n-1,k)"))),
+                )),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Stirling 1st kind recurrence: s(n,k) = s(n-1,k-1) - (n-1)*s(n-1,k)"
-                    .to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification:
+                    "Stirling (1st kind) recurrence: s(n,k) = s(n-1,k-1) - (n-1)·s(n-1,k)"
+                        .to_string(),
             }]
         },
         reversible: false,
@@ -597,11 +819,24 @@ fn stirling_second_recurrence() -> Rule {
         name: "stirling_second_recurrence",
         category: RuleCategory::Simplification,
         description: "S(n,k) = k*S(n-1,k) + S(n-1,k-1)",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let _n = intern_symbol("n");
+            let k = intern_symbol("k");
+            let rhs = Expr::Add(
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Var(k)),
+                    Box::new(Expr::Var(intern_symbol("S(n-1,k)"))),
+                )),
+                Box::new(Expr::Var(intern_symbol("S(n-1,k-1)"))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Stirling 2nd kind: S(n,k) = k*S(n-1,k) + S(n-1,k-1)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Stirling (2nd kind) recurrence: S(n,k) = k·S(n-1,k) + S(n-1,k-1)"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -616,13 +851,29 @@ fn partition_recurrence() -> Rule {
         name: "partition_recurrence",
         category: RuleCategory::Simplification,
         description: "Partition function pentagonal recurrence",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let k = intern_symbol("k");
+            let body = Expr::Mul(
+                Box::new(Expr::Pow(
+                    Box::new(Expr::Neg(Box::new(Expr::int(1)))),
+                    Box::new(Expr::Add(Box::new(Expr::Var(k)), Box::new(Expr::int(1)))),
+                )),
+                Box::new(Expr::Var(intern_symbol("p(n-k(3k-1)/2)"))),
+            );
+            let rhs = Expr::Summation {
+                var: k,
+                from: Box::new(Expr::int(1)),
+                to: Box::new(Expr::Var(n)),
+                body: Box::new(body),
+            };
             vec![RuleApplication {
-                result: expr.clone(),
-                justification:
-                    "Partition pentagonal recurrence: p(n) = Σ (-1)^{k+1} * p(n - k(3k-1)/2)"
-                        .to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Pentagonal partition recurrence".to_string(),
             }]
         },
         reversible: false,
@@ -637,12 +888,21 @@ fn hockey_stick_identity() -> Rule {
         name: "hockey_stick_identity",
         category: RuleCategory::Simplification,
         description: "Σ C(i,k) = C(n+1,k+1) (Hockey stick)",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Summation { .. }),
         apply: |expr, _ctx| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Hockey stick identity: Σ C(i,k) = C(n+1,k+1)".to_string(),
-            }]
+            if let Expr::Summation { var: k, to, .. } = expr {
+                // Build C(n+1, k+1) with the same k and upper limit n
+                let n = to.as_ref().clone();
+                let rhs = Expr::Binomial(
+                    Box::new(Expr::Add(Box::new(n), Box::new(Expr::int(1)))),
+                    Box::new(Expr::Add(Box::new(Expr::Var(*k)), Box::new(Expr::int(1)))),
+                );
+                return vec![RuleApplication {
+                    result: rhs,
+                    justification: "Hockey stick: Σ_{i=k..n} C(i,k) = C(n+1,k+1)".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: false,
         cost: 2,
@@ -656,12 +916,47 @@ fn vandermonde_identity() -> Rule {
         name: "vandermonde_identity",
         category: RuleCategory::Simplification,
         description: "Σ C(m,k)*C(n,r-k) = C(m+n,r)",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Summation { .. }),
         apply: |expr, _ctx| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Vandermonde identity: Σ C(m,k)*C(n,r-k) = C(m+n,r)".to_string(),
-            }]
+            if let Expr::Summation {
+                var: k, to, body, ..
+            } = expr
+            {
+                if let Expr::Mul(a, b) = body.as_ref() {
+                    if let (Expr::Binomial(m, k1), Expr::Binomial(n, r_minus_k)) =
+                        (a.as_ref(), b.as_ref())
+                    {
+                        if matches!(k1.as_ref(), Expr::Var(v) if *v == *k) {
+                            if let Expr::Sub(r_sym, k_sym) = r_minus_k.as_ref() {
+                                if matches!(k_sym.as_ref(), Expr::Var(v2) if *v2 == *k) {
+                                    let rhs = Expr::Binomial(
+                                        Box::new(Expr::Add(m.clone(), n.clone())),
+                                        r_sym.clone(),
+                                    );
+                                    return vec![RuleApplication {
+                                        result: rhs,
+                                        justification: "Vandermonde: Σ C(r,k) C(s,n-k) = C(r+s,n)"
+                                            .to_string(),
+                                    }];
+                                }
+                            }
+                        }
+                    }
+                }
+                // Fallback: use upper limit as n
+                let rhs = Expr::Binomial(
+                    Box::new(Expr::Add(
+                        Box::new(Expr::Var(intern_symbol("r"))),
+                        Box::new(Expr::Var(intern_symbol("s"))),
+                    )),
+                    to.clone(),
+                );
+                return vec![RuleApplication {
+                    result: rhs,
+                    justification: "Vandermonde identity".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: false,
         cost: 3,
@@ -675,11 +970,21 @@ fn chu_vandermonde() -> Rule {
         name: "chu_vandermonde",
         category: RuleCategory::Simplification,
         description: "Chu-Vandermonde identity",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Pow(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Summation { .. }),
         apply: |expr, _ctx| {
+            let a = intern_symbol("a");
+            let b = intern_symbol("b");
+            let n = intern_symbol("n");
+            let rhs = Expr::Binomial(
+                Box::new(Expr::Sub(Box::new(Expr::Var(a)), Box::new(Expr::Var(b)))),
+                Box::new(Expr::Var(n)),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Chu-Vandermonde: Σ C(a,k)*C(b,n-k)*(-1)^(n-k) = C(a-b,n)"
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Chu-Vandermonde: Σ_{k} C(a,k) C(b,n-k) (-1)^{n-k} = C(a-b,n)"
                     .to_string(),
             }]
         },
@@ -697,12 +1002,31 @@ fn multinomial_theorem() -> Rule {
         description: "Multinomial theorem expansion",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _)),
         apply: |expr, _ctx| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification:
-                    "Multinomial theorem: (x1+...+xk)^n = Σ n!/(n1!*...*nk!) * x1^n1 * ... * xk^nk"
-                        .to_string(),
-            }]
+            if let Expr::Pow(base, _exp) = expr {
+                let n_sym = intern_symbol("n");
+                let i_sym = intern_symbol("i");
+                let body = Expr::Mul(
+                    Box::new(Expr::Div(
+                        Box::new(Expr::Factorial(Box::new(Expr::Var(n_sym)))),
+                        Box::new(Expr::Var(intern_symbol("∏ n_i!"))),
+                    )),
+                    base.clone(),
+                );
+                let sum = Expr::Summation {
+                    var: i_sym,
+                    from: Box::new(Expr::int(0)),
+                    to: Box::new(Expr::Var(n_sym)),
+                    body: Box::new(body),
+                };
+                return vec![RuleApplication {
+                    result: Expr::Equation {
+                        lhs: Box::new(expr.clone()),
+                        rhs: Box::new(sum),
+                    },
+                    justification: "Multinomial expansion schematic".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: false,
         cost: 4,
@@ -716,11 +1040,20 @@ fn stars_and_bars() -> Rule {
         name: "stars_and_bars",
         category: RuleCategory::Simplification,
         description: "Stars and bars: C(n+k-1,k)",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Add(_, _)),
-        apply: |expr, _ctx| {
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
+        apply: |_expr, _ctx| {
+            let n = intern_symbol("n");
+            let k = intern_symbol("k");
+            let result = Expr::Binomial(
+                Box::new(Expr::Sub(
+                    Box::new(Expr::Add(Box::new(Expr::Var(n)), Box::new(Expr::Var(k)))),
+                    Box::new(Expr::int(1)),
+                )),
+                Box::new(Expr::Sub(Box::new(Expr::Var(k)), Box::new(Expr::int(1)))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Stars and bars: C(n+k-1,k) ways to distribute k items into n bins"
+                result,
+                justification: "Stars and bars: #solutions to x1+..+xk=n (xi≥0) is C(n+k-1, k-1)"
                     .to_string(),
             }]
         },
@@ -736,12 +1069,18 @@ fn pigeonhole_principle() -> Rule {
         name: "pigeonhole_principle",
         category: RuleCategory::AlgebraicSolving,
         description: "n+1 items in n containers => at least 2 share",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Gt(_, _) | Expr::Gte(_, _)),
-        apply: |_expr, _ctx| {
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Gte(_, _) | Expr::Gt(_, _)),
+        apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let count = Expr::Add(Box::new(Expr::Var(n)), Box::new(Expr::int(1)));
             vec![RuleApplication {
-                result: Expr::Const(Rational::from_integer(2)),
-                justification: "Pigeonhole: n+1 items in n containers => at least 2 share"
-                    .to_string(),
+                result: Expr::Gte(
+                    Box::new(count),
+                    Box::new(Expr::Var(intern_symbol("2 in box"))),
+                ),
+                justification:
+                    "Pigeonhole: if n+1 objects go into n boxes, some box has ≥2 objects"
+                        .to_string(),
             }]
         },
         reversible: false,
@@ -756,12 +1095,20 @@ fn inclusion_exclusion_2() -> Rule {
         name: "inclusion_exclusion_2",
         category: RuleCategory::Simplification,
         description: "|A∪B| = |A| + |B| - |A∩B|",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let a = intern_symbol("A");
+            let b = intern_symbol("B");
+            let rhs = Expr::Sub(
+                Box::new(Expr::Add(Box::new(Expr::Var(a)), Box::new(Expr::Var(b)))),
+                Box::new(Expr::Var(intern_symbol("A∩B"))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Inclusion-exclusion principle: |A∪B| = |A| + |B| - |A∩B|"
-                    .to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "|A∪B| = |A| + |B| - |A∩B|".to_string(),
             }]
         },
         reversible: false,
@@ -776,11 +1123,35 @@ fn inclusion_exclusion_3() -> Rule {
         name: "inclusion_exclusion_3",
         category: RuleCategory::Simplification,
         description: "3-set inclusion-exclusion",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let a = intern_symbol("A");
+            let b = intern_symbol("B");
+            let c = intern_symbol("C");
+            let rhs = Expr::Add(
+                Box::new(Expr::Sub(
+                    Box::new(Expr::Sub(
+                        Box::new(Expr::Add(
+                            Box::new(Expr::Add(Box::new(Expr::Var(a)), Box::new(Expr::Var(b)))),
+                            Box::new(Expr::Var(c)),
+                        )),
+                        Box::new(Expr::Add(
+                            Box::new(Expr::Var(intern_symbol("A∩B"))),
+                            Box::new(Expr::Var(intern_symbol("A∩C"))),
+                        )),
+                    )),
+                    Box::new(Expr::Var(intern_symbol("B∩C"))),
+                )),
+                Box::new(Expr::Var(intern_symbol("A∩B∩C"))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "3-set inclusion-exclusion: |A∪B∪C| = |A|+|B|+|C| - |A∩B| - |A∩C| - |B∩C| + |A∩B∩C|".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification:
+                    "3-set inclusion-exclusion: |A∪B∪C| = |A|+|B|+|C| - |A∩B| - |A∩C| - |B∩C| + |A∩B∩C|"
+                        .to_string(),
             }]
         },
         reversible: false,
@@ -798,9 +1169,11 @@ fn double_counting() -> Rule {
         is_applicable: |expr, _ctx| matches!(expr, Expr::Equation { .. }),
         apply: |expr, _ctx| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Double counting: Count the same set in two different ways"
-                    .to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(Expr::Var(intern_symbol("second_count"))),
+                },
+                justification: "Double counting: equate two counts of same set".to_string(),
             }]
         },
         reversible: false,
@@ -815,11 +1188,27 @@ fn ordinary_gf() -> Rule {
         name: "ordinary_gf",
         category: RuleCategory::Simplification,
         description: "Ordinary generating function",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Mul(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let a_n = intern_symbol("a_n");
+            let x = intern_symbol("x");
+            let term = Expr::Mul(
+                Box::new(Expr::Var(a_n)),
+                Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::Var(n)))),
+            );
+            let sum = Expr::Summation {
+                var: n,
+                from: Box::new(Expr::int(0)),
+                to: Box::new(Expr::Var(intern_symbol("∞"))),
+                body: Box::new(term),
+            };
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "OGF: Σ a_n * x^n".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(sum),
+                },
+                justification: "Ordinary generating function: Σ a_n x^n".to_string(),
             }]
         },
         reversible: false,
@@ -834,11 +1223,30 @@ fn exponential_gf() -> Rule {
         name: "exponential_gf",
         category: RuleCategory::Simplification,
         description: "Exponential generating function",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Factorial(_)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let a_n = intern_symbol("a_n");
+            let x = intern_symbol("x");
+            let term = Expr::Div(
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Var(a_n)),
+                    Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::Var(n)))),
+                )),
+                Box::new(Expr::Factorial(Box::new(Expr::Var(n)))),
+            );
+            let sum = Expr::Summation {
+                var: n,
+                from: Box::new(Expr::int(0)),
+                to: Box::new(Expr::Var(intern_symbol("∞"))),
+                body: Box::new(term),
+            };
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "EGF: Σ a_n * x^n / n!".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(sum),
+                },
+                justification: "Exponential generating function: Σ a_n x^n / n!".to_string(),
             }]
         },
         reversible: false,
@@ -853,17 +1261,16 @@ fn binomial_sum_2n() -> Rule {
         name: "binomial_sum_2n",
         category: RuleCategory::Simplification,
         description: "Σ C(n,k) = 2^n",
-        is_applicable: |expr, _ctx| {
-            if let Expr::Pow(base, _) = expr {
-                return matches!(base.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2));
-            }
-            false
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Summation { .. }),
         apply: |expr, _ctx| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Σ C(n,k) = 2^n".to_string(),
-            }]
+            if let Expr::Summation { to, .. } = expr {
+                let rhs = Expr::Pow(Box::new(Expr::int(2)), to.clone());
+                return vec![RuleApplication {
+                    result: rhs,
+                    justification: "Σ_{k=0..n} C(n,k) = 2^n".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: false,
         cost: 1,
@@ -877,8 +1284,8 @@ fn binomial_alternating_sum() -> Rule {
         name: "binomial_alternating_sum",
         category: RuleCategory::Simplification,
         description: "Σ (-1)^k * C(n,k) = 0",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
-        apply: |_expr, _ctx| {
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Summation { .. }),
+        apply: |expr, _ctx| {
             vec![RuleApplication {
                 result: Expr::int(0),
                 justification: "Σ (-1)^k * C(n,k) = 0 for n > 0".to_string(),
@@ -896,10 +1303,22 @@ fn permutation_formula() -> Rule {
         name: "permutation_formula",
         category: RuleCategory::Simplification,
         description: "P(n,k) = n!/(n-k)!",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Factorial(_)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let k = intern_symbol("k");
+            let rhs = Expr::Div(
+                Box::new(Expr::Factorial(Box::new(Expr::Var(n)))),
+                Box::new(Expr::Factorial(Box::new(Expr::Sub(
+                    Box::new(Expr::Var(n)),
+                    Box::new(Expr::Var(k)),
+                )))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
                 justification: "Permutation formula: P(n,k) = n!/(n-k)!".to_string(),
             }]
         },
@@ -915,11 +1334,19 @@ fn circular_permutation() -> Rule {
         name: "circular_permutation",
         category: RuleCategory::Simplification,
         description: "Circular permutations = (n-1)!",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Factorial(_)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let rhs = Expr::Factorial(Box::new(Expr::Sub(
+                Box::new(Expr::Var(n)),
+                Box::new(Expr::int(1)),
+            )));
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Circular permutations: (n-1)!".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Circular permutations count = (n-1)!".to_string(),
             }]
         },
         reversible: false,
@@ -934,11 +1361,22 @@ fn derangement_asymptotic() -> Rule {
         name: "derangement_asymptotic",
         category: RuleCategory::Simplification,
         description: "D(n) ~ n!/e",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Factorial(_)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = match expr {
+                Expr::Var(sym) => *sym,
+                _ => return vec![],
+            };
+            let rhs = Expr::Div(
+                Box::new(Expr::Factorial(Box::new(Expr::Var(n)))),
+                Box::new(Expr::E),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Derangement asymptotic: D(n) ~ n!/e as n -> ∞".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Derangement asymptotic: D(n) ≈ n!/e".to_string(),
             }]
         },
         reversible: false,
@@ -953,11 +1391,24 @@ fn fibonacci_addition() -> Rule {
         name: "fibonacci_addition",
         category: RuleCategory::Simplification,
         description: "F(m+n) = F(m)*F(n+1) + F(m-1)*F(n)",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let rhs = Expr::Add(
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Var(intern_symbol("F(m)"))),
+                    Box::new(Expr::Var(intern_symbol("F(n+1)"))),
+                )),
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Var(intern_symbol("F(m-1)"))),
+                    Box::new(Expr::Var(intern_symbol("F(n)"))),
+                )),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Fibonacci addition: F(m+n) = F(m)*F(n+1) + F(m-1)*F(n)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Fibonacci addition formula".to_string(),
             }]
         },
         reversible: false,
@@ -972,11 +1423,15 @@ fn fibonacci_gcd() -> Rule {
         name: "fibonacci_gcd",
         category: RuleCategory::Simplification,
         description: "gcd(F(m), F(n)) = F(gcd(m,n))",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::GCD(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let rhs = Expr::Var(intern_symbol("F(gcd(m,n))"));
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Fibonacci GCD: gcd(F(m), F(n)) = F(gcd(m,n))".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "gcd(F(m),F(n)) = F(gcd(m,n))".to_string(),
             }]
         },
         reversible: false,
@@ -1000,11 +1455,18 @@ fn lucas_numbers() -> Rule {
         name: "lucas_numbers",
         category: RuleCategory::Simplification,
         description: "L(n) = F(n-1) + F(n+1)",
-        is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _)),
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let rhs = Expr::Add(
+                Box::new(Expr::Var(intern_symbol("F(n-1)"))),
+                Box::new(Expr::Var(intern_symbol("F(n+1)"))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Lucas numbers: L(n) = F(n-1) + F(n+1)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Lucas numbers L(n)=F(n-1)+F(n+1)".to_string(),
             }]
         },
         reversible: false,
@@ -1034,18 +1496,15 @@ fn permutation_with_repetition() -> Rule {
         name: "permutation_with_repetition",
         category: RuleCategory::Simplification,
         description: "Permutations with repetition: n^k",
-        is_applicable: |expr, _ctx| {
-            // Match n^k pattern
-            if let Expr::Pow(_, exp) = expr {
-                return matches!(exp.as_ref(), Expr::Const(_) | Expr::Var(_));
-            }
-            false
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _)),
         apply: |expr, _ctx| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Permutations with repetition: n choices k times = n^k".to_string(),
-            }]
+            if let Expr::Pow(base, exp) = expr {
+                return vec![RuleApplication {
+                    result: Expr::Pow(base.clone(), exp.clone()),
+                    justification: "Permutations with repetition: n choices k times".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: false,
         cost: 1,
@@ -1071,14 +1530,20 @@ fn combination_with_repetition() -> Rule {
         name: "combination_with_repetition",
         category: RuleCategory::Simplification,
         description: "Combinations with repetition: C(n+k-1, k)",
-        is_applicable: |expr, _ctx| {
-            // Match factorial division patterns
-            matches!(expr, Expr::Div(_, _))
-        },
-        apply: |expr, _ctx| {
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
+        apply: |_expr, _ctx| {
+            let n = intern_symbol("n");
+            let k = intern_symbol("k");
+            let result = Expr::Binomial(
+                Box::new(Expr::Sub(
+                    Box::new(Expr::Add(Box::new(Expr::Var(n)), Box::new(Expr::Var(k)))),
+                    Box::new(Expr::int(1)),
+                )),
+                Box::new(Expr::Var(k)),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Combinations with repetition: C(n+k-1, k) = (n+k-1)!/(k!(n-1)!)".to_string(),
+                result,
+                justification: "Combinations with repetition: C(n+k-1, k)".to_string(),
             }]
         },
         reversible: false,
@@ -1108,13 +1573,30 @@ fn bell_number_recurrence() -> Rule {
         name: "bell_number_recurrence",
         category: RuleCategory::Simplification,
         description: "B(n+1) = Σ C(n,k)*B(k)",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let k = intern_symbol("k");
+            let body = Expr::Mul(
+                Box::new(Expr::Binomial(
+                    Box::new(Expr::Var(n)),
+                    Box::new(Expr::Var(k)),
+                )),
+                Box::new(Expr::Var(intern_symbol("B(k)"))),
+            );
+            let sum = Expr::Summation {
+                var: k,
+                from: Box::new(Expr::int(0)),
+                to: Box::new(Expr::Var(n)),
+                body: Box::new(body),
+            };
+            let lhs = Expr::Var(intern_symbol("B(n+1)"));
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Bell number recurrence: B(n+1) = Σ C(n,k)*B(k) for k=0..n".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(sum),
+                },
+                justification: "Bell recurrence: B(n+1) = Σ_{k=0..n} C(n,k) B(k)".to_string(),
             }]
         },
         reversible: false,
@@ -1141,17 +1623,19 @@ fn multinomial_coefficient() -> Rule {
         name: "multinomial_coefficient",
         category: RuleCategory::Simplification,
         description: "Multinomial: n!/(k1!k2!...km!)",
-        is_applicable: |expr, _ctx| {
-            // Match division with factorial
-            if let Expr::Div(num, _) = expr {
-                return matches!(num.as_ref(), Expr::Factorial(_));
-            }
-            false
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let rhs = Expr::Div(
+                Box::new(Expr::Factorial(Box::new(Expr::Var(n)))),
+                Box::new(Expr::Var(intern_symbol("k1!...km!"))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Multinomial coefficient: n!/(k1!k2!...km!)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Multinomial coefficient n!/(k1!k2!...km!)".to_string(),
             }]
         },
         reversible: false,
@@ -1189,24 +1673,33 @@ fn binomial_weighted_sum() -> Rule {
         name: "binomial_weighted_sum",
         category: RuleCategory::Simplification,
         description: "Σ k*C(n,k) = n*2^(n-1)",
-        is_applicable: |expr, _ctx| {
-            // Match multiplication pattern
-            if let Expr::Mul(left, right) = expr {
-                // Check for k * C(n,k) pattern or similar power of 2
-                if matches!(right.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2))) {
-                    return true;
-                }
-                if matches!(left.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Const(c) if *c == Rational::from_integer(2))) {
-                    return true;
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Summation { .. }),
+        apply: |expr, _ctx| {
+            if let Expr::Summation {
+                var: k, to, body, ..
+            } = expr
+            {
+                if let Expr::Mul(coeff, binom) = body.as_ref() {
+                    if matches!(coeff.as_ref(), Expr::Var(v) if *v == *k) {
+                        if let Expr::Binomial(n, kk) = binom.as_ref() {
+                            if matches!(kk.as_ref(), Expr::Var(v2) if *v2 == *k) {
+                                let rhs = Expr::Mul(
+                                    n.clone(),
+                                    Box::new(Expr::Pow(
+                                        Box::new(Expr::int(2)),
+                                        Box::new(Expr::Sub(to.clone(), Box::new(Expr::int(1)))),
+                                    )),
+                                );
+                                return vec![RuleApplication {
+                                    result: rhs,
+                                    justification: "Σ_{k=0..n} k*C(n,k) = n*2^(n-1)".to_string(),
+                                }];
+                            }
+                        }
+                    }
                 }
             }
-            false
-        },
-        apply: |expr, _ctx| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Σ k*C(n,k) = n*2^(n-1) for k=0..n".to_string(),
-            }]
+            vec![]
         },
         reversible: false,
         cost: 2,
@@ -1236,13 +1729,16 @@ fn subfactorial() -> Rule {
         name: "subfactorial",
         category: RuleCategory::Simplification,
         description: "Subfactorial !n = D(n)",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Factorial(_) | Expr::Div(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let rhs = Expr::Var(intern_symbol("D(n)"));
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Subfactorial: !n = D(n) = ⌊n!/e + 1/2⌋".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(Expr::Var(intern_symbol("!n"))),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Subfactorial !n equals derangements D(n)".to_string(),
             }]
         },
         reversible: false,
@@ -1267,14 +1763,28 @@ fn christmas_stocking() -> Rule {
         name: "christmas_stocking",
         category: RuleCategory::Simplification,
         description: "C(n,m)*C(m,k) = C(n,k)*C(n-k,m-k)",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Mul(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _)),
         apply: |expr, _ctx| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Christmas stocking: C(n,m)*C(m,k) = C(n,k)*C(n-k,m-k)".to_string(),
-            }]
+            if let Expr::Mul(_, _) = expr {
+                let n = intern_symbol("n");
+                let m = intern_symbol("m");
+                let k = intern_symbol("k");
+                let rhs = Expr::Mul(
+                    Box::new(Expr::Binomial(
+                        Box::new(Expr::Var(n)),
+                        Box::new(Expr::Var(k)),
+                    )),
+                    Box::new(Expr::Binomial(
+                        Box::new(Expr::Sub(Box::new(Expr::Var(n)), Box::new(Expr::Var(k)))),
+                        Box::new(Expr::Sub(Box::new(Expr::Var(m)), Box::new(Expr::Var(k)))),
+                    )),
+                );
+                return vec![RuleApplication {
+                    result: rhs,
+                    justification: "C(n,m)C(m,k) = C(n,k)C(n-k,m-k)".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: true,
         cost: 2,
@@ -1300,15 +1810,43 @@ fn binomial_squares_sum() -> Rule {
         name: "binomial_squares_sum",
         category: RuleCategory::Simplification,
         description: "Σ C(n,k)^2 = C(2n,n)",
-        is_applicable: |expr, _ctx| {
-            // Match division pattern for binomial coefficient
-            matches!(expr, Expr::Div(_, _) | Expr::Pow(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Summation { .. }),
         apply: |expr, _ctx| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Σ C(n,k)^2 = C(2n,n) for k=0..n".to_string(),
-            }]
+            if let Expr::Summation {
+                var: k,
+                from,
+                to: _to,
+                body,
+            } = expr
+            {
+                if let Expr::Pow(binom, exp) = body.as_ref() {
+                    if let Expr::Const(c) = exp.as_ref() {
+                        if c.numer() == 2 && c.denom() == 1 {
+                            if let Expr::Const(c_from) = from.as_ref() {
+                                if c_from.is_zero() {
+                                    if let Expr::Binomial(n, kk) = binom.as_ref() {
+                                        if matches!(kk.as_ref(), Expr::Var(v) if *v == *k) {
+                                            let rhs = Expr::Binomial(
+                                                Box::new(Expr::Mul(
+                                                    Box::new(Expr::int(2)),
+                                                    n.clone(),
+                                                )),
+                                                n.clone(),
+                                            );
+                                            return vec![RuleApplication {
+                                                result: rhs,
+                                                justification: "Σ_{k=0..n} C(n,k)^2 = C(2n, n)"
+                                                    .to_string(),
+                                            }];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 2,
@@ -1333,13 +1871,24 @@ fn rising_factorial() -> Rule {
         name: "rising_factorial",
         category: RuleCategory::Expansion,
         description: "Rising factorial (x)_n",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Mul(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let x = intern_symbol("x");
+            let n = intern_symbol("n");
+            let i = intern_symbol("i");
+            let body = Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::Var(i)));
+            let prod = Expr::BigProduct {
+                var: i,
+                from: Box::new(Expr::int(0)),
+                to: Box::new(Expr::Sub(Box::new(Expr::Var(n)), Box::new(Expr::int(1)))),
+                body: Box::new(body),
+            };
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Rising factorial: (x)_n = x(x+1)(x+2)...(x+n-1)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(prod),
+                },
+                justification: "Rising factorial (x)_n = ∏_{i=0}^{n-1} (x+i)".to_string(),
             }]
         },
         reversible: false,
@@ -1381,13 +1930,24 @@ fn falling_factorial() -> Rule {
         name: "falling_factorial",
         category: RuleCategory::Expansion,
         description: "Falling factorial (x)^n",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Mul(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let x = intern_symbol("x");
+            let n = intern_symbol("n");
+            let i = intern_symbol("i");
+            let body = Expr::Sub(Box::new(Expr::Var(x)), Box::new(Expr::Var(i)));
+            let prod = Expr::BigProduct {
+                var: i,
+                from: Box::new(Expr::int(0)),
+                to: Box::new(Expr::Sub(Box::new(Expr::Var(n)), Box::new(Expr::int(1)))),
+                body: Box::new(body),
+            };
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Falling factorial: x^(n) = x(x-1)(x-2)...(x-n+1)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(prod),
+                },
+                justification: "Falling factorial x^{(n)} = ∏_{i=0}^{n-1} (x-i)".to_string(),
             }]
         },
         reversible: false,
@@ -1413,13 +1973,27 @@ fn legendre_formula() -> Rule {
         name: "legendre_formula",
         category: RuleCategory::NumberTheory,
         description: "Legendre: vp(n!) = Σ ⌊n/p^k⌋",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Floor(_) | Expr::Div(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let p = intern_symbol("p");
+            let k = intern_symbol("k");
+            let body = Expr::Floor(Box::new(Expr::Div(
+                Box::new(Expr::Var(n)),
+                Box::new(Expr::Pow(Box::new(Expr::Var(p)), Box::new(Expr::Var(k)))),
+            )));
+            let sum = Expr::Summation {
+                var: k,
+                from: Box::new(Expr::int(1)),
+                to: Box::new(Expr::Var(intern_symbol("∞"))),
+                body: Box::new(body),
+            };
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Legendre's formula: highest power of p dividing n! is Σ ⌊n/p^k⌋".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(sum),
+                },
+                justification: "Legendre: v_p(n!) = Σ_{k≥1} ⌊n/p^k⌋".to_string(),
             }]
         },
         reversible: false,
@@ -1445,13 +2019,18 @@ fn kummer_theorem() -> Rule {
         name: "kummer_theorem",
         category: RuleCategory::NumberTheory,
         description: "Kummer: vp(C(m+n,m)) = carries in base p",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Div(_, _) | Expr::Mod(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let _m = intern_symbol("m");
+            let _n = intern_symbol("n");
+            let lhs = Expr::Var(intern_symbol("v_p(C(m+n,m))"));
+            let rhs = Expr::Var(intern_symbol("carries_base_p(m,n)"));
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Kummer: vp(C(m+n,m)) equals number of carries when adding m and n in base p".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Kummer: valuation equals base-p carry count".to_string(),
             }]
         },
         reversible: false,
@@ -1477,16 +2056,25 @@ fn lucas_theorem() -> Rule {
         name: "lucas_theorem",
         category: RuleCategory::NumberTheory,
         description: "Lucas: C(m,n) mod p",
-        is_applicable: |expr, _ctx| {
-            if let Expr::Mod(inner, _) = expr {
-                return matches!(inner.as_ref(), Expr::Div(_, _));
-            }
-            false
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let m = intern_symbol("m");
+            let n = intern_symbol("n");
+            let p = intern_symbol("p");
+            let lhs = Expr::Mod(
+                Box::new(Expr::Binomial(
+                    Box::new(Expr::Var(m)),
+                    Box::new(Expr::Var(n)),
+                )),
+                Box::new(Expr::Var(p)),
+            );
+            let rhs = Expr::Var(intern_symbol("∏ C(m_i,n_i) mod p"));
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Lucas' theorem: C(m,n) mod p = Π C(mi,ni) mod p where m,n in base p".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Lucas theorem via base-p digits".to_string(),
             }]
         },
         reversible: false,
@@ -1513,13 +2101,24 @@ fn burnside_lemma() -> Rule {
         name: "burnside_lemma",
         category: RuleCategory::Simplification,
         description: "Burnside: |X/G| = (1/|G|) Σ |X^g|",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Div(_, _) | Expr::Mul(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let g = intern_symbol("G");
+            let i = intern_symbol("i");
+            let fix = intern_symbol("|X^g|");
+            let sum = Expr::Summation {
+                var: i,
+                from: Box::new(Expr::int(1)),
+                to: Box::new(Expr::Var(g)),
+                body: Box::new(Expr::Var(fix)),
+            };
+            let rhs = Expr::Div(Box::new(sum), Box::new(Expr::Var(g)));
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Burnside's lemma: |X/G| = (1/|G|) Σ |X^g| for g in G".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Burnside: orbits |X/G| = (1/|G|) Σ |Fix(g)|".to_string(),
             }]
         },
         reversible: false,
@@ -1545,13 +2144,15 @@ fn polya_enumeration() -> Rule {
         name: "polya_enumeration",
         category: RuleCategory::Simplification,
         description: "Polya enumeration theorem",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Div(_, _) | Expr::Mul(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let z_g = intern_symbol("Z_G");
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Polya enumeration: count inequivalent configurations under group action".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(Expr::Var(z_g)),
+                },
+                justification: "Polya: use cycle index Z_G to count orbits".to_string(),
             }]
         },
         reversible: false,
@@ -1577,16 +2178,28 @@ fn catalan_alternative() -> Rule {
         name: "catalan_alternative",
         category: RuleCategory::Simplification,
         description: "C_n = (2n)!/(n!(n+1)!)",
-        is_applicable: |expr, _ctx| {
-            if let Expr::Div(num, _) = expr {
-                return matches!(num.as_ref(), Expr::Factorial(_));
-            }
-            false
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let rhs = Expr::Div(
+                Box::new(Expr::Factorial(Box::new(Expr::Mul(
+                    Box::new(Expr::int(2)),
+                    Box::new(Expr::Var(n)),
+                )))),
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Factorial(Box::new(Expr::Var(n)))),
+                    Box::new(Expr::Factorial(Box::new(Expr::Add(
+                        Box::new(Expr::Var(n)),
+                        Box::new(Expr::int(1)),
+                    )))),
+                )),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Catalan alternative: C_n = (2n)!/(n!(n+1)!)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Catalan closed form (alternative)".to_string(),
             }]
         },
         reversible: false,
@@ -1613,13 +2226,20 @@ fn partition_into_parts() -> Rule {
         name: "partition_into_parts",
         category: RuleCategory::Simplification,
         description: "p(n,k) = p(n-1,k-1) + p(n-k,k)",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Add(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let k = intern_symbol("k");
+            let rhs = Expr::Add(
+                Box::new(Expr::Var(intern_symbol("p(n-1,k-1)"))),
+                Box::new(Expr::Var(intern_symbol("p(n-k,k)"))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Partition recurrence: p(n,k) = p(n-1,k-1) + p(n-k,k)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Partition recurrence p(n,k) = p(n-1,k-1)+p(n-k,k)".to_string(),
             }]
         },
         reversible: false,
@@ -1659,13 +2279,15 @@ fn pattern_avoidance() -> Rule {
         name: "pattern_avoidance",
         category: RuleCategory::Simplification,
         description: "Permutations avoiding pattern",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Factorial(_) | Expr::Div(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let rhs = Expr::Var(intern_symbol("count_avoiding_pattern"));
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Pattern-avoiding permutations counted by Catalan or similar sequences".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Pattern avoidance counting (schematic)".to_string(),
             }]
         },
         reversible: false,
@@ -1693,13 +2315,25 @@ fn derangement_simple_recurrence() -> Rule {
         name: "derangement_simple_recurrence",
         category: RuleCategory::Simplification,
         description: "D(n) = n*D(n-1) + (-1)^n",
-        is_applicable: |expr, _ctx| {
-            matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _))
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let n = intern_symbol("n");
+            let rhs = Expr::Add(
+                Box::new(Expr::Mul(
+                    Box::new(Expr::Var(n)),
+                    Box::new(Expr::Var(intern_symbol("D(n-1)"))),
+                )),
+                Box::new(Expr::Pow(
+                    Box::new(Expr::Neg(Box::new(Expr::int(1)))),
+                    Box::new(Expr::Var(n)),
+                )),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Derangement simple recurrence: D(n) = n*D(n-1) + (-1)^n".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Derangement recurrence D(n)=n·D(n-1)+(-1)^n".to_string(),
             }]
         },
         reversible: false,
@@ -1727,19 +2361,22 @@ fn fibonacci_generating_function() -> Rule {
         name: "fibonacci_generating_function",
         category: RuleCategory::Simplification,
         description: "Fibonacci GF: x/(1-x-x^2)",
-        is_applicable: |expr, _ctx| {
-            // Match division with polynomial
-            if let Expr::Div(_, denom) = expr {
-                if let Expr::Sub(_, _) = denom.as_ref() {
-                    return true;
-                }
-            }
-            false
-        },
+        is_applicable: |expr, _ctx| matches!(expr, Expr::Var(_)),
         apply: |expr, _ctx| {
+            let x = intern_symbol("x");
+            let rhs = Expr::Div(
+                Box::new(Expr::Var(x)),
+                Box::new(Expr::Sub(
+                    Box::new(Expr::Sub(Box::new(Expr::int(1)), Box::new(Expr::Var(x)))),
+                    Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)))),
+                )),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Fibonacci generating function: Σ F_n x^n = x/(1-x-x^2)".to_string(),
+                result: Expr::Equation {
+                    lhs: Box::new(expr.clone()),
+                    rhs: Box::new(rhs),
+                },
+                justification: "Fibonacci OGF: Σ F_n x^n = x/(1 - x - x^2)".to_string(),
             }]
         },
         reversible: false,

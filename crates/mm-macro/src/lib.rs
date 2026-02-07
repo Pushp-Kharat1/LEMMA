@@ -212,6 +212,31 @@ fn expr_to_token_stream(
         Expr::Gt(l, r) => binary!(Gt, l, r),
         Expr::Lte(l, r) => binary!(Lte, l, r),
         Expr::Lt(l, r) => binary!(Lt, l, r),
+        Expr::Sinh(e) => unary!(Sinh, e),
+        Expr::Cosh(e) => unary!(Cosh, e),
+        Expr::Tanh(e) => unary!(Tanh, e),
+        Expr::Limit {
+            expr,
+            var,
+            approaching,
+        } => {
+            let inner = expr_to_token_stream(expr, runtime_symbol_table, temp_symbols);
+            let var_name = temp_symbols.resolve(*var).expect("Symbol not found");
+            let target = expr_to_token_stream(approaching, runtime_symbol_table, temp_symbols);
+            quote! {
+                mm_core::Expr::Limit {
+                    expr: Box::new(#inner),
+                    var: #runtime_symbol_table.intern(#var_name),
+                    approaching: Box::new(#target),
+                }
+            }
+        }
+        Expr::Vector(items) => {
+            let elems = items
+                .iter()
+                .map(|e| expr_to_token_stream(e, runtime_symbol_table, temp_symbols));
+            quote! { mm_core::Expr::Vector(vec![#(#elems),*]) }
+        }
         Expr::Summation {
             var,
             from,

@@ -8,7 +8,14 @@
 //! Includes AM-GM, Cauchy-Schwarz, Jensen's, triangle inequality, and more.
 
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
-use mm_core::{Expr, Rational};
+use mm_core::{Expr, Rational, Symbol, SymbolTable};
+use std::sync::{Mutex, OnceLock};
+
+fn intern_symbol(name: &str) -> Symbol {
+    static INTERNER: OnceLock<Mutex<SymbolTable>> = OnceLock::new();
+    let m = INTERNER.get_or_init(|| Mutex::new(SymbolTable::new()));
+    m.lock().expect("symbol interner poisoned").intern(name)
+}
 
 /// Aggregates all available inequality rules into a single list.
 ///
@@ -1175,10 +1182,18 @@ fn holder_inequality() -> Rule {
         category: RuleCategory::Inequality,
         description: "Holder: (Σ|ab|)^p <= (Σ|a|^p)(Σ|b|^q), 1/p+1/q=1",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Mul(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
+            let lhs = Expr::Pow(
+                Box::new(Expr::Var(intern_symbol("Σ|ab|"))),
+                Box::new(Expr::Var(intern_symbol("p"))),
+            );
+            let rhs = Expr::Mul(
+                Box::new(Expr::Var(intern_symbol("Σ|a|^p"))),
+                Box::new(Expr::Var(intern_symbol("Σ|b|^q"))),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Holder's inequality: (Σ|ab|)^p <= (Σ|a|^p)(Σ|b|^q) where 1/p+1/q=1".to_string(),
+                result: Expr::Lte(Box::new(lhs), Box::new(rhs)),
+                justification: "Holder inequality with 1/p+1/q=1".to_string(),
             }]
         },
         reversible: false,
@@ -1207,10 +1222,28 @@ fn jensen_convex() -> Rule {
         category: RuleCategory::Inequality,
         description: "Jensen (convex): f((x+y)/2) <= (f(x)+f(y))/2",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Add(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
+            let f = intern_symbol("f");
+            let x = intern_symbol("x");
+            let y = intern_symbol("y");
+            let _mid = Expr::Div(
+                Box::new(Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::Var(y)))),
+                Box::new(Expr::int(2)),
+            );
+            let _lhs = Expr::Var(f); // schematic f
+            let rhs = Expr::Div(
+                Box::new(Expr::Add(
+                    Box::new(Expr::Var(intern_symbol("f(x)"))),
+                    Box::new(Expr::Var(intern_symbol("f(y)"))),
+                )),
+                Box::new(Expr::int(2)),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Jensen's inequality for convex f: f((x+y)/2) <= (f(x)+f(y))/2".to_string(),
+                result: Expr::Lte(
+                    Box::new(Expr::Var(intern_symbol("f((x+y)/2)"))),
+                    Box::new(rhs),
+                ),
+                justification: "Jensen convex".to_string(),
             }]
         },
         reversible: false,
@@ -1237,10 +1270,19 @@ fn jensen_concave() -> Rule {
         category: RuleCategory::Inequality,
         description: "Jensen (concave): f((x+y)/2) >= (f(x)+f(y))/2",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Div(_, _) | Expr::Add(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Jensen's inequality for concave f: f((x+y)/2) >= (f(x)+f(y))/2".to_string(),
+                result: Expr::Gte(
+                    Box::new(Expr::Var(intern_symbol("f((x+y)/2)"))),
+                    Box::new(Expr::Div(
+                        Box::new(Expr::Add(
+                            Box::new(Expr::Var(intern_symbol("f(x)"))),
+                            Box::new(Expr::Var(intern_symbol("f(y)"))),
+                        )),
+                        Box::new(Expr::int(2)),
+                    )),
+                ),
+                justification: "Jensen concave".to_string(),
             }]
         },
         reversible: false,
@@ -1267,10 +1309,13 @@ fn jensen_weighted() -> Rule {
         category: RuleCategory::Inequality,
         description: "Weighted Jensen: f(Σw_i·x_i) <= Σw_i·f(x_i)",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Weighted Jensen for convex f: f(Σw_i·x_i) <= Σw_i·f(x_i) where Σw_i=1".to_string(),
+                result: Expr::Lte(
+                    Box::new(Expr::Var(intern_symbol("f(Σ w_i x_i)"))),
+                    Box::new(Expr::Var(intern_symbol("Σ w_i f(x_i)"))),
+                ),
+                justification: "Weighted Jensen (Σw_i=1)".to_string(),
             }]
         },
         reversible: false,
@@ -1300,10 +1345,19 @@ fn chebyshev_sum() -> Rule {
         category: RuleCategory::Inequality,
         description: "Chebyshev: (Σa)(Σb) <= n·Σab (same order)",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Chebyshev's inequality: (Σa)(Σb) <= n·Σab for similarly ordered sequences".to_string(),
+                result: Expr::Lte(
+                    Box::new(Expr::Mul(
+                        Box::new(Expr::Var(intern_symbol("Σa"))),
+                        Box::new(Expr::Var(intern_symbol("Σb"))),
+                    )),
+                    Box::new(Expr::Mul(
+                        Box::new(Expr::Var(intern_symbol("n"))),
+                        Box::new(Expr::Var(intern_symbol("Σab"))),
+                    )),
+                ),
+                justification: "Chebyshev sum (similarly ordered)".to_string(),
             }]
         },
         reversible: false,
@@ -1330,10 +1384,13 @@ fn power_mean_inequality() -> Rule {
         category: RuleCategory::Inequality,
         description: "Power mean: M_p <= M_q for p <= q",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Pow(_, _) | Expr::Div(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Power mean inequality: M_p(a1,...,an) <= M_q(a1,...,an) for p <= q".to_string(),
+                result: Expr::Lte(
+                    Box::new(Expr::Var(intern_symbol("M_p"))),
+                    Box::new(Expr::Var(intern_symbol("M_q"))),
+                ),
+                justification: "Power mean: M_p <= M_q for p<=q".to_string(),
             }]
         },
         reversible: false,
@@ -1359,10 +1416,13 @@ fn muirhead_inequality() -> Rule {
         category: RuleCategory::Inequality,
         description: "Muirhead: [a,b] majorizes [c,d]",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Muirhead's inequality: symmetric sum [a,b] >= [c,d] if [a,b] majorizes [c,d]".to_string(),
+                result: Expr::Gte(
+                    Box::new(Expr::Var(intern_symbol("sym[a,b]"))),
+                    Box::new(Expr::Var(intern_symbol("sym[c,d]"))),
+                ),
+                justification: "Muirhead majorization".to_string(),
             }]
         },
         reversible: false,
@@ -1413,10 +1473,13 @@ fn schur_inequality() -> Rule {
         category: RuleCategory::Inequality,
         description: "Schur: Σx^r(x-y)(x-z) >= 0 for r>=0",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Schur's inequality: x^r(x-y)(x-z) + cyclic >= 0 for r>=0".to_string(),
+                result: Expr::Gte(
+                    Box::new(Expr::Var(intern_symbol("Σ x^r(x-y)(x-z)"))),
+                    Box::new(Expr::int(0)),
+                ),
+                justification: "Schur inequality".to_string(),
             }]
         },
         reversible: false,
@@ -1444,10 +1507,11 @@ fn nesbitt_inequality() -> Rule {
         category: RuleCategory::Inequality,
         description: "Nesbitt: a/(b+c) + b/(a+c) + c/(a+b) >= 3/2",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Div(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
             vec![RuleApplication {
                 result: Expr::Div(Box::new(Expr::int(3)), Box::new(Expr::int(2))),
-                justification: "Nesbitt's inequality: a/(b+c) + b/(a+c) + c/(a+b) >= 3/2".to_string(),
+                justification: "Nesbitt's inequality: a/(b+c) + b/(a+c) + c/(a+b) >= 3/2"
+                    .to_string(),
             }]
         },
         reversible: false,
@@ -1476,10 +1540,13 @@ fn rearrangement_inequality() -> Rule {
         category: RuleCategory::Inequality,
         description: "Rearrangement: same order gives max sum",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Mul(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Rearrangement inequality: Σx_i·y_σ(i) is maximized when both sequences have same order".to_string(),
+                result: Expr::Gte(
+                    Box::new(Expr::Var(intern_symbol("Σ x_i y_i"))),
+                    Box::new(Expr::Var(intern_symbol("Σ x_i y_{rev(i)}"))),
+                ),
+                justification: "Rearrangement inequality".to_string(),
             }]
         },
         reversible: false,
@@ -1513,10 +1580,27 @@ fn young_inequality() -> Rule {
         category: RuleCategory::Inequality,
         description: "Young: ab <= a^p/p + b^q/q, 1/p+1/q=1",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Mul(_, _) | Expr::Add(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
+            let a = intern_symbol("a");
+            let b = intern_symbol("b");
+            let p = intern_symbol("p");
+            let q = intern_symbol("q");
+            let rhs = Expr::Add(
+                Box::new(Expr::Div(
+                    Box::new(Expr::Pow(Box::new(Expr::Var(a)), Box::new(Expr::Var(p)))),
+                    Box::new(Expr::Var(p)),
+                )),
+                Box::new(Expr::Div(
+                    Box::new(Expr::Pow(Box::new(Expr::Var(b)), Box::new(Expr::Var(q)))),
+                    Box::new(Expr::Var(q)),
+                )),
+            );
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Young's inequality: ab <= a^p/p + b^q/q where 1/p+1/q=1".to_string(),
+                result: Expr::Lte(
+                    Box::new(Expr::Mul(Box::new(Expr::Var(a)), Box::new(Expr::Var(b)))),
+                    Box::new(rhs),
+                ),
+                justification: "Young inequality ab <= a^p/p + b^q/q".to_string(),
             }]
         },
         reversible: false,
@@ -1545,10 +1629,16 @@ fn minkowski_inequality() -> Rule {
         category: RuleCategory::Inequality,
         description: "Minkowski: ||a+b||_p <= ||a||_p + ||b||_p",
         is_applicable: |expr, _ctx| matches!(expr, Expr::Add(_, _) | Expr::Pow(_, _)),
-        apply: |expr, _ctx| {
+        apply: |_expr, _ctx| {
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Minkowski's inequality: ||a+b||_p <= ||a||_p + ||b||_p for p>=1".to_string(),
+                result: Expr::Lte(
+                    Box::new(Expr::Var(intern_symbol("||a+b||_p"))),
+                    Box::new(Expr::Add(
+                        Box::new(Expr::Var(intern_symbol("||a||_p"))),
+                        Box::new(Expr::Var(intern_symbol("||b||_p"))),
+                    )),
+                ),
+                justification: "Minkowski inequality".to_string(),
             }]
         },
         reversible: false,

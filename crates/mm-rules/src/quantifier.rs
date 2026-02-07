@@ -197,13 +197,22 @@ impl QuantifierEngine {
     /// # Examples
     ///
     /// ```
-    /// use mm_core::{Expr, SymbolTable};
+    /// use mm_core::{Expr, SymbolTable, Rational};
     /// let st = SymbolTable::new();
     /// let x = st.intern("x");
-    /// let five = Expr::Const(5.0);
-    /// let body = Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::Const(1.0)));
+    /// let five = Expr::Const(Rational::from(5));
+    /// let body = Expr::Add(
+    ///     Box::new(Expr::Var(x)),
+    ///     Box::new(Expr::Const(Rational::from(1))),
+    /// );
     /// let out = QuantifierEngine::new().substitute(&body, x, &five);
-    /// assert_eq!(out, Expr::Add(Box::new(Expr::Const(5.0)), Box::new(Expr::Const(1.0))));
+    /// assert_eq!(
+    ///     out,
+    ///     Expr::Add(
+    ///         Box::new(Expr::Const(Rational::from(5))),
+    ///         Box::new(Expr::Const(Rational::from(1))),
+    ///     )
+    /// );
     /// ```
     fn substitute(&self, body: &Expr, var: Symbol, value: &Expr) -> Expr {
         match body {
@@ -215,6 +224,15 @@ impl QuantifierEngine {
             Expr::Sin(e) => Expr::Sin(Box::new(self.substitute(e, var, value))),
             Expr::Cos(e) => Expr::Cos(Box::new(self.substitute(e, var, value))),
             Expr::Tan(e) => Expr::Tan(Box::new(self.substitute(e, var, value))),
+            Expr::Sinh(e) => Expr::Sinh(Box::new(self.substitute(e, var, value))),
+            Expr::Cosh(e) => Expr::Cosh(Box::new(self.substitute(e, var, value))),
+            Expr::Tanh(e) => Expr::Tanh(Box::new(self.substitute(e, var, value))),
+            Expr::Vector(items) => Expr::Vector(
+                items
+                    .iter()
+                    .map(|e| self.substitute(e, var, value))
+                    .collect(),
+            ),
             Expr::Arcsin(e) => Expr::Arcsin(Box::new(self.substitute(e, var, value))),
             Expr::Arccos(e) => Expr::Arccos(Box::new(self.substitute(e, var, value))),
             Expr::Arctan(e) => Expr::Arctan(Box::new(self.substitute(e, var, value))),
@@ -323,6 +341,15 @@ impl QuantifierEngine {
                 expr: Box::new(self.substitute(expr, var, value)),
                 var: *v,
             },
+            Expr::Limit {
+                expr,
+                var: v,
+                approaching,
+            } if *v != var => Expr::Limit {
+                expr: Box::new(self.substitute(expr, var, value)),
+                var: *v,
+                approaching: Box::new(self.substitute(approaching, var, value)),
+            },
 
             // For nested quantifiers, don't substitute if variable is shadowed
             Expr::ForAll {
@@ -374,7 +401,8 @@ impl QuantifierEngine {
             Expr::ForAll { .. }
             | Expr::Exists { .. }
             | Expr::Summation { .. }
-            | Expr::BigProduct { .. } => body.clone(),
+            | Expr::BigProduct { .. }
+            | Expr::Limit { .. } => body.clone(),
         }
     }
 

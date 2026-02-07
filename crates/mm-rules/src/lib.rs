@@ -38,3 +38,20 @@ pub mod rule;
 pub mod trig;
 
 pub use rule::{Rule, RuleApplication, RuleCategory, RuleContext, RuleId, RuleSet};
+// Re-export commonly used helpers so doctest examples work with the default `use mm_rules::*;`
+pub use algebra::*;
+pub use board_exam::*;
+pub use calculus::*;
+pub use case_analysis::*;
+pub use combinatorics::*;
+pub use equations::*;
+pub use induction::*;
+pub use inequalities::*;
+pub use inequality_chain::*;
+pub use integration::*;
+pub use mm_core::{Expr, Rational, Symbol};
+pub use number_theory::*;
+pub use polynomial::*;
+pub use polynomials::*;
+pub use quantifier::*;
+pub use trig::*;

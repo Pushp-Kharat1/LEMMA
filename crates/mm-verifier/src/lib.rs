@@ -116,6 +116,11 @@ fn is_calculus_expr(expr: &Expr) -> bool {
         }
         Expr::Not(e) => is_calculus_expr(e),
         Expr::Const(_) | Expr::Var(_) | Expr::Pi | Expr::E => false,
+        Expr::Vector(items) => items.iter().any(is_calculus_expr),
+        Expr::Limit {
+            expr, approaching, ..
+        } => is_calculus_expr(expr) || is_calculus_expr(approaching),
+        _ => false,
     }
 }
 
@@ -302,12 +307,18 @@ fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
         Expr::Sin(e) => Expr::Sin(Box::new(substitute(e, var, value))),
         Expr::Cos(e) => Expr::Cos(Box::new(substitute(e, var, value))),
         Expr::Tan(e) => Expr::Tan(Box::new(substitute(e, var, value))),
+        Expr::Sinh(e) => Expr::Sinh(Box::new(substitute(e, var, value))),
+        Expr::Cosh(e) => Expr::Cosh(Box::new(substitute(e, var, value))),
+        Expr::Tanh(e) => Expr::Tanh(Box::new(substitute(e, var, value))),
         Expr::Arcsin(e) => Expr::Arcsin(Box::new(substitute(e, var, value))),
         Expr::Arccos(e) => Expr::Arccos(Box::new(substitute(e, var, value))),
         Expr::Arctan(e) => Expr::Arctan(Box::new(substitute(e, var, value))),
         Expr::Ln(e) => Expr::Ln(Box::new(substitute(e, var, value))),
         Expr::Exp(e) => Expr::Exp(Box::new(substitute(e, var, value))),
         Expr::Abs(e) => Expr::Abs(Box::new(substitute(e, var, value))),
+        Expr::Vector(items) => {
+            Expr::Vector(items.iter().map(|e| substitute(e, var, value)).collect())
+        }
         Expr::Add(a, b) => Expr::Add(
             Box::new(substitute(a, var, value)),
             Box::new(substitute(b, var, value)),
@@ -490,6 +501,16 @@ fn substitute(expr: &Expr, var: mm_core::Symbol, value: &Expr) -> Expr {
             Box::new(substitute(a, var, value)),
             Box::new(substitute(b, var, value)),
         ),
+        Expr::Limit {
+            expr,
+            var: v,
+            approaching,
+        } => Expr::Limit {
+            expr: Box::new(substitute(expr, var, value)),
+            var: *v,
+            approaching: Box::new(substitute(approaching, var, value)),
+        },
+        _ => expr.clone(),
     }
 }
 

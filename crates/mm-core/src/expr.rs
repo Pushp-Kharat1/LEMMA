@@ -52,6 +52,15 @@ pub enum Expr {
     /// Tangent: tan(a)
     Tan(Box<Expr>),
 
+    /// Hyperbolic sine: sinh(a)
+    Sinh(Box<Expr>),
+
+    /// Hyperbolic cosine: cosh(a)
+    Cosh(Box<Expr>),
+
+    /// Hyperbolic tangent: tanh(a)
+    Tanh(Box<Expr>),
+
     /// Inverse sine: arcsin(a)
     Arcsin(Box<Expr>),
 
@@ -69,6 +78,9 @@ pub enum Expr {
 
     /// Absolute value: |a|
     Abs(Box<Expr>),
+
+    /// Vector of expressions (for vector calculus constructs)
+    Vector(Vec<Expr>),
 
     // ========== Binary Operations ==========
     /// Addition: a + b
@@ -103,6 +115,13 @@ pub enum Expr {
 
     /// Integral: ∫ expr dx
     Integral { expr: Box<Expr>, var: Symbol },
+
+    /// Limit: lim_{var -> approaching} expr
+    Limit {
+        expr: Box<Expr>,
+        var: Symbol,
+        approaching: Box<Expr>,
+    },
 
     // ========== Relations ==========
     /// Equation: lhs = rhs
@@ -258,12 +277,16 @@ impl PartialEq for Expr {
             (Expr::Sin(a), Expr::Sin(b)) => a == b,
             (Expr::Cos(a), Expr::Cos(b)) => a == b,
             (Expr::Tan(a), Expr::Tan(b)) => a == b,
+            (Expr::Sinh(a), Expr::Sinh(b)) => a == b,
+            (Expr::Cosh(a), Expr::Cosh(b)) => a == b,
+            (Expr::Tanh(a), Expr::Tanh(b)) => a == b,
             (Expr::Arcsin(a), Expr::Arcsin(b)) => a == b,
             (Expr::Arccos(a), Expr::Arccos(b)) => a == b,
             (Expr::Arctan(a), Expr::Arctan(b)) => a == b,
             (Expr::Ln(a), Expr::Ln(b)) => a == b,
             (Expr::Exp(a), Expr::Exp(b)) => a == b,
             (Expr::Abs(a), Expr::Abs(b)) => a == b,
+            (Expr::Vector(a), Expr::Vector(b)) => a == b,
             (Expr::Add(a1, a2), Expr::Add(b1, b2)) => a1 == b1 && a2 == b2,
             (Expr::Sub(a1, a2), Expr::Sub(b1, b2)) => a1 == b1 && a2 == b2,
             (Expr::Mul(a1, a2), Expr::Mul(b1, b2)) => a1 == b1 && a2 == b2,
@@ -277,6 +300,18 @@ impl PartialEq for Expr {
             (Expr::Integral { expr: e1, var: v1 }, Expr::Integral { expr: e2, var: v2 }) => {
                 e1 == e2 && v1 == v2
             }
+            (
+                Expr::Limit {
+                    expr: e1,
+                    var: v1,
+                    approaching: a1,
+                },
+                Expr::Limit {
+                    expr: e2,
+                    var: v2,
+                    approaching: a2,
+                },
+            ) => e1 == e2 && v1 == v2 && a1 == a2,
             (Expr::Equation { lhs: l1, rhs: r1 }, Expr::Equation { lhs: l2, rhs: r2 }) => {
                 l1 == l2 && r1 == r2
             }
@@ -328,12 +363,16 @@ impl Hash for Expr {
             | Expr::Sin(e)
             | Expr::Cos(e)
             | Expr::Tan(e)
+            | Expr::Sinh(e)
+            | Expr::Cosh(e)
+            | Expr::Tanh(e)
             | Expr::Arcsin(e)
             | Expr::Arccos(e)
             | Expr::Arctan(e)
             | Expr::Ln(e)
             | Expr::Exp(e)
             | Expr::Abs(e) => e.hash(state),
+            Expr::Vector(v) => v.hash(state),
             Expr::Add(a, b)
             | Expr::Sub(a, b)
             | Expr::Mul(a, b)
@@ -347,6 +386,15 @@ impl Hash for Expr {
             Expr::Derivative { expr, var } | Expr::Integral { expr, var } => {
                 expr.hash(state);
                 var.hash(state);
+            }
+            Expr::Limit {
+                expr,
+                var,
+                approaching,
+            } => {
+                expr.hash(state);
+                var.hash(state);
+                approaching.hash(state);
             }
             Expr::Equation { lhs, rhs }
             | Expr::GCD(lhs, rhs)
@@ -572,12 +620,16 @@ impl Expr {
             | Expr::Sin(e)
             | Expr::Cos(e)
             | Expr::Tan(e)
+            | Expr::Sinh(e)
+            | Expr::Cosh(e)
+            | Expr::Tanh(e)
             | Expr::Arcsin(e)
             | Expr::Arccos(e)
             | Expr::Arctan(e)
             | Expr::Ln(e)
             | Expr::Exp(e)
             | Expr::Abs(e) => 1 + e.complexity(),
+            Expr::Vector(v) => 1 + v.iter().map(|e| e.complexity()).sum::<usize>(),
             Expr::Add(a, b)
             | Expr::Sub(a, b)
             | Expr::Mul(a, b)
@@ -591,6 +643,9 @@ impl Expr {
                     .sum::<usize>()
             }
             Expr::Derivative { expr, .. } | Expr::Integral { expr, .. } => 1 + expr.complexity(),
+            Expr::Limit {
+                expr, approaching, ..
+            } => 1 + expr.complexity() + approaching.complexity(),
             Expr::Equation { lhs, rhs }
             | Expr::GCD(lhs, rhs)
             | Expr::LCM(lhs, rhs)

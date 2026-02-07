@@ -286,6 +286,7 @@ fn collect_variables(expr: &Expr) -> Vec<Symbol> {
 /// # Examples
 ///
 /// ```
+/// # use mm_rules::*;
 /// // Assuming constructors for Expr and Symbol exist:
 /// let x = Symbol::new("x");
 /// let y = Symbol::new("y");
@@ -307,6 +308,9 @@ fn collect_vars_recursive(expr: &Expr, vars: &mut Vec<Symbol>) {
         | Expr::Sin(e)
         | Expr::Cos(e)
         | Expr::Tan(e)
+        | Expr::Sinh(e)
+        | Expr::Cosh(e)
+        | Expr::Tanh(e)
         | Expr::Arcsin(e)
         | Expr::Arccos(e)
         | Expr::Arctan(e)
@@ -318,6 +322,11 @@ fn collect_vars_recursive(expr: &Expr, vars: &mut Vec<Symbol>) {
         | Expr::Factorial(e)
         | Expr::Not(e) => {
             collect_vars_recursive(e, vars);
+        }
+        Expr::Vector(items) => {
+            for e in items {
+                collect_vars_recursive(e, vars);
+            }
         }
         Expr::Add(a, b)
         | Expr::Sub(a, b)
@@ -358,6 +367,15 @@ fn collect_vars_recursive(expr: &Expr, vars: &mut Vec<Symbol>) {
             if !vars.contains(var) {
                 vars.push(*var);
             }
+        }
+        Expr::Limit {
+            expr,
+            var,
+            approaching,
+        } => {
+            collect_vars_recursive(expr, vars);
+            collect_vars_recursive(approaching, vars);
+            vars.retain(|v| v != var);
         }
         Expr::ForAll { var, domain, body } | Expr::Exists { var, domain, body } => {
             if let Some(d) = domain {

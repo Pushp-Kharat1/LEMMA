@@ -7,7 +7,7 @@
 //! Calculus transformation rules (derivatives).
 
 use crate::{Rule, RuleApplication, RuleCategory, RuleId};
-use mm_core::Expr;
+use mm_core::{Expr, Symbol};
 
 /// Get all calculus rules.
 pub fn calculus_rules() -> Vec<Rule> {
@@ -465,21 +465,21 @@ pub fn advanced_calculus_rules() -> Vec<Rule> {
         // inverse_trig_deriv_arctan(), - STUB: need Arctan type
         diff_rule(),
         constant_multiple_rule(),
-        constant_base_exp_simple(),  // Rule 408
-        constant_base_exp_chain(),   // Rule 409
-        sqrt_chain_rule(),           // Rule 476
-        general_power_rule(),        // Rule 475
-        log_base_simple(),           // Rule 411
-        log_base_chain(),            // Rule 412
-        sec_derivative(),            // Rule 472
-        csc_derivative(),            // Rule 473
-        cot_derivative(),            // Rule 474
-        arcsin_derivative(),         // Rule 413
-        arccos_derivative(),         // Rule 414
-        arctan_derivative(),         // Rule 415
-        arccot_derivative(),         // Rule 416
-        arcsec_derivative(),         // Rule 417
-        arccsc_derivative(),         // Rule 418
+        constant_base_exp_simple(), // Rule 408
+        constant_base_exp_chain(),  // Rule 409
+        sqrt_chain_rule(),          // Rule 476
+        general_power_rule(),       // Rule 475
+        log_base_simple(),          // Rule 411
+        log_base_chain(),           // Rule 412
+        sec_derivative(),           // Rule 472
+        csc_derivative(),           // Rule 473
+        cot_derivative(),           // Rule 474
+        arcsin_derivative(),        // Rule 413
+        arccos_derivative(),        // Rule 414
+        arctan_derivative(),        // Rule 415
+        arccot_derivative(),        // Rule 416
+        arcsec_derivative(),        // Rule 417
+        arccsc_derivative(),        // Rule 418
     ]
 }
 
@@ -760,12 +760,9 @@ fn constant_base_exp_simple() -> Rule {
                     // d/dx(a^x) = a^x * ln(a)
                     let a_pow_x = inner.as_ref().clone();
                     let ln_a = Expr::Ln(base.clone());
-                    
+
                     return vec![RuleApplication {
-                        result: Expr::Mul(
-                            Box::new(a_pow_x),
-                            Box::new(ln_a),
-                        ),
+                        result: Expr::Mul(Box::new(a_pow_x), Box::new(ln_a)),
                         justification: "d/dx(a^x) = a^x·ln(a)".to_string(),
                     }];
                 }
@@ -809,16 +806,13 @@ fn constant_base_exp_chain() -> Rule {
                         expr: exp.clone(),
                         var: *var,
                     };
-                    
+
                     // a^f * ln(a) * f'
                     let result = Expr::Mul(
-                        Box::new(Expr::Mul(
-                            Box::new(a_pow_f),
-                            Box::new(ln_a),
-                        )),
+                        Box::new(Expr::Mul(Box::new(a_pow_f), Box::new(ln_a))),
                         Box::new(f_prime),
                     );
-                    
+
                     return vec![RuleApplication {
                         result,
                         justification: "d/dx(a^f) = a^f·ln(a)·f'".to_string(),
@@ -861,7 +855,7 @@ fn sqrt_chain_rule() -> Rule {
                     let two = Expr::int(2);
                     let sqrt_f = Expr::Sqrt(f.clone());
                     let denominator = Expr::Mul(Box::new(two), Box::new(sqrt_f));
-                    
+
                     return vec![RuleApplication {
                         result: Expr::Div(Box::new(f_prime), Box::new(denominator)),
                         justification: "d/dx(√f) = f'/(2√f)".to_string(),
@@ -907,16 +901,16 @@ fn general_power_rule() -> Rule {
                             expr: f.clone(),
                             var: *var,
                         };
-                        
+
                         // n * f^(n-1)
                         let n_times_f_pow = Expr::Mul(
                             n.clone(),
                             Box::new(Expr::Pow(f.clone(), Box::new(Expr::Const(n_minus_1)))),
                         );
-                        
+
                         // (n * f^(n-1)) * f'
                         let result = Expr::Mul(Box::new(n_times_f_pow), Box::new(f_prime));
-                        
+
                         return vec![RuleApplication {
                             result,
                             justification: "d/dx(f^n) = n·f^(n-1)·f'".to_string(),
@@ -958,9 +952,13 @@ fn log_base_simple() -> Rule {
             false
         },
         apply: |expr, _ctx| {
-            if let Expr::Derivative { expr: inner, var } = expr {
+            if let Expr::Derivative {
+                expr: inner,
+                var: _var,
+            } = expr
+            {
                 if let Expr::Div(num, denom) = inner.as_ref() {
-                    if let (Expr::Ln(arg), Expr::Ln(base)) = (num.as_ref(), denom.as_ref()) {
+                    if let (Expr::Ln(arg), Expr::Ln(_base)) = (num.as_ref(), denom.as_ref()) {
                         if let Expr::Var(_) = arg.as_ref() {
                             // d/dx(log_a(x)) = 1/(x·ln(a))
                             let x_ln_a = Expr::Mul(arg.clone(), denom.clone());
@@ -1014,7 +1012,7 @@ fn log_base_chain() -> Rule {
                             var: *var,
                         };
                         let f_ln_a = Expr::Mul(f.clone(), denom.clone());
-                        
+
                         return vec![RuleApplication {
                             result: Expr::Div(Box::new(f_prime), Box::new(f_ln_a)),
                             justification: "d/dx(log_a(f)) = f'/(f·ln(a))".to_string(),
@@ -1064,12 +1062,13 @@ fn sec_derivative() -> Rule {
                             var: *var,
                         };
                         let sin_f = Expr::Sin(f.clone());
-                        let cos_sq_f = Expr::Pow(Box::new(Expr::Cos(f.clone())), Box::new(Expr::int(2)));
-                        
+                        let cos_sq_f =
+                            Expr::Pow(Box::new(Expr::Cos(f.clone())), Box::new(Expr::int(2)));
+
                         // f' * sin(f) / cos²(f)
                         let numerator = Expr::Mul(Box::new(f_prime), Box::new(sin_f));
                         let result = Expr::Div(Box::new(numerator), Box::new(cos_sq_f));
-                        
+
                         return vec![RuleApplication {
                             result,
                             justification: "d/dx(sec(f)) = f'·sec(f)·tan(f)".to_string(),
@@ -1119,12 +1118,14 @@ fn csc_derivative() -> Rule {
                             var: *var,
                         };
                         let cos_f = Expr::Cos(f.clone());
-                        let sin_sq_f = Expr::Pow(Box::new(Expr::Sin(f.clone())), Box::new(Expr::int(2)));
-                        
+                        let sin_sq_f =
+                            Expr::Pow(Box::new(Expr::Sin(f.clone())), Box::new(Expr::int(2)));
+
                         // -f' * cos(f) / sin²(f)
                         let numerator = Expr::Mul(Box::new(f_prime), Box::new(cos_f));
-                        let result = Expr::Neg(Box::new(Expr::Div(Box::new(numerator), Box::new(sin_sq_f))));
-                        
+                        let result =
+                            Expr::Neg(Box::new(Expr::Div(Box::new(numerator), Box::new(sin_sq_f))));
+
                         return vec![RuleApplication {
                             result,
                             justification: "d/dx(csc(f)) = -f'·csc(f)·cot(f)".to_string(),
@@ -1172,11 +1173,13 @@ fn cot_derivative() -> Rule {
                             expr: f.clone(),
                             var: *var,
                         };
-                        let sin_sq_f = Expr::Pow(Box::new(Expr::Sin(f.clone())), Box::new(Expr::int(2)));
-                        
+                        let sin_sq_f =
+                            Expr::Pow(Box::new(Expr::Sin(f.clone())), Box::new(Expr::int(2)));
+
                         // -f' / sin²(f)
-                        let result = Expr::Neg(Box::new(Expr::Div(Box::new(f_prime), Box::new(sin_sq_f))));
-                        
+                        let result =
+                            Expr::Neg(Box::new(Expr::Div(Box::new(f_prime), Box::new(sin_sq_f))));
+
                         return vec![RuleApplication {
                             result,
                             justification: "d/dx(cot(f)) = -f'/sin²(f)".to_string(),
@@ -1217,19 +1220,19 @@ fn arcsin_derivative() -> Rule {
                         expr: f.clone(),
                         var: *var,
                     };
-                    
+
                     // 1 - f²
                     let one_minus_f_squared = Expr::Sub(
                         Box::new(Expr::int(1)),
-                        Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2))))
+                        Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2)))),
                     );
-                    
+
                     // √(1-f²)
                     let sqrt_denom = Expr::Sqrt(Box::new(one_minus_f_squared));
-                    
+
                     // f' / √(1-f²)
                     let result = Expr::Div(Box::new(f_prime), Box::new(sqrt_denom));
-                    
+
                     return vec![RuleApplication {
                         result,
                         justification: "d/dx(arcsin(f)) = f'/√(1-f²)".to_string(),
@@ -1269,22 +1272,22 @@ fn arccos_derivative() -> Rule {
                         expr: f.clone(),
                         var: *var,
                     };
-                    
+
                     // 1 - f²
                     let one_minus_f_squared = Expr::Sub(
                         Box::new(Expr::int(1)),
-                        Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2))))
+                        Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2)))),
                     );
-                    
+
                     // √(1-f²)
                     let sqrt_denom = Expr::Sqrt(Box::new(one_minus_f_squared));
-                    
+
                     // f' / √(1-f²)
                     let fraction = Expr::Div(Box::new(f_prime), Box::new(sqrt_denom));
-                    
+
                     // -f' / √(1-f²)
                     let result = Expr::Neg(Box::new(fraction));
-                    
+
                     return vec![RuleApplication {
                         result,
                         justification: "d/dx(arccos(f)) = -f'/√(1-f²)".to_string(),
@@ -1324,16 +1327,16 @@ fn arctan_derivative() -> Rule {
                         expr: f.clone(),
                         var: *var,
                     };
-                    
+
                     // 1 + f²
                     let one_plus_f_squared = Expr::Add(
                         Box::new(Expr::int(1)),
-                        Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2))))
+                        Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2)))),
                     );
-                    
+
                     // f' / (1+f²)
                     let result = Expr::Div(Box::new(f_prime), Box::new(one_plus_f_squared));
-                    
+
                     return vec![RuleApplication {
                         result,
                         justification: "d/dx(arctan(f)) = f'/(1+f²)".to_string(),
@@ -1362,7 +1365,7 @@ fn arccot_derivative() -> Rule {
                 // Match arccot(something)
                 if let Expr::Div(one, inner_expr) = inner.as_ref() {
                     if matches!(one.as_ref(), Expr::Const(c) if c.is_one()) {
-                        if let Expr::Tan(arg) = inner_expr.as_ref() {
+                        if let Expr::Tan(_arg) = inner_expr.as_ref() {
                             // arccot(x) = 1/tan(x) pattern
                             return true;
                         }
@@ -1380,19 +1383,19 @@ fn arccot_derivative() -> Rule {
                             expr: f.clone(),
                             var: *var,
                         };
-                        
+
                         // 1 + f²
                         let one_plus_f_sq = Expr::Add(
                             Box::new(Expr::int(1)),
-                            Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2))))
+                            Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2)))),
                         );
-                        
+
                         // -f'/(1+f²)
                         let result = Expr::Neg(Box::new(Expr::Div(
                             Box::new(f_prime),
-                            Box::new(one_plus_f_sq)
+                            Box::new(one_plus_f_sq),
                         )));
-                        
+
                         return vec![RuleApplication {
                             result,
                             justification: "d/dx(arccot(f)) = -f'/(1+f²)".to_string(),
@@ -1439,28 +1442,23 @@ fn arcsec_derivative() -> Rule {
                             expr: f.clone(),
                             var: *var,
                         };
-                        
+
                         // f² - 1
                         let f_sq_minus_1 = Expr::Sub(
                             Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2)))),
-                            Box::new(Expr::int(1))
+                            Box::new(Expr::int(1)),
                         );
-                        
+
                         // √(f²-1)
                         let sqrt_part = Expr::Sqrt(Box::new(f_sq_minus_1));
-                        
+
                         // |f|√(f²-1)
-                        let denominator = Expr::Mul(
-                            Box::new(Expr::Abs(f.clone())),
-                            Box::new(sqrt_part)
-                        );
-                        
+                        let denominator =
+                            Expr::Mul(Box::new(Expr::Abs(f.clone())), Box::new(sqrt_part));
+
                         // f'/(|f|√(f²-1))
-                        let result = Expr::Div(
-                            Box::new(f_prime),
-                            Box::new(denominator)
-                        );
-                        
+                        let result = Expr::Div(Box::new(f_prime), Box::new(denominator));
+
                         return vec![RuleApplication {
                             result,
                             justification: "d/dx(arcsec(f)) = f'/(|f|√(f²-1))".to_string(),
@@ -1507,28 +1505,26 @@ fn arccsc_derivative() -> Rule {
                             expr: f.clone(),
                             var: *var,
                         };
-                        
+
                         // f² - 1
                         let f_sq_minus_1 = Expr::Sub(
                             Box::new(Expr::Pow(f.clone(), Box::new(Expr::int(2)))),
-                            Box::new(Expr::int(1))
+                            Box::new(Expr::int(1)),
                         );
-                        
+
                         // √(f²-1)
                         let sqrt_part = Expr::Sqrt(Box::new(f_sq_minus_1));
-                        
+
                         // |f|√(f²-1)
-                        let denominator = Expr::Mul(
-                            Box::new(Expr::Abs(f.clone())),
-                            Box::new(sqrt_part)
-                        );
-                        
+                        let denominator =
+                            Expr::Mul(Box::new(Expr::Abs(f.clone())), Box::new(sqrt_part));
+
                         // -f'/(|f|√(f²-1))
                         let result = Expr::Neg(Box::new(Expr::Div(
                             Box::new(f_prime),
-                            Box::new(denominator)
+                            Box::new(denominator),
                         )));
-                        
+
                         return vec![RuleApplication {
                             result,
                             justification: "d/dx(arccsc(f)) = -f'/(|f|√(f²-1))".to_string(),
@@ -1553,12 +1549,16 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
         | Expr::Sin(e)
         | Expr::Cos(e)
         | Expr::Tan(e)
+        | Expr::Sinh(e)
+        | Expr::Cosh(e)
+        | Expr::Tanh(e)
         | Expr::Arcsin(e)
         | Expr::Arccos(e)
         | Expr::Arctan(e)
         | Expr::Ln(e)
         | Expr::Exp(e)
         | Expr::Abs(e) => contains_var(e, var),
+        Expr::Vector(v) => v.iter().any(|e| contains_var(e, var)),
         Expr::Add(a, b) | Expr::Sub(a, b) | Expr::Mul(a, b) | Expr::Div(a, b) | Expr::Pow(a, b) => {
             contains_var(a, var) || contains_var(b, var)
         }
@@ -1624,6 +1624,105 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
             contains_var(a, var) || contains_var(b, var)
         }
         Expr::Not(e) => contains_var(e, var),
+        Expr::Limit {
+            expr,
+            approaching,
+            var: v,
+        } => *v == var || contains_var(expr, var) || contains_var(approaching, var),
+    }
+}
+
+fn collect_symbols(expr: &Expr, vars: &mut Vec<Symbol>) {
+    match expr {
+        Expr::Var(s) => {
+            if !vars.contains(s) {
+                vars.push(*s);
+            }
+        }
+        Expr::Const(_) | Expr::Pi | Expr::E => {}
+        Expr::Neg(e)
+        | Expr::Sqrt(e)
+        | Expr::Sin(e)
+        | Expr::Cos(e)
+        | Expr::Tan(e)
+        | Expr::Sinh(e)
+        | Expr::Cosh(e)
+        | Expr::Tanh(e)
+        | Expr::Arcsin(e)
+        | Expr::Arccos(e)
+        | Expr::Arctan(e)
+        | Expr::Ln(e)
+        | Expr::Exp(e)
+        | Expr::Abs(e) => collect_symbols(e, vars),
+        Expr::Vector(v) => v.iter().for_each(|e| collect_symbols(e, vars)),
+        Expr::Add(a, b)
+        | Expr::Sub(a, b)
+        | Expr::Mul(a, b)
+        | Expr::Div(a, b)
+        | Expr::Pow(a, b)
+        | Expr::Equation { lhs: a, rhs: b }
+        | Expr::GCD(a, b)
+        | Expr::LCM(a, b)
+        | Expr::Mod(a, b)
+        | Expr::Binomial(a, b)
+        | Expr::Gte(a, b)
+        | Expr::Gt(a, b)
+        | Expr::Lte(a, b)
+        | Expr::Lt(a, b)
+        | Expr::And(a, b)
+        | Expr::Or(a, b)
+        | Expr::Implies(a, b) => {
+            collect_symbols(a, vars);
+            collect_symbols(b, vars);
+        }
+        Expr::Sum(terms) => terms.iter().for_each(|t| collect_symbols(&t.expr, vars)),
+        Expr::Product(factors) => factors.iter().for_each(|f| {
+            collect_symbols(&f.base, vars);
+            collect_symbols(&f.power, vars);
+        }),
+        Expr::Derivative { expr, var } | Expr::Integral { expr, var } => {
+            collect_symbols(expr, vars);
+            if !vars.contains(var) {
+                vars.push(*var);
+            }
+        }
+        Expr::Limit {
+            expr,
+            var,
+            approaching,
+        } => {
+            collect_symbols(expr, vars);
+            collect_symbols(approaching, vars);
+            if !vars.contains(var) {
+                vars.push(*var);
+            }
+        }
+        Expr::Floor(e) | Expr::Ceiling(e) | Expr::Factorial(e) => collect_symbols(e, vars),
+        Expr::Summation {
+            var,
+            from,
+            to,
+            body,
+        }
+        | Expr::BigProduct {
+            var,
+            from,
+            to,
+            body,
+        } => {
+            collect_symbols(from, vars);
+            collect_symbols(to, vars);
+            collect_symbols(body, vars);
+            vars.retain(|v| v != var);
+        }
+        Expr::ForAll { var, domain, body } | Expr::Exists { var, domain, body } => {
+            if let Some(d) = domain {
+                collect_symbols(d, vars);
+            }
+            collect_symbols(body, vars);
+            vars.retain(|v| v != var);
+        }
+        Expr::Not(e) => collect_symbols(e, vars),
     }
 }
 
@@ -1634,7 +1733,7 @@ fn contains_var(expr: &Expr, var: mm_core::Symbol) -> bool {
 /// Phase 4 calculus rules for 450+ rules milestone
 pub fn phase4_calculus_rules() -> Vec<Rule> {
     vec![
-        integral_constant_multiple(),  // Rule 419
+        integral_constant_multiple(), // Rule 419
         integral_power(),
         integral_constant(),
         integral_sum(),
@@ -1642,7 +1741,7 @@ pub fn phase4_calculus_rules() -> Vec<Rule> {
         integral_ln(),
         integral_sin(),
         integral_cos(),
-        integral_difference(),  // Rule 427
+        integral_difference(), // Rule 427
         integral_tan(),
         integral_sec2(),
         integral_csc2(),
@@ -1652,30 +1751,30 @@ pub fn phase4_calculus_rules() -> Vec<Rule> {
         u_substitution(),
         partial_fractions(),
         trig_substitution(),
-        integral_cot(),  // Rule 441
+        integral_cot(), // Rule 441
         integral_sec(),
         integral_csc(),
         integral_sec_tan(),
-        integral_inv_sqrt_a2_minus_x2(),  // Rule 445
+        integral_inv_sqrt_a2_minus_x2(), // Rule 445
         integral_inv_a2_plus_x2(),
         integral_inv_x_sqrt_x2_minus_a2(),
-        integral_x_sin(),  // Rule 448
+        integral_x_sin(), // Rule 448
         integral_x_cos(),
         integral_ln_x(),
         integral_x_exp_ax(),
-        integral_x_over_x2_plus_a2(),  // Rule 452
+        integral_x_over_x2_plus_a2(), // Rule 452
         integral_x_over_x2_minus_a2(),
         integral_exp_ax(),
         integral_one_over_x2_minus_a2(),
-        integral_sin_squared(),  // Rule 456 - Advanced patterns
+        integral_sin_squared(), // Rule 456 - Advanced patterns
         integral_cos_squared(),
         integral_tan_squared(),
         integral_sec_cubed(),
-        integral_x2_sin(),  // Rule 460
+        integral_x2_sin(), // Rule 460
         integral_x2_cos(),
         integral_exp_sin(),
         integral_exp_cos(),
-        integral_sqrt_a2_minus_x2(),  // Rule 464 - Square root patterns
+        integral_sqrt_a2_minus_x2(), // Rule 464 - Square root patterns
         integral_sqrt_x2_plus_a2(),
         integral_sqrt_x2_minus_a2(),
         integral_x_sqrt_a2_minus_x2(),
@@ -1694,13 +1793,6 @@ pub fn phase4_calculus_rules() -> Vec<Rule> {
         taylor_cos(),
         taylor_ln(),
         maclaurin_1mx(),
-        geometric_series(),
-        power_series_diff(),
-        power_series_int(),
-        partial_x(),
-        partial_y(),
-        partial_z(),
-        gradient(),
         divergence_vec(),
         curl_vec(),
         laplacian(),
@@ -1708,14 +1800,6 @@ pub fn phase4_calculus_rules() -> Vec<Rule> {
         implicit_diff(),
         total_differential(),
         directional_derivative(),
-        double_integral(),
-        triple_integral(),
-        line_integral(),
-        surface_integral(),
-        greens_theorem(),
-        stokes_theorem(),
-        divergence_theorem(),
-        jacobian_transform(),
     ]
 }
 
@@ -1747,7 +1831,7 @@ fn integral_constant_multiple() -> Rule {
                         var: *var,
                     };
                     let result = Expr::Mul(k.clone(), Box::new(integral_f));
-                    
+
                     return vec![RuleApplication {
                         result,
                         justification: "∫k·f(x) dx = k·∫f(x) dx".to_string(),
@@ -1790,15 +1874,10 @@ fn integral_power() -> Rule {
                     if let Expr::Const(n) = exp.as_ref() {
                         // ∫x^n dx = x^(n+1)/(n+1)
                         let n_plus_1 = *n + mm_core::Rational::from_integer(1);
-                        let new_power = Expr::Pow(
-                            base.clone(),
-                            Box::new(Expr::Const(n_plus_1))
-                        );
-                        let result = Expr::Div(
-                            Box::new(new_power),
-                            Box::new(Expr::Const(n_plus_1))
-                        );
-                        
+                        let new_power = Expr::Pow(base.clone(), Box::new(Expr::Const(n_plus_1)));
+                        let result =
+                            Expr::Div(Box::new(new_power), Box::new(Expr::Const(n_plus_1)));
+
                         return vec![RuleApplication {
                             result,
                             justification: format!("∫x^{} dx = x^{}/({})", n, n_plus_1, n_plus_1),
@@ -1808,9 +1887,9 @@ fn integral_power() -> Rule {
                     // ∫x dx = x²/2
                     let result = Expr::Div(
                         Box::new(Expr::Pow(inner.clone(), Box::new(Expr::int(2)))),
-                        Box::new(Expr::int(2))
+                        Box::new(Expr::int(2)),
                     );
-                    
+
                     return vec![RuleApplication {
                         result,
                         justification: "∫x dx = x²/2".to_string(),
@@ -1839,11 +1918,8 @@ fn integral_constant() -> Rule {
         apply: |expr, _ctx| {
             if let Expr::Integral { expr: inner, var } = expr {
                 // ∫k dx = k*x
-                let result = Expr::Mul(
-                    inner.clone(),
-                    Box::new(Expr::Var(*var))
-                );
-                
+                let result = Expr::Mul(inner.clone(), Box::new(Expr::Var(*var)));
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫k dx = kx".to_string(),
@@ -1881,7 +1957,7 @@ fn integral_sum() -> Rule {
                         var: *var,
                     };
                     let result = Expr::Add(Box::new(integral_f), Box::new(integral_g));
-                    
+
                     return vec![RuleApplication {
                         result,
                         justification: "∫(f+g) dx = ∫f dx + ∫g dx".to_string(),
@@ -1920,7 +1996,7 @@ fn integral_difference() -> Rule {
                         var: *var,
                     };
                     let result = Expr::Sub(Box::new(integral_f), Box::new(integral_g));
-                    
+
                     return vec![RuleApplication {
                         result,
                         justification: "∫(f-g) dx = ∫f dx - ∫g dx".to_string(),
@@ -1984,7 +2060,7 @@ fn integral_ln() -> Rule {
             if let Expr::Integral { var, .. } = expr {
                 // ∫1/x dx = ln|x| (we use Abs for |x|)
                 let result = Expr::Ln(Box::new(Expr::Abs(Box::new(Expr::Var(*var)))));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫1/x dx = ln|x|".to_string(),
@@ -2015,7 +2091,7 @@ fn integral_sin() -> Rule {
             if let Expr::Integral { var, .. } = expr {
                 // ∫sin(x) dx = -cos(x)
                 let result = Expr::Neg(Box::new(Expr::Cos(Box::new(Expr::Var(*var)))));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫sin(x) dx = -cos(x)".to_string(),
@@ -2046,7 +2122,7 @@ fn integral_cos() -> Rule {
             if let Expr::Integral { var, .. } = expr {
                 // ∫cos(x) dx = sin(x)
                 let result = Expr::Sin(Box::new(Expr::Var(*var)));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫cos(x) dx = sin(x)".to_string(),
@@ -2076,10 +2152,10 @@ fn integral_tan() -> Rule {
         apply: |expr, _ctx| {
             if let Expr::Integral { var, .. } = expr {
                 // ∫tan(x) dx = -ln|cos(x)|
-                let result = Expr::Neg(Box::new(Expr::Ln(Box::new(
-                    Expr::Abs(Box::new(Expr::Cos(Box::new(Expr::Var(*var)))))
-                ))));
-                
+                let result = Expr::Neg(Box::new(Expr::Ln(Box::new(Expr::Abs(Box::new(
+                    Expr::Cos(Box::new(Expr::Var(*var))),
+                ))))));
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫tan(x) dx = -ln|cos(x)|".to_string(),
@@ -2103,7 +2179,8 @@ fn integral_sec2() -> Rule {
                 if let Expr::Div(one, denom) = inner.as_ref() {
                     if matches!(one.as_ref(), Expr::Const(c) if c.is_one()) {
                         if let Expr::Pow(base, exp) = denom.as_ref() {
-                            if let (Expr::Cos(arg), Expr::Const(n)) = (base.as_ref(), exp.as_ref()) {
+                            if let (Expr::Cos(arg), Expr::Const(n)) = (base.as_ref(), exp.as_ref())
+                            {
                                 if n.numer() == 2 {
                                     return matches!(arg.as_ref(), Expr::Var(v) if *v == *var);
                                 }
@@ -2118,7 +2195,7 @@ fn integral_sec2() -> Rule {
             if let Expr::Integral { var, .. } = expr {
                 // ∫sec²(x) dx = tan(x)
                 let result = Expr::Tan(Box::new(Expr::Var(*var)));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫sec²(x) dx = tan(x)".to_string(),
@@ -2142,7 +2219,8 @@ fn integral_csc2() -> Rule {
                 if let Expr::Div(one, denom) = inner.as_ref() {
                     if matches!(one.as_ref(), Expr::Const(c) if c.is_one()) {
                         if let Expr::Pow(base, exp) = denom.as_ref() {
-                            if let (Expr::Sin(arg), Expr::Const(n)) = (base.as_ref(), exp.as_ref()) {
+                            if let (Expr::Sin(arg), Expr::Const(n)) = (base.as_ref(), exp.as_ref())
+                            {
                                 if n.numer() == 2 {
                                     return matches!(arg.as_ref(), Expr::Var(v) if *v == *var);
                                 }
@@ -2158,9 +2236,9 @@ fn integral_csc2() -> Rule {
                 // ∫csc²(x) dx = -cot(x) = -cos(x)/sin(x)
                 let result = Expr::Neg(Box::new(Expr::Div(
                     Box::new(Expr::Cos(Box::new(Expr::Var(*var)))),
-                    Box::new(Expr::Sin(Box::new(Expr::Var(*var))))
+                    Box::new(Expr::Sin(Box::new(Expr::Var(*var)))),
                 )));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫csc²(x) dx = -cot(x)".to_string(),
@@ -2178,12 +2256,24 @@ fn integral_sinh() -> Rule {
         name: "integral_sinh",
         category: RuleCategory::Integral,
         description: "∫sinh(x) dx = cosh(x) + C",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        is_applicable: |expr, _| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                return matches!(inner.as_ref(), Expr::Sinh(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var));
+            }
+            false
+        },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∫sinh(x) dx = cosh(x) + C (hyperbolic integral)".to_string(),
-            }]
+            if let Expr::Integral { expr: inner, var } = expr {
+                if let Expr::Sinh(arg) = inner.as_ref() {
+                    if matches!(arg.as_ref(), Expr::Var(v) if *v == *var) {
+                        return vec![RuleApplication {
+                            result: Expr::Cosh(arg.clone()),
+                            justification: "∫sinh(x) dx = cosh(x)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
         },
         reversible: true,
         cost: 2,
@@ -2195,12 +2285,24 @@ fn integral_cosh() -> Rule {
         name: "integral_cosh",
         category: RuleCategory::Integral,
         description: "∫cosh(x) dx = sinh(x) + C",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
+        is_applicable: |expr, _| {
+            if let Expr::Integral { expr: inner, var } = expr {
+                return matches!(inner.as_ref(), Expr::Cosh(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var));
+            }
+            false
+        },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∫cosh(x) dx = sinh(x) + C (hyperbolic integral)".to_string(),
-            }]
+            if let Expr::Integral { expr: inner, var } = expr {
+                if let Expr::Cosh(arg) = inner.as_ref() {
+                    if matches!(arg.as_ref(), Expr::Var(v) if *v == *var) {
+                        return vec![RuleApplication {
+                            result: Expr::Sinh(arg.clone()),
+                            justification: "∫cosh(x) dx = sinh(x)".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
         },
         reversible: true,
         cost: 2,
@@ -2218,10 +2320,10 @@ fn integration_by_parts() -> Rule {
                 if let Expr::Mul(left, right) = inner.as_ref() {
                     let is_x_times_exp = matches!(left.as_ref(), Expr::Var(v) if *v == *var)
                         && matches!(right.as_ref(), Expr::Exp(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
-                    
+
                     let is_exp_times_x = matches!(right.as_ref(), Expr::Var(v) if *v == *var)
                         && matches!(left.as_ref(), Expr::Exp(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
-                    
+
                     return is_x_times_exp || is_exp_times_x;
                 }
             }
@@ -2232,13 +2334,13 @@ fn integration_by_parts() -> Rule {
                 // ∫x·e^x dx = x·e^x - e^x = (x-1)·e^x
                 let x_var = Expr::Var(*var);
                 let exp_x = Expr::Exp(Box::new(Expr::Var(*var)));
-                
+
                 // x·e^x
                 let x_exp = Expr::Mul(Box::new(x_var.clone()), Box::new(exp_x.clone()));
-                
+
                 // x·e^x - e^x
                 let result = Expr::Sub(Box::new(x_exp), Box::new(exp_x));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫x·e^x dx = x·e^x - e^x (integration by parts)".to_string(),
@@ -2261,12 +2363,15 @@ fn u_substitution() -> Rule {
                 // Match 2x * e^(x²) pattern
                 if let Expr::Mul(left, right) = inner.as_ref() {
                     // Check if left is 2x and right is e^(x²)
-                    if let (Expr::Mul(coeff, x_part), Expr::Exp(exp_arg)) = (left.as_ref(), right.as_ref()) {
+                    if let (Expr::Mul(coeff, x_part), Expr::Exp(exp_arg)) =
+                        (left.as_ref(), right.as_ref())
+                    {
                         if matches!(coeff.as_ref(), Expr::Const(n) if n.numer() == 2) {
                             if matches!(x_part.as_ref(), Expr::Var(v) if *v == *var) {
                                 if matches!(exp_arg.as_ref(), Expr::Pow(base, exp) 
                                     if matches!(base.as_ref(), Expr::Var(v2) if *v2 == *var)
-                                    && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2)) {
+                                    && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
+                                {
                                     return true;
                                 }
                             }
@@ -2281,7 +2386,7 @@ fn u_substitution() -> Rule {
                 // ∫2x·e^(x²) dx = e^(x²)
                 let x_squared = Expr::Pow(Box::new(Expr::Var(*var)), Box::new(Expr::int(2)));
                 let result = Expr::Exp(Box::new(x_squared));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫2x·e^(x²) dx = e^(x²) (u-substitution with u=x²)".to_string(),
@@ -2307,7 +2412,8 @@ fn partial_fractions() -> Rule {
                         if let Expr::Sub(left, right) = denom.as_ref() {
                             if matches!(left.as_ref(), Expr::Pow(base, exp)
                                 if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
-                                && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2)) {
+                                && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
+                            {
                                 if matches!(right.as_ref(), Expr::Const(n) if n.is_one()) {
                                     return true;
                                 }
@@ -2322,29 +2428,30 @@ fn partial_fractions() -> Rule {
             if let Expr::Integral { var, .. } = expr {
                 // ∫1/(x²-1) dx = (1/2)·ln|(x-1)/(x+1)|
                 let x = Expr::Var(*var);
-                
+
                 // x - 1
                 let x_minus_1 = Expr::Sub(Box::new(x.clone()), Box::new(Expr::int(1)));
-                
+
                 // x + 1
                 let x_plus_1 = Expr::Add(Box::new(x), Box::new(Expr::int(1)));
-                
+
                 // (x-1)/(x+1)
                 let fraction = Expr::Div(Box::new(x_minus_1), Box::new(x_plus_1));
-                
+
                 // |(x-1)/(x+1)|
                 let abs_fraction = Expr::Abs(Box::new(fraction));
-                
+
                 // ln|(x-1)/(x+1)|
                 let ln_part = Expr::Ln(Box::new(abs_fraction));
-                
+
                 // (1/2)·ln|(x-1)/(x+1)|
                 let half = Expr::Div(Box::new(Expr::int(1)), Box::new(Expr::int(2)));
                 let result = Expr::Mul(Box::new(half), Box::new(ln_part));
-                
+
                 return vec![RuleApplication {
                     result,
-                    justification: "∫1/(x²-1) dx = (1/2)ln|(x-1)/(x+1)| (partial fractions)".to_string(),
+                    justification: "∫1/(x²-1) dx = (1/2)ln|(x-1)/(x+1)| (partial fractions)"
+                        .to_string(),
                 }];
             }
             vec![]
@@ -2369,7 +2476,8 @@ fn trig_substitution() -> Rule {
                                 if matches!(left.as_ref(), Expr::Const(n) if n.is_one()) {
                                     if matches!(right.as_ref(), Expr::Pow(base, exp)
                                         if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
-                                        && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2)) {
+                                        && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
+                                    {
                                         return true;
                                     }
                                 }
@@ -2384,7 +2492,7 @@ fn trig_substitution() -> Rule {
             if let Expr::Integral { var, .. } = expr {
                 // ∫1/√(1-x²) dx = arcsin(x)
                 let result = Expr::Arcsin(Box::new(Expr::Var(*var)));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫1/√(1-x²) dx = arcsin(x) (trig substitution)".to_string(),
@@ -2422,7 +2530,7 @@ fn integral_cot() -> Rule {
                 let sin_x = Expr::Sin(Box::new(Expr::Var(*var)));
                 let abs_sin = Expr::Abs(Box::new(sin_x));
                 let result = Expr::Ln(Box::new(abs_sin));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫cot(x) dx = ln|sin(x)|".to_string(),
@@ -2457,20 +2565,20 @@ fn integral_sec() -> Rule {
                 let x = Expr::Var(*var);
                 let cos_x = Expr::Cos(Box::new(x.clone()));
                 let sin_x = Expr::Sin(Box::new(x.clone()));
-                
+
                 // sec(x) = 1/cos(x)
                 let sec_x = Expr::Div(Box::new(Expr::int(1)), Box::new(cos_x.clone()));
-                
+
                 // tan(x) = sin(x)/cos(x)
                 let tan_x = Expr::Div(Box::new(sin_x), Box::new(cos_x));
-                
+
                 // sec(x) + tan(x)
                 let sum = Expr::Add(Box::new(sec_x), Box::new(tan_x));
-                
+
                 // ln|sec(x) + tan(x)|
                 let abs_sum = Expr::Abs(Box::new(sum));
                 let result = Expr::Ln(Box::new(abs_sum));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫sec(x) dx = ln|sec(x) + tan(x)|".to_string(),
@@ -2505,21 +2613,21 @@ fn integral_csc() -> Rule {
                 let x = Expr::Var(*var);
                 let sin_x = Expr::Sin(Box::new(x.clone()));
                 let cos_x = Expr::Cos(Box::new(x.clone()));
-                
+
                 // csc(x) = 1/sin(x)
                 let csc_x = Expr::Div(Box::new(Expr::int(1)), Box::new(sin_x.clone()));
-                
+
                 // cot(x) = cos(x)/sin(x)
                 let cot_x = Expr::Div(Box::new(cos_x), Box::new(sin_x));
-                
+
                 // csc(x) + cot(x)
                 let sum = Expr::Add(Box::new(csc_x), Box::new(cot_x));
-                
+
                 // -ln|csc(x) + cot(x)|
                 let abs_sum = Expr::Abs(Box::new(sum));
                 let ln_part = Expr::Ln(Box::new(abs_sum));
                 let result = Expr::Neg(Box::new(ln_part));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫csc(x) dx = -ln|csc(x) + cot(x)|".to_string(),
@@ -2542,7 +2650,8 @@ fn integral_sec_tan() -> Rule {
             if let Expr::Integral { expr: inner, var } = expr {
                 // Match sec(x)·tan(x) = (1/cos(x))·(sin(x)/cos(x)) = sin(x)/cos²(x)
                 if let Expr::Div(num, denom) = inner.as_ref() {
-                    if matches!(num.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var)) {
+                    if matches!(num.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
+                    {
                         if let Expr::Pow(base, exp) = denom.as_ref() {
                             return matches!(base.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
                                 && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2);
@@ -2557,7 +2666,7 @@ fn integral_sec_tan() -> Rule {
                 // ∫sec(x)tan(x) dx = sec(x) = 1/cos(x)
                 let cos_x = Expr::Cos(Box::new(Expr::Var(*var)));
                 let result = Expr::Div(Box::new(Expr::int(1)), Box::new(cos_x));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫sec(x)tan(x) dx = sec(x)".to_string(),
@@ -2592,10 +2701,12 @@ fn integral_inv_sqrt_a2_minus_x2() -> Rule {
                                     && matches!(right.as_ref(), Expr::Pow(base, exp)
                                         if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
                                         && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2));
-                                        
+
                                 // Or check if it's (const)²-x²
-                                let is_pow_const_minus_var_sq = if let Expr::Pow(base, exp) = left.as_ref() {
-                                    matches!(base.as_ref(), Expr::Const(_)) 
+                                let is_pow_const_minus_var_sq = if let Expr::Pow(base, exp) =
+                                    left.as_ref()
+                                {
+                                    matches!(base.as_ref(), Expr::Const(_))
                                         && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2)
                                         && matches!(right.as_ref(), Expr::Pow(base2, exp2)
                                             if matches!(base2.as_ref(), Expr::Var(v) if *v == *var)
@@ -2603,7 +2714,7 @@ fn integral_inv_sqrt_a2_minus_x2() -> Rule {
                                 } else {
                                     false
                                 };
-                                
+
                                 return is_const_minus_var_sq || is_pow_const_minus_var_sq;
                             }
                         }
@@ -2622,10 +2733,10 @@ fn integral_inv_sqrt_a2_minus_x2() -> Rule {
                             // ∫1/√(a²-x²) dx = arcsin(x/a)
                             let x_div_a = Expr::Div(
                                 Box::new(Expr::Var(*var)),
-                                Box::new(Expr::Sqrt(a_squared))
+                                Box::new(Expr::Sqrt(a_squared)),
                             );
                             let result = Expr::Arcsin(Box::new(x_div_a));
-                            
+
                             return vec![RuleApplication {
                                 result,
                                 justification: "∫1/√(a²-x²) dx = arcsin(x/a)".to_string(),
@@ -2658,12 +2769,12 @@ fn integral_inv_a2_plus_x2() -> Rule {
                                 && matches!(right.as_ref(), Expr::Pow(base, exp)
                                     if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
                                     && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2));
-                                    
+
                             let pattern2 = matches!(right.as_ref(), Expr::Const(_) | Expr::Pow(..))
                                 && matches!(left.as_ref(), Expr::Pow(base, exp)
                                     if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
                                     && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2));
-                                    
+
                             return pattern1 || pattern2;
                         }
                     }
@@ -2676,18 +2787,19 @@ fn integral_inv_a2_plus_x2() -> Rule {
                 if let Expr::Div(_, denom) = inner.as_ref() {
                     if let Expr::Add(left, right) = denom.as_ref() {
                         // Get a² (the constant term)
-                        let a_squared = if matches!(left.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Var(_))) {
+                        let a_squared = if matches!(left.as_ref(), Expr::Pow(base, _) if matches!(base.as_ref(), Expr::Var(_)))
+                        {
                             right.clone()
                         } else {
                             left.clone()
                         };
-                        
+
                         // ∫1/(a²+x²) dx = (1/a)arctan(x/a)
                         let a = Expr::Sqrt(a_squared.clone());
                         let x_div_a = Expr::Div(Box::new(Expr::Var(*var)), Box::new(a.clone()));
                         let arctan_part = Expr::Arctan(Box::new(x_div_a));
                         let result = Expr::Div(Box::new(arctan_part), Box::new(a));
-                        
+
                         return vec![RuleApplication {
                             result,
                             justification: "∫1/(a²+x²) dx = (1/a)arctan(x/a)".to_string(),
@@ -2717,7 +2829,8 @@ fn integral_inv_x_sqrt_x2_minus_a2() -> Rule {
                         if let Expr::Mul(left, right) = denom.as_ref() {
                             let has_var = matches!(left.as_ref(), Expr::Var(v) if *v == *var)
                                 || matches!(right.as_ref(), Expr::Var(v) if *v == *var);
-                            let has_sqrt = matches!(left.as_ref(), Expr::Sqrt(_)) || matches!(right.as_ref(), Expr::Sqrt(_));
+                            let has_sqrt = matches!(left.as_ref(), Expr::Sqrt(_))
+                                || matches!(right.as_ref(), Expr::Sqrt(_));
                             return has_var && has_sqrt;
                         }
                     }
@@ -2733,7 +2846,7 @@ fn integral_inv_x_sqrt_x2_minus_a2() -> Rule {
                 let abs_x = Expr::Abs(Box::new(x.clone()));
                 let one_over_x = Expr::Div(Box::new(Expr::int(1)), Box::new(abs_x));
                 let result = Expr::Arccos(Box::new(one_over_x));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫1/(x√(x²-a²)) dx = arccos(1/|x|) (arcsec form)".to_string(),
@@ -2775,16 +2888,17 @@ fn integral_x_sin() -> Rule {
                 let x = Expr::Var(*var);
                 let cos_x = Expr::Cos(Box::new(x.clone()));
                 let sin_x = Expr::Sin(Box::new(x.clone()));
-                
+
                 // -x·cos(x)
                 let neg_x_cos = Expr::Neg(Box::new(Expr::Mul(Box::new(x), Box::new(cos_x))));
-                
+
                 // -x·cos(x) + sin(x)
                 let result = Expr::Add(Box::new(neg_x_cos), Box::new(sin_x));
-                
+
                 return vec![RuleApplication {
                     result,
-                    justification: "∫x·sin(x) dx = -x·cos(x) + sin(x) (integration by parts)".to_string(),
+                    justification: "∫x·sin(x) dx = -x·cos(x) + sin(x) (integration by parts)"
+                        .to_string(),
                 }];
             }
             vec![]
@@ -2819,16 +2933,17 @@ fn integral_x_cos() -> Rule {
                 let x = Expr::Var(*var);
                 let sin_x = Expr::Sin(Box::new(x.clone()));
                 let cos_x = Expr::Cos(Box::new(x.clone()));
-                
+
                 // x·sin(x)
                 let x_sin = Expr::Mul(Box::new(x), Box::new(sin_x));
-                
+
                 // x·sin(x) + cos(x)
                 let result = Expr::Add(Box::new(x_sin), Box::new(cos_x));
-                
+
                 return vec![RuleApplication {
                     result,
-                    justification: "∫x·cos(x) dx = x·sin(x) + cos(x) (integration by parts)".to_string(),
+                    justification: "∫x·cos(x) dx = x·sin(x) + cos(x) (integration by parts)"
+                        .to_string(),
                 }];
             }
             vec![]
@@ -2858,13 +2973,13 @@ fn integral_ln_x() -> Rule {
                 // ∫ln(x) dx = x·ln(x) - x
                 let x = Expr::Var(*var);
                 let ln_x = Expr::Ln(Box::new(x.clone()));
-                
+
                 // x·ln(x)
                 let x_ln_x = Expr::Mul(Box::new(x.clone()), Box::new(ln_x));
-                
+
                 // x·ln(x) - x
                 let result = Expr::Sub(Box::new(x_ln_x), Box::new(x));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫ln(x) dx = x·ln(x) - x (integration by parts)".to_string(),
@@ -2891,7 +3006,7 @@ fn integral_x_exp_ax() -> Rule {
                     let exp_on_right = matches!(right.as_ref(), Expr::Exp(_));
                     let var_on_right = matches!(right.as_ref(), Expr::Var(v) if *v == *var);
                     let exp_on_left = matches!(left.as_ref(), Expr::Exp(_));
-                    
+
                     return (var_on_left && exp_on_right) || (var_on_right && exp_on_left);
                 }
             }
@@ -2903,13 +3018,13 @@ fn integral_x_exp_ax() -> Rule {
                 // For general case, return result assuming a=1
                 let x = Expr::Var(*var);
                 let exp_x = Expr::Exp(Box::new(x.clone()));
-                
+
                 // (x-1)
                 let x_minus_1 = Expr::Sub(Box::new(x), Box::new(Expr::int(1)));
-                
+
                 // (x-1)·e^x
                 let result = Expr::Mul(Box::new(x_minus_1), Box::new(exp_x));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫x·e^x dx = (x-1)·e^x (integration by parts)".to_string(),
@@ -2946,13 +3061,17 @@ fn integral_x_over_x2_plus_a2() -> Rule {
             false
         },
         apply: |expr, _ctx| {
-            if let Expr::Integral { var, expr: inner } = expr {
+            if let Expr::Integral {
+                var: _var,
+                expr: inner,
+            } = expr
+            {
                 if let Expr::Div(_, denom) = inner.as_ref() {
                     // ∫x/(x²+a²) dx = (1/2)ln(x²+a²)
                     let ln_denom = Expr::Ln(Box::new(*denom.clone()));
                     let half = Expr::Div(Box::new(Expr::int(1)), Box::new(Expr::int(2)));
                     let result = Expr::Mul(Box::new(half), Box::new(ln_denom));
-                    
+
                     return vec![RuleApplication {
                         result,
                         justification: "∫x/(x²+a²) dx = (1/2)ln(x²+a²)".to_string(),
@@ -2986,14 +3105,18 @@ fn integral_x_over_x2_minus_a2() -> Rule {
             false
         },
         apply: |expr, _ctx| {
-            if let Expr::Integral { var, expr: inner } = expr {
+            if let Expr::Integral {
+                var: _var,
+                expr: inner,
+            } = expr
+            {
                 if let Expr::Div(_, denom) = inner.as_ref() {
                     // ∫x/(x²-a²) dx = (1/2)ln|x²-a²|
                     let abs_denom = Expr::Abs(Box::new(*denom.clone()));
                     let ln_part = Expr::Ln(Box::new(abs_denom));
                     let half = Expr::Div(Box::new(Expr::int(1)), Box::new(Expr::int(2)));
                     let result = Expr::Mul(Box::new(half), Box::new(ln_part));
-                    
+
                     return vec![RuleApplication {
                         result,
                         justification: "∫x/(x²-a²) dx = (1/2)ln|x²-a²|".to_string(),
@@ -3034,7 +3157,7 @@ fn integral_exp_ax() -> Rule {
                         // Result: (1/a)·e^(ax)
                         let inv_coeff = Expr::Div(Box::new(Expr::int(1)), coeff.clone());
                         let result = Expr::Mul(Box::new(inv_coeff), Box::new(*inner.clone()));
-                        
+
                         return vec![RuleApplication {
                             result,
                             justification: "∫e^(ax) dx = (1/a)e^(ax)".to_string(),
@@ -3079,27 +3202,29 @@ fn integral_one_over_x2_minus_a2() -> Rule {
                         // Simplified: assume a=1
                         let x = Expr::Var(*var);
                         let a = Expr::Sqrt(right.clone());
-                        
+
                         // x-a
                         let x_minus_a = Expr::Sub(Box::new(x.clone()), Box::new(a.clone()));
-                        
+
                         // x+a
                         let x_plus_a = Expr::Add(Box::new(x), Box::new(a.clone()));
-                        
+
                         // (x-a)/(x+a)
                         let fraction = Expr::Div(Box::new(x_minus_a), Box::new(x_plus_a));
-                        
+
                         // ln|(x-a)/(x+a)|
                         let ln_part = Expr::Ln(Box::new(Expr::Abs(Box::new(fraction))));
-                        
+
                         // (1/2a)·ln|(x-a)/(x+a)|
                         let two_a = Expr::Mul(Box::new(Expr::int(2)), Box::new(a));
                         let coefficient = Expr::Div(Box::new(Expr::int(1)), Box::new(two_a));
                         let result = Expr::Mul(Box::new(coefficient), Box::new(ln_part));
-                        
+
                         return vec![RuleApplication {
                             result,
-                            justification: "∫1/(x²-a²) dx = (1/2a)ln|(x-a)/(x+a)| (partial fractions)".to_string(),
+                            justification:
+                                "∫1/(x²-a²) dx = (1/2a)ln|(x-a)/(x+a)| (partial fractions)"
+                                    .to_string(),
                         }];
                     }
                 }
@@ -3139,16 +3264,16 @@ fn integral_sin_squared() -> Rule {
                 let x = Expr::Var(*var);
                 let two_x = Expr::Mul(Box::new(Expr::int(2)), Box::new(x.clone()));
                 let sin_2x = Expr::Sin(Box::new(two_x));
-                
+
                 // x/2
                 let x_over_2 = Expr::Div(Box::new(x), Box::new(Expr::int(2)));
-                
+
                 // sin(2x)/4
                 let sin_2x_over_4 = Expr::Div(Box::new(sin_2x), Box::new(Expr::int(4)));
-                
+
                 // x/2 - sin(2x)/4
                 let result = Expr::Sub(Box::new(x_over_2), Box::new(sin_2x_over_4));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫sin²(x) dx = x/2 - sin(2x)/4 (reduction formula)".to_string(),
@@ -3183,16 +3308,16 @@ fn integral_cos_squared() -> Rule {
                 let x = Expr::Var(*var);
                 let two_x = Expr::Mul(Box::new(Expr::int(2)), Box::new(x.clone()));
                 let sin_2x = Expr::Sin(Box::new(two_x));
-                
+
                 // x/2
                 let x_over_2 = Expr::Div(Box::new(x), Box::new(Expr::int(2)));
-                
+
                 // sin(2x)/4
                 let sin_2x_over_4 = Expr::Div(Box::new(sin_2x), Box::new(Expr::int(4)));
-                
+
                 // x/2 + sin(2x)/4
                 let result = Expr::Add(Box::new(x_over_2), Box::new(sin_2x_over_4));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫cos²(x) dx = x/2 + sin(2x)/4 (reduction formula)".to_string(),
@@ -3232,10 +3357,10 @@ fn integral_tan_squared() -> Rule {
                 let sin_x = Expr::Sin(Box::new(x.clone()));
                 let cos_x = Expr::Cos(Box::new(x.clone()));
                 let tan_x = Expr::Div(Box::new(sin_x), Box::new(cos_x));
-                
+
                 // tan(x) - x
                 let result = Expr::Sub(Box::new(tan_x), Box::new(x));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫tan²(x) dx = tan(x) - x (reduction formula)".to_string(),
@@ -3273,24 +3398,25 @@ fn integral_sec_cubed() -> Rule {
                 let x = Expr::Var(*var);
                 let cos_x = Expr::Cos(Box::new(x.clone()));
                 let sin_x = Expr::Sin(Box::new(x.clone()));
-                
+
                 let sec_x = Expr::Div(Box::new(Expr::int(1)), Box::new(cos_x.clone()));
                 let tan_x = Expr::Div(Box::new(sin_x), Box::new(cos_x));
-                
+
                 // sec·tan
                 let sec_tan = Expr::Mul(Box::new(sec_x.clone()), Box::new(tan_x.clone()));
-                
+
                 // ln|sec+tan|
                 let sec_plus_tan = Expr::Add(Box::new(sec_x), Box::new(tan_x));
                 let ln_part = Expr::Ln(Box::new(Expr::Abs(Box::new(sec_plus_tan))));
-                
+
                 // (sec·tan + ln|sec+tan|)/2
                 let sum = Expr::Add(Box::new(sec_tan), Box::new(ln_part));
                 let result = Expr::Div(Box::new(sum), Box::new(Expr::int(2)));
-                
+
                 return vec![RuleApplication {
                     result,
-                    justification: "∫sec³(x) dx = (1/2)[sec(x)tan(x) + ln|sec(x)+tan(x)|]".to_string(),
+                    justification: "∫sec³(x) dx = (1/2)[sec(x)tan(x) + ln|sec(x)+tan(x)|]"
+                        .to_string(),
                 }];
             }
             vec![]
@@ -3316,12 +3442,12 @@ fn integral_x2_sin() -> Rule {
                         if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
                         && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
                         && matches!(right.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
-                    
+
                     let sin_x2 = matches!(right.as_ref(), Expr::Pow(base, exp)
                         if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
                         && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
                         && matches!(left.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
-                    
+
                     return x2_sin || sin_x2;
                 }
             }
@@ -3334,24 +3460,26 @@ fn integral_x2_sin() -> Rule {
                 let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
                 let cos_x = Expr::Cos(Box::new(x.clone()));
                 let sin_x = Expr::Sin(Box::new(x.clone()));
-                
+
                 // -x²·cos(x)
-                let neg_x2_cos = Expr::Neg(Box::new(Expr::Mul(Box::new(x2), Box::new(cos_x.clone()))));
-                
+                let neg_x2_cos =
+                    Expr::Neg(Box::new(Expr::Mul(Box::new(x2), Box::new(cos_x.clone()))));
+
                 // 2x·sin(x)
                 let two_x = Expr::Mul(Box::new(Expr::int(2)), Box::new(x));
                 let two_x_sin = Expr::Mul(Box::new(two_x), Box::new(sin_x));
-                
+
                 // 2cos(x)
                 let two_cos = Expr::Mul(Box::new(Expr::int(2)), Box::new(cos_x));
-                
+
                 // Combine: -x²·cos(x) + 2x·sin(x) + 2cos(x)
                 let temp = Expr::Add(Box::new(neg_x2_cos), Box::new(two_x_sin));
                 let result = Expr::Add(Box::new(temp), Box::new(two_cos));
-                
+
                 return vec![RuleApplication {
                     result,
-                    justification: "∫x²·sin(x) dx = -x²·cos(x) + 2x·sin(x) + 2cos(x) (by parts)".to_string(),
+                    justification: "∫x²·sin(x) dx = -x²·cos(x) + 2x·sin(x) + 2cos(x) (by parts)"
+                        .to_string(),
                 }];
             }
             vec![]
@@ -3375,12 +3503,12 @@ fn integral_x2_cos() -> Rule {
                         if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
                         && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
                         && matches!(right.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
-                    
+
                     let cos_x2 = matches!(right.as_ref(), Expr::Pow(base, exp)
                         if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
                         && matches!(exp.as_ref(), Expr::Const(n) if n.numer() == 2))
                         && matches!(left.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
-                    
+
                     return x2_cos || cos_x2;
                 }
             }
@@ -3393,24 +3521,25 @@ fn integral_x2_cos() -> Rule {
                 let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
                 let sin_x = Expr::Sin(Box::new(x.clone()));
                 let cos_x = Expr::Cos(Box::new(x.clone()));
-                
+
                 // x²·sin(x)
                 let x2_sin = Expr::Mul(Box::new(x2), Box::new(sin_x.clone()));
-                
+
                 // 2x·cos(x)
                 let two_x = Expr::Mul(Box::new(Expr::int(2)), Box::new(x));
                 let two_x_cos = Expr::Mul(Box::new(two_x), Box::new(cos_x));
-                
+
                 // 2sin(x)
                 let two_sin = Expr::Mul(Box::new(Expr::int(2)), Box::new(sin_x));
-                
+
                 // Combine: x²·sin(x) + 2x·cos(x) - 2sin(x)
                 let temp = Expr::Add(Box::new(x2_sin), Box::new(two_x_cos));
                 let result = Expr::Sub(Box::new(temp), Box::new(two_sin));
-                
+
                 return vec![RuleApplication {
                     result,
-                    justification: "∫x²·cos(x) dx = x²·sin(x) + 2x·cos(x) - 2sin(x) (by parts)".to_string(),
+                    justification: "∫x²·cos(x) dx = x²·sin(x) + 2x·cos(x) - 2sin(x) (by parts)"
+                        .to_string(),
                 }];
             }
             vec![]
@@ -3432,10 +3561,10 @@ fn integral_exp_sin() -> Rule {
                 if let Expr::Mul(left, right) = inner.as_ref() {
                     let exp_sin = matches!(left.as_ref(), Expr::Exp(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
                         && matches!(right.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
-                    
+
                     let sin_exp = matches!(right.as_ref(), Expr::Exp(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
                         && matches!(left.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
-                    
+
                     return exp_sin || sin_exp;
                 }
             }
@@ -3448,19 +3577,20 @@ fn integral_exp_sin() -> Rule {
                 let exp_x = Expr::Exp(Box::new(x.clone()));
                 let sin_x = Expr::Sin(Box::new(x.clone()));
                 let cos_x = Expr::Cos(Box::new(x));
-                
+
                 // sin(x) - cos(x)
                 let sin_minus_cos = Expr::Sub(Box::new(sin_x), Box::new(cos_x));
-                
+
                 // e^x·(sin(x) - cos(x))
                 let exp_times_diff = Expr::Mul(Box::new(exp_x), Box::new(sin_minus_cos));
-                
+
                 // (e^x·(sin(x) - cos(x)))/2
                 let result = Expr::Div(Box::new(exp_times_diff), Box::new(Expr::int(2)));
-                
+
                 return vec![RuleApplication {
                     result,
-                    justification: "∫e^x·sin(x) dx = (e^x/2)(sin(x) - cos(x)) (by parts)".to_string(),
+                    justification: "∫e^x·sin(x) dx = (e^x/2)(sin(x) - cos(x)) (by parts)"
+                        .to_string(),
                 }];
             }
             vec![]
@@ -3482,10 +3612,10 @@ fn integral_exp_cos() -> Rule {
                 if let Expr::Mul(left, right) = inner.as_ref() {
                     let exp_cos = matches!(left.as_ref(), Expr::Exp(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
                         && matches!(right.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
-                    
+
                     let cos_exp = matches!(right.as_ref(), Expr::Exp(arg) if matches!(arg.as_ref(), Expr::Var(v) if *v == *var))
                         && matches!(left.as_ref(), Expr::Cos(arg) if matches!(arg.as_ref(), Expr::Var(v2) if *v2 == *var));
-                    
+
                     return exp_cos || cos_exp;
                 }
             }
@@ -3498,19 +3628,20 @@ fn integral_exp_cos() -> Rule {
                 let exp_x = Expr::Exp(Box::new(x.clone()));
                 let sin_x = Expr::Sin(Box::new(x.clone()));
                 let cos_x = Expr::Cos(Box::new(x));
-                
+
                 // sin(x) + cos(x)
                 let sin_plus_cos = Expr::Add(Box::new(sin_x), Box::new(cos_x));
-                
+
                 // e^x·(sin(x) + cos(x))
                 let exp_times_sum = Expr::Mul(Box::new(exp_x), Box::new(sin_plus_cos));
-                
+
                 // (e^x·(sin(x) + cos(x)))/2
                 let result = Expr::Div(Box::new(exp_times_sum), Box::new(Expr::int(2)));
-                
+
                 return vec![RuleApplication {
                     result,
-                    justification: "∫e^x·cos(x) dx = (e^x/2)(sin(x) + cos(x)) (by parts)".to_string(),
+                    justification: "∫e^x·cos(x) dx = (e^x/2)(sin(x) + cos(x)) (by parts)"
+                        .to_string(),
                 }];
             }
             vec![]
@@ -3532,7 +3663,7 @@ fn integral_sqrt_a2_minus_x2() -> Rule {
             if let Expr::Integral { expr: inner, var } = expr {
                 // Match √(a²-x²)
                 if let Expr::Sqrt(sqrt_arg) = inner.as_ref() {
-                    if let Expr::Sub(left, right) = sqrt_arg.as_ref() {
+                    if let Expr::Sub(_left, right) = sqrt_arg.as_ref() {
                         // Check if it's const - x² or a² - x²
                         let is_pattern = matches!(right.as_ref(), Expr::Pow(base, exp)
                             if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
@@ -3544,23 +3675,23 @@ fn integral_sqrt_a2_minus_x2() -> Rule {
             false
         },
         apply: |expr, _ctx| {
-            if let Expr::Integral { var, expr: inner } = expr {
+            if let Expr::Integral { var, expr: _inner } = expr {
                 // Simplified: assume a=1, result = (x/2)√(1-x²) + (1/2)arcsin(x)
                 let x = Expr::Var(*var);
                 let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
                 let one_minus_x2 = Expr::Sub(Box::new(Expr::int(1)), Box::new(x2));
                 let sqrt_part = Expr::Sqrt(Box::new(one_minus_x2));
-                
+
                 // (x/2)√(1-x²)
                 let x_over_2 = Expr::Div(Box::new(x.clone()), Box::new(Expr::int(2)));
                 let first_term = Expr::Mul(Box::new(x_over_2), Box::new(sqrt_part));
-                
+
                 // (1/2)arcsin(x)
                 let arcsin_x = Expr::Arcsin(Box::new(x));
                 let second_term = Expr::Div(Box::new(arcsin_x), Box::new(Expr::int(2)));
-                
+
                 let result = Expr::Add(Box::new(first_term), Box::new(second_term));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫√(a²-x²) dx = (x/2)√(a²-x²) + (a²/2)arcsin(x/a)".to_string(),
@@ -3604,23 +3735,24 @@ fn integral_sqrt_x2_plus_a2() -> Rule {
                 let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
                 let x2_plus_1 = Expr::Add(Box::new(x2.clone()), Box::new(Expr::int(1)));
                 let sqrt_part = Expr::Sqrt(Box::new(x2_plus_1.clone()));
-                
+
                 // (x/2)√(x²+1)
                 let x_over_2 = Expr::Div(Box::new(x.clone()), Box::new(Expr::int(2)));
                 let first_term = Expr::Mul(Box::new(x_over_2), Box::new(sqrt_part.clone()));
-                
+
                 // ln|x+√(x²+1)|
                 let x_plus_sqrt = Expr::Add(Box::new(x), Box::new(sqrt_part));
                 let ln_part = Expr::Ln(Box::new(Expr::Abs(Box::new(x_plus_sqrt))));
-                
+
                 // (1/2)ln|x+√(x²+1)|
                 let second_term = Expr::Div(Box::new(ln_part), Box::new(Expr::int(2)));
-                
+
                 let result = Expr::Add(Box::new(first_term), Box::new(second_term));
-                
+
                 return vec![RuleApplication {
                     result,
-                    justification: "∫√(x²+a²) dx = (x/2)√(x²+a²) + (a²/2)ln|x+√(x²+a²)|".to_string(),
+                    justification: "∫√(x²+a²) dx = (x/2)√(x²+a²) + (a²/2)ln|x+√(x²+a²)|"
+                        .to_string(),
                 }];
             }
             vec![]
@@ -3640,7 +3772,7 @@ fn integral_sqrt_x2_minus_a2() -> Rule {
             if let Expr::Integral { expr: inner, var } = expr {
                 // Match √(x²-a²)
                 if let Expr::Sqrt(sqrt_arg) = inner.as_ref() {
-                    if let Expr::Sub(left, right) = sqrt_arg.as_ref() {
+                    if let Expr::Sub(left, _right) = sqrt_arg.as_ref() {
                         // Check if it's x² - const
                         return matches!(left.as_ref(), Expr::Pow(base, exp)
                             if matches!(base.as_ref(), Expr::Var(v) if *v == *var)
@@ -3657,24 +3789,25 @@ fn integral_sqrt_x2_minus_a2() -> Rule {
                 let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
                 let x2_minus_1 = Expr::Sub(Box::new(x2), Box::new(Expr::int(1)));
                 let sqrt_part = Expr::Sqrt(Box::new(x2_minus_1));
-                
+
                 // (x/2)√(x²-1)
                 let x_over_2 = Expr::Div(Box::new(x.clone()), Box::new(Expr::int(2)));
                 let first_term = Expr::Mul(Box::new(x_over_2), Box::new(sqrt_part.clone()));
-                
+
                 // ln|x+√(x²-1)|
                 let x_plus_sqrt = Expr::Add(Box::new(x), Box::new(sqrt_part));
                 let ln_part = Expr::Ln(Box::new(Expr::Abs(Box::new(x_plus_sqrt))));
-                
+
                 // -(1/2)ln|x+√(x²-1)|
                 let second_term = Expr::Div(Box::new(ln_part), Box::new(Expr::int(2)));
                 let neg_second = Expr::Neg(Box::new(second_term));
-                
+
                 let result = Expr::Add(Box::new(first_term), Box::new(neg_second));
-                
+
                 return vec![RuleApplication {
                     result,
-                    justification: "∫√(x²-a²) dx = (x/2)√(x²-a²) - (a²/2)ln|x+√(x²-a²)|".to_string(),
+                    justification: "∫√(x²-a²) dx = (x/2)√(x²-a²) - (a²/2)ln|x+√(x²-a²)|"
+                        .to_string(),
                 }];
             }
             vec![]
@@ -3709,16 +3842,16 @@ fn integral_x_sqrt_a2_minus_x2() -> Rule {
                 let x = Expr::Var(*var);
                 let x2 = Expr::Pow(Box::new(x), Box::new(Expr::int(2)));
                 let one_minus_x2 = Expr::Sub(Box::new(Expr::int(1)), Box::new(x2));
-                
+
                 // (1-x²)^(3/2)
                 let three_halves = Expr::Div(Box::new(Expr::int(3)), Box::new(Expr::int(2)));
                 let power_part = Expr::Pow(Box::new(one_minus_x2), Box::new(three_halves));
-                
+
                 // -(1/3)(1-x²)^(3/2)
                 let one_third = Expr::Div(Box::new(Expr::int(1)), Box::new(Expr::int(3)));
                 let product = Expr::Mul(Box::new(one_third), Box::new(power_part));
                 let result = Expr::Neg(Box::new(product));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫x·√(a²-x²) dx = -(1/3)(a²-x²)^(3/2)".to_string(),
@@ -3759,13 +3892,13 @@ fn integral_inv_sqrt_x2_plus_a2() -> Rule {
                 let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
                 let x2_plus_1 = Expr::Add(Box::new(x2), Box::new(Expr::int(1)));
                 let sqrt_part = Expr::Sqrt(Box::new(x2_plus_1));
-                
+
                 // x+√(x²+1)
                 let x_plus_sqrt = Expr::Add(Box::new(x), Box::new(sqrt_part));
-                
+
                 // ln|x+√(x²+1)|
                 let result = Expr::Ln(Box::new(Expr::Abs(Box::new(x_plus_sqrt))));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫1/√(x²+a²) dx = ln|x+√(x²+a²)|".to_string(),
@@ -3808,13 +3941,13 @@ fn integral_inv_sqrt_x2_minus_a2() -> Rule {
                 let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
                 let x2_minus_1 = Expr::Sub(Box::new(x2), Box::new(Expr::int(1)));
                 let sqrt_part = Expr::Sqrt(Box::new(x2_minus_1));
-                
+
                 // x+√(x²-1)
                 let x_plus_sqrt = Expr::Add(Box::new(x), Box::new(sqrt_part));
-                
+
                 // ln|x+√(x²-1)|
                 let result = Expr::Ln(Box::new(Expr::Abs(Box::new(x_plus_sqrt))));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫1/√(x²-a²) dx = ln|x+√(x²-a²)|".to_string(),
@@ -3855,7 +3988,7 @@ fn integral_x_over_sqrt_x2_plus_a2() -> Rule {
                 let x2 = Expr::Pow(Box::new(x), Box::new(Expr::int(2)));
                 let x2_plus_1 = Expr::Add(Box::new(x2), Box::new(Expr::int(1)));
                 let result = Expr::Sqrt(Box::new(x2_plus_1));
-                
+
                 return vec![RuleApplication {
                     result,
                     justification: "∫x/√(x²+a²) dx = √(x²+a²)".to_string(),
@@ -3878,12 +4011,17 @@ fn limit_constant() -> Rule {
         name: "limit_constant",
         category: RuleCategory::Simplification,
         description: "lim c = c",
-        is_applicable: |expr, _| matches!(expr, Expr::Const(_)),
+        is_applicable: |expr, _| matches!(expr, Expr::Limit { expr: inner, .. } if matches!(inner.as_ref(), Expr::Const(_))),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "lim c = c (constant limit)".to_string(),
-            }]
+            if let Expr::Limit { expr: inner, .. } = expr {
+                if let Expr::Const(c) = inner.as_ref() {
+                    return vec![RuleApplication {
+                        result: Expr::Const(*c),
+                        justification: "lim c = c".to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 1,
@@ -3895,12 +4033,32 @@ fn limit_sum() -> Rule {
         name: "limit_sum",
         category: RuleCategory::Simplification,
         description: "lim(f+g) = lim f + lim g",
-        is_applicable: |expr, _| matches!(expr, Expr::Add(_, _)),
+        is_applicable: |expr, _| matches!(expr, Expr::Limit { expr: inner, .. } if matches!(inner.as_ref(), Expr::Add(_, _))),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "lim(f+g) = lim f + lim g (sum of limits)".to_string(),
-            }]
+            if let Expr::Limit {
+                expr: inner,
+                var,
+                approaching,
+            } = expr
+            {
+                if let Expr::Add(a, b) = inner.as_ref() {
+                    let lim_a = Expr::Limit {
+                        expr: a.clone(),
+                        var: *var,
+                        approaching: approaching.clone(),
+                    };
+                    let lim_b = Expr::Limit {
+                        expr: b.clone(),
+                        var: *var,
+                        approaching: approaching.clone(),
+                    };
+                    return vec![RuleApplication {
+                        result: Expr::Add(Box::new(lim_a), Box::new(lim_b)),
+                        justification: "lim(f+g) = lim f + lim g".to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: true,
         cost: 2,
@@ -3912,12 +4070,32 @@ fn limit_product() -> Rule {
         name: "limit_product",
         category: RuleCategory::Simplification,
         description: "lim(fg) = lim f · lim g",
-        is_applicable: |expr, _| matches!(expr, Expr::Mul(_, _)),
+        is_applicable: |expr, _| matches!(expr, Expr::Limit { expr: inner, .. } if matches!(inner.as_ref(), Expr::Mul(_, _))),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "lim(fg) = lim f · lim g (product of limits)".to_string(),
-            }]
+            if let Expr::Limit {
+                expr: inner,
+                var,
+                approaching,
+            } = expr
+            {
+                if let Expr::Mul(a, b) = inner.as_ref() {
+                    let lim_a = Expr::Limit {
+                        expr: a.clone(),
+                        var: *var,
+                        approaching: approaching.clone(),
+                    };
+                    let lim_b = Expr::Limit {
+                        expr: b.clone(),
+                        var: *var,
+                        approaching: approaching.clone(),
+                    };
+                    return vec![RuleApplication {
+                        result: Expr::Mul(Box::new(lim_a), Box::new(lim_b)),
+                        justification: "lim(fg) = lim f · lim g".to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: true,
         cost: 2,
@@ -3929,12 +4107,32 @@ fn limit_quotient() -> Rule {
         name: "limit_quotient",
         category: RuleCategory::Simplification,
         description: "lim(f/g) = lim f / lim g",
-        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        is_applicable: |expr, _| matches!(expr, Expr::Limit { expr: inner, .. } if matches!(inner.as_ref(), Expr::Div(_, _))),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "lim(f/g) = lim f / lim g (quotient of limits)".to_string(),
-            }]
+            if let Expr::Limit {
+                expr: inner,
+                var,
+                approaching,
+            } = expr
+            {
+                if let Expr::Div(a, b) = inner.as_ref() {
+                    let lim_a = Expr::Limit {
+                        expr: a.clone(),
+                        var: *var,
+                        approaching: approaching.clone(),
+                    };
+                    let lim_b = Expr::Limit {
+                        expr: b.clone(),
+                        var: *var,
+                        approaching: approaching.clone(),
+                    };
+                    return vec![RuleApplication {
+                        result: Expr::Div(Box::new(lim_a), Box::new(lim_b)),
+                        justification: "lim(f/g) = lim f / lim g".to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: true,
         cost: 2,
@@ -3946,12 +4144,27 @@ fn limit_power() -> Rule {
         name: "limit_power",
         category: RuleCategory::Simplification,
         description: "lim(f^n) = (lim f)^n",
-        is_applicable: |expr, _| matches!(expr, Expr::Pow(_, _)),
+        is_applicable: |expr, _| matches!(expr, Expr::Limit { expr: inner, .. } if matches!(inner.as_ref(), Expr::Pow(_, _))),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "lim(f^n) = (lim f)^n (power of limit)".to_string(),
-            }]
+            if let Expr::Limit {
+                expr: inner,
+                var,
+                approaching,
+            } = expr
+            {
+                if let Expr::Pow(base, exp) = inner.as_ref() {
+                    let lim_base = Expr::Limit {
+                        expr: base.clone(),
+                        var: *var,
+                        approaching: approaching.clone(),
+                    };
+                    return vec![RuleApplication {
+                        result: Expr::Pow(Box::new(lim_base), exp.clone()),
+                        justification: "lim(f^n) = (lim f)^n".to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: true,
         cost: 2,
@@ -3963,12 +4176,35 @@ fn limit_lhopital() -> Rule {
         name: "limit_lhopital",
         category: RuleCategory::Simplification,
         description: "L'Hôpital's rule for 0/0 or ∞/∞",
-        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
+        is_applicable: |expr, _| matches!(expr, Expr::Limit { expr: inner, .. } if matches!(inner.as_ref(), Expr::Div(_, _))),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "L'Hôpital's rule: lim(f/g) = lim(f'/g') for indeterminate forms".to_string(),
-            }]
+            if let Expr::Limit {
+                expr: inner,
+                var,
+                approaching,
+            } = expr
+            {
+                if let Expr::Div(n, d) = inner.as_ref() {
+                    let num_deriv = Expr::Derivative {
+                        expr: n.clone(),
+                        var: *var,
+                    };
+                    let den_deriv = Expr::Derivative {
+                        expr: d.clone(),
+                        var: *var,
+                    };
+                    let quotient = Expr::Div(Box::new(num_deriv), Box::new(den_deriv));
+                    return vec![RuleApplication {
+                        result: Expr::Limit {
+                            expr: Box::new(quotient),
+                            var: *var,
+                            approaching: approaching.clone(),
+                        },
+                        justification: "Apply L'Hôpital: lim(f/g)=lim(f'/g')".to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 3,
@@ -3980,12 +4216,38 @@ fn limit_squeeze() -> Rule {
         name: "limit_squeeze",
         category: RuleCategory::Simplification,
         description: "Squeeze theorem",
-        is_applicable: |expr, _| matches!(expr, Expr::Add(_, _) | Expr::Sub(_, _)),
+        is_applicable: |expr, _| {
+            if let Expr::Limit {
+                expr: inner,
+                approaching,
+                ..
+            } = expr
+            {
+                // Recognize classic sin(x)/x -> 1 as x->0
+                if matches!(approaching.as_ref(), Expr::Const(c) if c.is_zero()) {
+                    return matches!(inner.as_ref(), Expr::Div(num, den)
+                        if matches!(num.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(_)))
+                            && matches!(den.as_ref(), Expr::Var(vd)
+                                if matches!(num.as_ref(), Expr::Sin(arg) if matches!(arg.as_ref(), Expr::Var(vn) if vn == vd))));
+                }
+            }
+            false
+        },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Squeeze theorem: if g(x) ≤ f(x) ≤ h(x) and lim g = lim h = L, then lim f = L".to_string(),
-            }]
+            if let Expr::Limit { expr: inner, .. } = expr {
+                if let Expr::Div(num, den) = inner.as_ref() {
+                    if let (Expr::Sin(arg), Expr::Var(vd)) = (num.as_ref(), den.as_ref()) {
+                        if matches!(arg.as_ref(), Expr::Var(vn) if vn == vd) {
+                            return vec![RuleApplication {
+                                result: Expr::int(1),
+                                justification: "By squeeze theorem, lim_{x->0} sin x / x = 1"
+                                    .to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 3,
@@ -3999,10 +4261,25 @@ fn taylor_exp() -> Rule {
         description: "e^x = Σ x^n/n!",
         is_applicable: |expr, _| matches!(expr, Expr::Exp(_)),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "e^x = Σ(x^n/n!) for n=0 to ∞ (Taylor series)".to_string(),
-            }]
+            if let Expr::Exp(arg) = expr {
+                let x = *arg.clone();
+                let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let x3 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(3)));
+                let term2 = Expr::Div(Box::new(x2), Box::new(Expr::int(2)));
+                let term3 = Expr::Div(Box::new(x3), Box::new(Expr::int(6)));
+                let result = Expr::Add(
+                    Box::new(Expr::Add(
+                        Box::new(Expr::Add(Box::new(Expr::int(1)), Box::new(x))),
+                        Box::new(term2),
+                    )),
+                    Box::new(term3),
+                );
+                return vec![RuleApplication {
+                    result,
+                    justification: "Maclaurin expansion of e^x up to x^3".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: true,
         cost: 3,
@@ -4016,10 +4293,22 @@ fn taylor_sin() -> Rule {
         description: "sin(x) = Σ (-1)^n x^(2n+1)/(2n+1)!",
         is_applicable: |expr, _| matches!(expr, Expr::Sin(_)),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "sin(x) = Σ((-1)^n · x^(2n+1)/(2n+1)!) for n=0 to ∞ (Taylor series)".to_string(),
-            }]
+            if let Expr::Sin(arg) = expr {
+                let x = *arg.clone();
+                let x3 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(3)));
+                let x5 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(5)));
+                let term3 = Expr::Div(Box::new(x3), Box::new(Expr::int(6)));
+                let term5 = Expr::Div(Box::new(x5), Box::new(Expr::int(120)));
+                let result = Expr::Sub(
+                    Box::new(Expr::Sub(Box::new(x), Box::new(term3))),
+                    Box::new(term5),
+                );
+                return vec![RuleApplication {
+                    result,
+                    justification: "sin(x) ≈ x - x^3/6 - x^5/120".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: true,
         cost: 3,
@@ -4033,10 +4322,22 @@ fn taylor_cos() -> Rule {
         description: "cos(x) = Σ (-1)^n x^(2n)/(2n)!",
         is_applicable: |expr, _| matches!(expr, Expr::Cos(_)),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "cos(x) = Σ((-1)^n · x^(2n)/(2n)!) for n=0 to ∞ (Taylor series)".to_string(),
-            }]
+            if let Expr::Cos(arg) = expr {
+                let x = *arg.clone();
+                let x2 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(2)));
+                let x4 = Expr::Pow(Box::new(x.clone()), Box::new(Expr::int(4)));
+                let term2 = Expr::Div(Box::new(x2), Box::new(Expr::int(2)));
+                let term4 = Expr::Div(Box::new(x4), Box::new(Expr::int(24)));
+                let result = Expr::Add(
+                    Box::new(Expr::Sub(Box::new(Expr::int(1)), Box::new(term2))),
+                    Box::new(term4),
+                );
+                return vec![RuleApplication {
+                    result,
+                    justification: "cos(x) ≈ 1 - x^2/2 + x^4/24".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: true,
         cost: 3,
@@ -4050,10 +4351,26 @@ fn taylor_ln() -> Rule {
         description: "ln(1+x) = Σ (-1)^(n+1) x^n/n",
         is_applicable: |expr, _| matches!(expr, Expr::Ln(_)),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "ln(1+x) = Σ((-1)^(n+1) · x^n/n) for n=1 to ∞, |x| < 1 (Taylor series)".to_string(),
-            }]
+            if let Expr::Ln(arg) = expr {
+                if let Expr::Add(one, x) = arg.as_ref() {
+                    if matches!(one.as_ref(), Expr::Const(c) if c.is_one()) {
+                        let x_expr = *x.clone();
+                        let x2 = Expr::Pow(Box::new(x_expr.clone()), Box::new(Expr::int(2)));
+                        let x3 = Expr::Pow(Box::new(x_expr.clone()), Box::new(Expr::int(3)));
+                        let term2 = Expr::Div(Box::new(x2), Box::new(Expr::int(2)));
+                        let term3 = Expr::Div(Box::new(x3), Box::new(Expr::int(3)));
+                        let result = Expr::Sub(
+                            Box::new(Expr::Add(Box::new(x_expr), Box::new(term3))),
+                            Box::new(term2),
+                        );
+                        return vec![RuleApplication {
+                            result,
+                            justification: "ln(1+x) ≈ x - x^2/2 + x^3/3".to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
         },
         reversible: true,
         cost: 3,
@@ -4067,185 +4384,152 @@ fn maclaurin_1mx() -> Rule {
         description: "1/(1-x) = Σ x^n",
         is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "1/(1-x) = Σ(x^n) for n=0 to ∞, |x| < 1 (geometric series)".to_string(),
-            }]
+            if let Expr::Div(num, denom) = expr {
+                if matches!(num.as_ref(), Expr::Const(c) if c.is_one()) {
+                    if let Expr::Sub(one, x) = denom.as_ref() {
+                        if matches!(one.as_ref(), Expr::Const(c) if c.is_one()) {
+                            let x_expr = *x.clone();
+                            let x2 = Expr::Pow(Box::new(x_expr.clone()), Box::new(Expr::int(2)));
+                            let x3 = Expr::Pow(Box::new(x_expr.clone()), Box::new(Expr::int(3)));
+                            let partial = Expr::Add(
+                                Box::new(Expr::Add(
+                                    Box::new(Expr::int(1)),
+                                    Box::new(x_expr.clone()),
+                                )),
+                                Box::new(x2),
+                            );
+                            let result = Expr::Add(Box::new(partial), Box::new(x3));
+                            return vec![RuleApplication {
+                                result,
+                                justification: "Geometric series expansion up to x^3".to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
         },
         reversible: true,
         cost: 2,
     }
 }
-fn geometric_series() -> Rule {
-    Rule {
-        id: RuleId(448),
-        name: "geometric_series",
-        category: RuleCategory::Simplification,
-        description: "Σ ar^n = a/(1-r) for |r|<1",
-        is_applicable: |expr, _| matches!(expr, Expr::Div(_, _)),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Σ(a·r^n) = a/(1-r) for |r| < 1 (infinite geometric series)".to_string(),
-            }]
-        },
-        reversible: true,
-        cost: 2,
-    }
-}
-fn power_series_diff() -> Rule {
-    Rule {
-        id: RuleId(449),
-        name: "power_series_diff",
-        category: RuleCategory::Derivative,
-        description: "d/dx(Σa_n x^n) = Σ n·a_n x^(n-1)",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "d/dx(Σ(a_n·x^n)) = Σ(n·a_n·x^(n-1)) (term-by-term differentiation)".to_string(),
-            }]
-        },
-        reversible: true,
-        cost: 3,
-    }
-}
-fn power_series_int() -> Rule {
-    Rule {
-        id: RuleId(450),
-        name: "power_series_int",
-        category: RuleCategory::Integral,
-        description: "∫(Σa_n x^n)dx = Σ a_n x^(n+1)/(n+1)",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∫(Σ(a_n·x^n))dx = Σ(a_n·x^(n+1)/(n+1)) (term-by-term integration)".to_string(),
-            }]
-        },
-        reversible: true,
-        cost: 3,
-    }
-}
-fn partial_x() -> Rule {
-    Rule {
-        id: RuleId(451),
-        name: "partial_x",
-        category: RuleCategory::Derivative,
-        description: "∂f/∂x partial derivative",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∂f/∂x (partial derivative with respect to x)".to_string(),
-            }]
-        },
-        reversible: false,
-        cost: 2,
-    }
-}
-fn partial_y() -> Rule {
-    Rule {
-        id: RuleId(452),
-        name: "partial_y",
-        category: RuleCategory::Derivative,
-        description: "∂f/∂y partial derivative",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∂f/∂y (partial derivative with respect to y)".to_string(),
-            }]
-        },
-        reversible: false,
-        cost: 2,
-    }
-}
-fn partial_z() -> Rule {
-    Rule {
-        id: RuleId(453),
-        name: "partial_z",
-        category: RuleCategory::Derivative,
-        description: "∂f/∂z partial derivative",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∂f/∂z (partial derivative with respect to z)".to_string(),
-            }]
-        },
-        reversible: false,
-        cost: 2,
-    }
-}
-fn gradient() -> Rule {
-    Rule {
-        id: RuleId(454),
-        name: "gradient",
-        category: RuleCategory::Derivative,
-        description: "∇f = (∂f/∂x, ∂f/∂y, ∂f/∂z)",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∇f = (∂f/∂x, ∂f/∂y, ∂f/∂z) (gradient vector)".to_string(),
-            }]
-        },
-        reversible: false,
-        cost: 3,
-    }
-}
+#[allow(dead_code)]
 fn divergence_vec() -> Rule {
     Rule {
         id: RuleId(455),
         name: "divergence_vec",
         category: RuleCategory::Derivative,
         description: "∇·F divergence of vector field",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        is_applicable: |expr, _| matches!(expr, Expr::Vector(v) if v.len() == 3),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∇·F = ∂F₁/∂x + ∂F₂/∂y + ∂F₃/∂z (divergence)".to_string(),
-            }]
+            if let Expr::Vector(v) = expr {
+                if v.len() == 3 {
+                    let mut vars = Vec::new();
+                    v.iter().for_each(|e| collect_symbols(e, &mut vars));
+                    if vars.len() >= 3 {
+                        let dx = differentiate(&v[0], vars[0]);
+                        let dy = differentiate(&v[1], vars[1]);
+                        let dz = differentiate(&v[2], vars[2]);
+                        let result = Expr::Add(
+                            Box::new(Expr::Add(Box::new(dx), Box::new(dy))),
+                            Box::new(dz),
+                        );
+                        return vec![RuleApplication {
+                            result,
+                            justification: "∇·F = ∂F₁/∂x + ∂F₂/∂y + ∂F₃/∂z (divergence)"
+                                .to_string(),
+                        }];
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 3,
     }
 }
+#[allow(dead_code)]
 fn curl_vec() -> Rule {
     Rule {
         id: RuleId(456),
         name: "curl_vec",
         category: RuleCategory::Derivative,
         description: "∇×F curl of vector field",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        is_applicable: |expr, _| matches!(expr, Expr::Vector(v) if v.len() == 3),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∇×F = curl(F) = (∂F₃/∂y - ∂F₂/∂z, ∂F₁/∂z - ∂F₃/∂x, ∂F₂/∂x - ∂F₁/∂y)".to_string(),
-            }]
+            if let Expr::Vector(v) = expr {
+                if v.len() == 3 {
+                    let mut vars = Vec::new();
+                    v.iter().for_each(|e| collect_symbols(e, &mut vars));
+                    if vars.len() < 3 {
+                        return vec![];
+                    }
+                    let fx = v[0].clone();
+                    let fy = v[1].clone();
+                    let fz = v[2].clone();
+                    let c1 = Expr::Sub(
+                        Box::new(differentiate(&fz, vars[1])),
+                        Box::new(differentiate(&fy, vars[2])),
+                    );
+                    let c2 = Expr::Sub(
+                        Box::new(differentiate(&fx, vars[2])),
+                        Box::new(differentiate(&fz, vars[0])),
+                    );
+                    let c3 = Expr::Sub(
+                        Box::new(differentiate(&fy, vars[0])),
+                        Box::new(differentiate(&fx, vars[1])),
+                    );
+                    let result = Expr::Vector(vec![c1, c2, c3]);
+                    return vec![RuleApplication {
+                        result,
+                        justification: "∇×F = (∂F₃/∂y - ∂F₂/∂z, ∂F₁/∂z - ∂F₃/∂x, ∂F₂/∂x - ∂F₁/∂y)"
+                            .to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 4,
     }
 }
+#[allow(dead_code)]
 fn laplacian() -> Rule {
     Rule {
         id: RuleId(457),
         name: "laplacian",
         category: RuleCategory::Derivative,
         description: "∇²f = ∂²f/∂x² + ∂²f/∂y² + ∂²f/∂z²",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        is_applicable: |expr, _| !matches!(expr, Expr::Vector(_)),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∇²f = ∂²f/∂x² + ∂²f/∂y² + ∂²f/∂z² (Laplacian)".to_string(),
-            }]
+            let mut vars = Vec::new();
+            collect_symbols(expr, &mut vars);
+            if vars.is_empty() {
+                return vec![];
+            }
+            let mut sum: Option<Expr> = None;
+            for v in vars.iter().take(3) {
+                let second = differentiate(&differentiate(expr, *v), *v);
+                sum = Some(match sum {
+                    Some(acc) => Expr::Add(Box::new(acc), Box::new(second)),
+                    None => second,
+                });
+            }
+            if let Some(result) = sum {
+                vec![RuleApplication {
+                    result,
+                    justification: "∇²f = Σ ∂²f/∂x_i² over available variables (Laplacian)"
+                        .to_string(),
+                }]
+            } else {
+                vec![]
+            }
         },
         reversible: false,
         cost: 4,
     }
 }
+#[allow(dead_code)]
 fn chain_multivariable() -> Rule {
     Rule {
         id: RuleId(458),
@@ -4254,200 +4538,115 @@ fn chain_multivariable() -> Rule {
         description: "Multivariable chain rule",
         is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "dz/dt = ∂z/∂x · dx/dt + ∂z/∂y · dy/dt (multivariable chain rule)".to_string(),
-            }]
+            if let Expr::Derivative { expr: inner, var } = expr {
+                let result = differentiate(inner, *var);
+                return vec![RuleApplication {
+                    result,
+                    justification: "Chain rule: d/dt f(g(t)) = f'(g(t))·g'(t)".to_string(),
+                }];
+            }
+            vec![]
         },
         reversible: false,
         cost: 4,
     }
 }
+#[allow(dead_code)]
 fn implicit_diff() -> Rule {
     Rule {
         id: RuleId(459),
         name: "implicit_diff",
         category: RuleCategory::Derivative,
         description: "Implicit differentiation",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        is_applicable: |expr, _| matches!(expr, Expr::Equation { .. }),
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Implicit differentiation: differentiate both sides with respect to x".to_string(),
-            }]
+            if let Expr::Equation { lhs, rhs } = expr {
+                let mut vars = Vec::new();
+                collect_symbols(lhs, &mut vars);
+                collect_symbols(rhs, &mut vars);
+                if let Some(var) = vars.first() {
+                    let dl = differentiate(lhs, *var);
+                    let dr = differentiate(rhs, *var);
+                    return vec![RuleApplication {
+                        result: Expr::Equation {
+                            lhs: Box::new(dl),
+                            rhs: Box::new(dr),
+                        },
+                        justification:
+                            "Implicit differentiation with respect to the first free variable"
+                                .to_string(),
+                    }];
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 3,
     }
 }
+#[allow(dead_code)]
 fn total_differential() -> Rule {
     Rule {
         id: RuleId(460),
         name: "total_differential",
         category: RuleCategory::Derivative,
         description: "df = ∂f/∂x dx + ∂f/∂y dy",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        is_applicable: |expr, _| !matches!(expr, Expr::Vector(_)),
         apply: |expr, _| {
+            let mut vars = Vec::new();
+            collect_symbols(expr, &mut vars);
+            if vars.is_empty() {
+                return vec![];
+            }
+            let partials: Vec<Expr> = vars.iter().map(|v| differentiate(expr, *v)).collect();
             vec![RuleApplication {
-                result: expr.clone(),
-                justification: "df = ∂f/∂x dx + ∂f/∂y dy (total differential)".to_string(),
+                result: Expr::Vector(partials),
+                justification: "df coefficients (∂f/∂vars) captured as a vector".to_string(),
             }]
         },
         reversible: false,
         cost: 3,
     }
 }
+#[allow(dead_code)]
 fn directional_derivative() -> Rule {
     Rule {
         id: RuleId(461),
         name: "directional_derivative",
         category: RuleCategory::Derivative,
         description: "D_u f = ∇f · u",
-        is_applicable: |expr, _| matches!(expr, Expr::Derivative { .. }),
+        is_applicable: |expr, _| match expr {
+            Expr::Mul(_, b) => matches!(b.as_ref(), Expr::Vector(_)),
+            _ => false,
+        },
         apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "D_u f = ∇f · u (directional derivative in direction u)".to_string(),
-            }]
+            if let Expr::Mul(f, dir) = expr {
+                if let Expr::Vector(dir_vec) = dir.as_ref() {
+                    let mut vars = Vec::new();
+                    collect_symbols(f, &mut vars);
+                    if vars.len() == dir_vec.len() {
+                        let mut sum: Option<Expr> = None;
+                        for (v_sym, u) in vars.iter().zip(dir_vec.iter()) {
+                            let part =
+                                Expr::Mul(Box::new(differentiate(f, *v_sym)), Box::new(u.clone()));
+                            sum = Some(match sum {
+                                Some(acc) => Expr::Add(Box::new(acc), Box::new(part)),
+                                None => part,
+                            });
+                        }
+                        if let Some(result) = sum {
+                            return vec![RuleApplication {
+                                result,
+                                justification: "Directional derivative D_u f = ∇f · u".to_string(),
+                            }];
+                        }
+                    }
+                }
+            }
+            vec![]
         },
         reversible: false,
         cost: 3,
-    }
-}
-fn double_integral() -> Rule {
-    Rule {
-        id: RuleId(462),
-        name: "double_integral",
-        category: RuleCategory::Integral,
-        description: "∬∬f dA double integral",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∬∬f(x,y) dA = ∫∫f(x,y) dy dx (double integral)".to_string(),
-            }]
-        },
-        reversible: false,
-        cost: 4,
-    }
-}
-fn triple_integral() -> Rule {
-    Rule {
-        id: RuleId(463),
-        name: "triple_integral",
-        category: RuleCategory::Integral,
-        description: "∭∭∭f dV triple integral",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∭∭∭f(x,y,z) dV = ∫∫∫f(x,y,z) dz dy dx (triple integral)".to_string(),
-            }]
-        },
-        reversible: false,
-        cost: 5,
-    }
-}
-fn line_integral() -> Rule {
-    Rule {
-        id: RuleId(464),
-        name: "line_integral",
-        category: RuleCategory::Integral,
-        description: "∫_C F·dr line integral",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∫_C F·dr (line integral of vector field along curve C)".to_string(),
-            }]
-        },
-        reversible: false,
-        cost: 4,
-    }
-}
-fn surface_integral() -> Rule {
-    Rule {
-        id: RuleId(465),
-        name: "surface_integral",
-        category: RuleCategory::Integral,
-        description: "∬∬_S F·dS surface integral",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∬∬_S F·dS (surface integral of vector field over surface S)".to_string(),
-            }]
-        },
-        reversible: false,
-        cost: 5,
-    }
-}
-fn greens_theorem() -> Rule {
-    Rule {
-        id: RuleId(466),
-        name: "greens_theorem",
-        category: RuleCategory::Integral,
-        description: "Green's theorem: ∮_C = ∬∬_D",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Green's theorem: ∮_C (P dx + Q dy) = ∬∬_D (∂Q/∂x - ∂P/∂y) dA".to_string(),
-            }]
-        },
-        reversible: true,
-        cost: 4,
-    }
-}
-fn stokes_theorem() -> Rule {
-    Rule {
-        id: RuleId(467),
-        name: "stokes_theorem",
-        category: RuleCategory::Integral,
-        description: "Stokes' theorem",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Stokes' theorem: ∮_C F·dr = ∬∬_S (∇×F)·dS".to_string(),
-            }]
-        },
-        reversible: true,
-        cost: 5,
-    }
-}
-fn divergence_theorem() -> Rule {
-    Rule {
-        id: RuleId(468),
-        name: "divergence_theorem",
-        category: RuleCategory::Integral,
-        description: "Divergence theorem",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "Divergence theorem (Gauss): ∬∬∬_V (∇·F) dV = ∬∬_S F·dS".to_string(),
-            }]
-        },
-        reversible: true,
-        cost: 5,
-    }
-}
-fn jacobian_transform() -> Rule {
-    Rule {
-        id: RuleId(469),
-        name: "jacobian_transform",
-        category: RuleCategory::Integral,
-        description: "Jacobian coordinate transform",
-        is_applicable: |expr, _| matches!(expr, Expr::Integral { .. }),
-        apply: |expr, _| {
-            vec![RuleApplication {
-                result: expr.clone(),
-                justification: "∫∫f(x,y) dx dy = ∫∫f(u,v) |J| du dv where J = ∂(x,y)/∂(u,v) (Jacobian)".to_string(),
-            }]
-        },
-        reversible: false,
-        cost: 4,
     }
 }
 
@@ -4455,7 +4654,7 @@ fn jacobian_transform() -> Rule {
 // Symbolic Differentiation Function
 // ============================================================================
 
-use mm_core::{Rational, Symbol};
+use mm_core::Rational;
 
 /// Symbolically differentiate an expression with respect to a variable.
 /// Returns the derivative expression.
@@ -4880,16 +5079,16 @@ mod tests {
     fn test_integral_power_rule() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫x² dx should give x³/3
         let expr = Expr::Integral {
             expr: Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)))),
             var: x,
         };
-        
+
         let rule = integral_power();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -4900,39 +5099,42 @@ mod tests {
     fn test_integral_constant() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫5 dx should give 5x
         let expr = Expr::Integral {
             expr: Box::new(Expr::int(5)),
             var: x,
         };
-        
+
         let rule = integral_constant();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
-        assert_eq!(results[0].result, Expr::Mul(Box::new(Expr::int(5)), Box::new(Expr::Var(x))));
+        assert_eq!(
+            results[0].result,
+            Expr::Mul(Box::new(Expr::int(5)), Box::new(Expr::Var(x)))
+        );
     }
 
     #[test]
     fn test_integral_constant_multiple() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫3x² dx should give 3·∫x² dx
         let expr = Expr::Integral {
             expr: Box::new(Expr::Mul(
                 Box::new(Expr::int(3)),
-                Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2))))
+                Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)))),
             )),
             var: x,
         };
-        
+
         let rule = integral_constant_multiple();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -4944,19 +5146,19 @@ mod tests {
     fn test_integral_sum() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫(x² + x) dx should split into ∫x² dx + ∫x dx
         let expr = Expr::Integral {
             expr: Box::new(Expr::Add(
                 Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)))),
-                Box::new(Expr::Var(x))
+                Box::new(Expr::Var(x)),
             )),
             var: x,
         };
-        
+
         let rule = integral_sum();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -4967,16 +5169,16 @@ mod tests {
     fn test_integral_exp() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫e^x dx should give e^x
         let expr = Expr::Integral {
             expr: Box::new(Expr::Exp(Box::new(Expr::Var(x)))),
             var: x,
         };
-        
+
         let rule = integral_exp();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -4987,16 +5189,16 @@ mod tests {
     fn test_integral_sin() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫sin(x) dx should give -cos(x)
         let expr = Expr::Integral {
             expr: Box::new(Expr::Sin(Box::new(Expr::Var(x)))),
             var: x,
         };
-        
+
         let rule = integral_sin();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -5007,16 +5209,16 @@ mod tests {
     fn test_integral_cos() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫cos(x) dx should give sin(x)
         let expr = Expr::Integral {
             expr: Box::new(Expr::Cos(Box::new(Expr::Var(x)))),
             var: x,
         };
-        
+
         let rule = integral_cos();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -5027,19 +5229,19 @@ mod tests {
     fn test_integral_difference() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫(x² - x) dx should split into ∫x² dx - ∫x dx
         let expr = Expr::Integral {
             expr: Box::new(Expr::Sub(
                 Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)))),
-                Box::new(Expr::Var(x))
+                Box::new(Expr::Var(x)),
             )),
             var: x,
         };
-        
+
         let rule = integral_difference();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -5050,16 +5252,16 @@ mod tests {
     fn test_integral_tan() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫tan(x) dx should give -ln|cos(x)|
         let expr = Expr::Integral {
             expr: Box::new(Expr::Tan(Box::new(Expr::Var(x)))),
             var: x,
         };
-        
+
         let rule = integral_tan();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -5070,22 +5272,22 @@ mod tests {
     fn test_integral_sec2() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫sec²(x) dx = ∫1/cos²(x) dx should give tan(x)
         let expr = Expr::Integral {
             expr: Box::new(Expr::Div(
                 Box::new(Expr::int(1)),
                 Box::new(Expr::Pow(
                     Box::new(Expr::Cos(Box::new(Expr::Var(x)))),
-                    Box::new(Expr::int(2))
-                ))
+                    Box::new(Expr::int(2)),
+                )),
             )),
             var: x,
         };
-        
+
         let rule = integral_sec2();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -5096,22 +5298,22 @@ mod tests {
     fn test_integral_csc2() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫csc²(x) dx = ∫1/sin²(x) dx should give -cot(x)
         let expr = Expr::Integral {
             expr: Box::new(Expr::Div(
                 Box::new(Expr::int(1)),
                 Box::new(Expr::Pow(
                     Box::new(Expr::Sin(Box::new(Expr::Var(x)))),
-                    Box::new(Expr::int(2))
-                ))
+                    Box::new(Expr::int(2)),
+                )),
             )),
             var: x,
         };
-        
+
         let rule = integral_csc2();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -5122,19 +5324,19 @@ mod tests {
     fn test_integration_by_parts() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫x·e^x dx should give x·e^x - e^x
         let expr = Expr::Integral {
             expr: Box::new(Expr::Mul(
                 Box::new(Expr::Var(x)),
-                Box::new(Expr::Exp(Box::new(Expr::Var(x))))
+                Box::new(Expr::Exp(Box::new(Expr::Var(x)))),
             )),
             var: x,
         };
-        
+
         let rule = integration_by_parts();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -5145,20 +5347,20 @@ mod tests {
     fn test_u_substitution() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫2x·e^(x²) dx should give e^(x²)
         let x_squared = Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)));
         let expr = Expr::Integral {
             expr: Box::new(Expr::Mul(
                 Box::new(Expr::Mul(Box::new(Expr::int(2)), Box::new(Expr::Var(x)))),
-                Box::new(Expr::Exp(Box::new(x_squared.clone())))
+                Box::new(Expr::Exp(Box::new(x_squared.clone()))),
             )),
             var: x,
         };
-        
+
         let rule = u_substitution();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -5169,22 +5371,22 @@ mod tests {
     fn test_partial_fractions() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫1/(x²-1) dx should give (1/2)ln|(x-1)/(x+1)|
         let expr = Expr::Integral {
             expr: Box::new(Expr::Div(
                 Box::new(Expr::int(1)),
                 Box::new(Expr::Sub(
                     Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)))),
-                    Box::new(Expr::int(1))
-                ))
+                    Box::new(Expr::int(1)),
+                )),
             )),
             var: x,
         };
-        
+
         let rule = partial_fractions();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
@@ -5195,22 +5397,22 @@ mod tests {
     fn test_trig_substitution() {
         let mut symbols = SymbolTable::new();
         let x = symbols.intern("x");
-        
+
         // ∫1/√(1-x²) dx should give arcsin(x)
         let expr = Expr::Integral {
             expr: Box::new(Expr::Div(
                 Box::new(Expr::int(1)),
                 Box::new(Expr::Sqrt(Box::new(Expr::Sub(
                     Box::new(Expr::int(1)),
-                    Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2))))
-                ))))
+                    Box::new(Expr::Pow(Box::new(Expr::Var(x)), Box::new(Expr::int(2)))),
+                )))),
             )),
             var: x,
         };
-        
+
         let rule = trig_substitution();
         let ctx = RuleContext::default();
-        
+
         assert!((rule.is_applicable)(&expr, &ctx));
         let results = (rule.apply)(&expr, &ctx);
         assert!(!results.is_empty());
