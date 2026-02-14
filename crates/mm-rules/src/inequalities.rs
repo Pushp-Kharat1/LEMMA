@@ -11,6 +11,21 @@ use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational, Symbol, SymbolTable};
 use std::sync::{Mutex, OnceLock};
 
+/// Interns a symbol name into a global/shared symbol table and returns its canonical `Symbol`.
+///
+/// This ensures repeated requests with the same `name` yield the same `Symbol`.
+///
+/// # Panics
+///
+/// Panics if the global symbol interner's mutex is poisoned.
+///
+/// # Examples
+///
+/// ```rust
+/// let s1 = intern_symbol("x");
+/// let s2 = intern_symbol("x");
+/// assert_eq!(s1, s2);
+/// ```
 fn intern_symbol(name: &str) -> Symbol {
     static INTERNER: OnceLock<Mutex<SymbolTable>> = OnceLock::new();
     let m = INTERNER.get_or_init(|| Mutex::new(SymbolTable::new()));
@@ -1252,9 +1267,9 @@ fn jensen_convex() -> Rule {
 }
 
 // Jensen's inequality for concave functions
-/// Produces a rule encoding Jensen's inequality for concave functions: f((x + y)/2) >= (f(x) + f(y))/2.
+/// Encodes Jensen's inequality for concave functions: f((x + y)/2) ≥ (f(x) + f(y))/2.
 ///
-/// The rule is applicable to expressions that are additions or divisions and, when applied, returns a single RuleApplication that preserves the input expression and includes a justification referencing Jensen's inequality for concave f.
+/// Produces a single rule application that yields the inequality and carries the justification "Jensen concave".
 ///
 /// # Examples
 ///
@@ -1291,9 +1306,10 @@ fn jensen_concave() -> Rule {
 }
 
 // Weighted Jensen
-/// Constructs the Weighted Jensen inequality rule for convex functions.
+/// Constructs the weighted Jensen inequality rule for convex functions.
 ///
-/// The rule represents the inequality f(Σ w_i · x_i) ≤ Σ w_i · f(x_i) for convex f with weights w_i summing to 1; it matches expressions that look like weighted sums and returns a placeholder RuleApplication preserving the original expression with a justification.
+/// The rule matches expressions that represent a weighted average Σ w_i·x_i (with Σ w_i = 1)
+/// and yields the inequality f(Σ w_i·x_i) ≤ Σ w_i·f(x_i) as a placeholder `RuleApplication`.
 ///
 /// # Examples
 ///
@@ -1366,9 +1382,9 @@ fn chebyshev_sum() -> Rule {
 }
 
 // Power mean inequality
-/// Constructs the power mean inequality rule which encodes that the power mean M_p is less than or equal to M_q when p ≤ q.
+/// Creates the power mean inequality rule asserting that the power mean M_p is less than or equal to M_q when p ≤ q.
 ///
-/// This rule matches expressions that are powers or divisions and, when applied, returns a RuleApplication preserving the input expression and providing a justification referencing the power mean inequality.
+/// When applied to a matching expression, the rule produces a `RuleApplication` whose result is the inequality `M_p ≤ M_q` and includes a textual justification.
 ///
 /// # Examples
 ///
@@ -1399,9 +1415,9 @@ fn power_mean_inequality() -> Rule {
 }
 
 // Muirhead's inequality
-/// Constructs the Muirhead inequality rule for reasoning about symmetric sums when one exponent vector majorizes another.
+/// Creates the Muirhead inequality rule for comparing symmetric sums when one exponent vector majorizes another.
 ///
-/// The rule is applicable to additive or multiplicative expressions and, upon application, produces the original expression together with a justification referencing Muirhead's majorization condition.
+/// The rule matches additive or multiplicative symmetric-sum expressions and yields a Gte relation between two interned symbolic symmetric-sum placeholders with a justification referencing Muirhead's majorization.
 ///
 /// # Examples
 ///
@@ -1431,40 +1447,21 @@ fn muirhead_inequality() -> Rule {
 }
 
 // Schur's inequality
-/// Creates the rule encoding Schur's inequality.
-
+/// Creates a Rule encoding Schur's inequality.
 ///
-
-/// Schur's inequality: for nonnegative r and real numbers x,y,z,
-
-/// Σ x^r (x - y)(x - z) ≥ 0 (summed cyclically).
-
+/// Schur's inequality: for real x, y, z and r ≥ 0,
+/// Σ x^r (x - y)(x - z) ≥ 0 (cyclic sum).
 ///
-
-/// # Returns
-
+/// The rule uses a simple applicability heuristic that matches additive or
+/// multiplicative expressions and, when applied, produces a `>= 0` bound with
+/// an explanatory justification.
 ///
-
-/// The `Rule` representing Schur's inequality (id 521), with an applicability
-
-/// heuristic for additive or multiplicative expressions and a justification
-
-/// string produced on application.
-
-///
-
 /// # Examples
-
 ///
-
 /// ```
-
 /// let rule = schur_inequality();
-
 /// assert_eq!(rule.id, RuleId(521));
-
 /// assert_eq!(rule.name, "schur_inequality");
-
 /// ```
 fn schur_inequality() -> Rule {
     Rule {
@@ -1488,10 +1485,11 @@ fn schur_inequality() -> Rule {
 }
 
 // Nesbitt's inequality
-/// Nesbitt's inequality rule that yields the constant 3/2 as a lower bound.
+/// Produces a Rule implementing Nesbitt's inequality for expressions of the form
+/// `a/(b+c) + b/(a+c) + c/(a+b)`.
 ///
-/// When applied to expressions of the form a/(b+c) + b/(a+c) + c/(a+b), this rule produces
-/// an application with result 3/2 and a justification string referencing Nesbitt's inequality.
+/// When this rule is applied to that sum it yields the constant `3/2` as a lower bound
+/// and includes a justification string referencing Nesbitt's inequality.
 ///
 /// # Examples
 ///
@@ -1520,12 +1518,9 @@ fn nesbitt_inequality() -> Rule {
 }
 
 // Rearrangement inequality
-/// Produces the rearrangement inequality rule for sums/products.
+/// Produces a rule encoding the rearrangement inequality for sums or products.
 ///
-/// Returns a `Rule` that matches addition or multiplication expressions and,
-/// when applied, yields the same expression with a justification stating that
-/// the sum of pairwise products is maximized when the two sequences are sorted
-/// in the same order.
+/// When applied to an expression representing sums or pairwise products, the rule produces an inequality asserting that the sum of pairwise products is maximized when the two sequences are ordered the same way (i.e., the sum with aligned order is greater than or equal to the sum with reversed pairing).
 ///
 /// # Examples
 ///
@@ -1555,12 +1550,9 @@ fn rearrangement_inequality() -> Rule {
 }
 
 // Young's inequality
-/// Constructs a Rule for Young's inequality: for conjugate exponents p,q with 1/p + 1/q = 1,
-/// it asserts ab ≤ a^p/p + b^q/q.
+/// Creates a Rule encoding Young's inequality: for conjugate exponents `p` and `q` with `1/p + 1/q = 1`, it gives the bound `a*b ≤ a^p/p + b^q/q`.
 ///
-/// The produced Rule is categorized as an inequality, matches product or sum expressions
-/// (Expr::Mul or Expr::Add) as applicable, and when applied returns the original expression
-/// together with a justification string referencing Young's inequality. The rule is not reversible.
+/// The rule is applicable to product or sum expressions and, when applied, returns an inequality of the form `a*b ≤ a^p/p + b^q/q` together with a justification string referencing Young's inequality.
 ///
 /// # Examples
 ///
@@ -1570,7 +1562,19 @@ fn rearrangement_inequality() -> Rule {
 /// assert_eq!(r.name, "young_inequality");
 /// let expr = Expr::Mul(Box::new(Expr::Var("a".into())), Box::new(Expr::Var("b".into())));
 /// let apps = (r.apply)(&expr, &Default::default());
-/// assert_eq!(apps[0].result, expr);
+/// assert_eq!(apps[0].result, Expr::Lte(
+///     Box::new(Expr::Mul(Box::new(Expr::Var(intern_symbol("a"))), Box::new(Expr::Var(intern_symbol("b"))))),
+///     Box::new(Expr::Add(
+///         Box::new(Expr::Div(
+///             Box::new(Expr::Pow(Box::new(Expr::Var(intern_symbol("a"))), Box::new(Expr::Var(intern_symbol("p"))))),
+///             Box::new(Expr::Var(intern_symbol("p"))),
+///         )),
+///         Box::new(Expr::Div(
+///             Box::new(Expr::Pow(Box::new(Expr::Var(intern_symbol("b"))), Box::new(Expr::Var(intern_symbol("q"))))),
+///             Box::new(Expr::Var(intern_symbol("q"))),
+///         )),
+///     )),
+/// ));
 /// assert!(apps[0].justification.contains("Young"));
 /// ```
 fn young_inequality() -> Rule {
@@ -1609,15 +1613,14 @@ fn young_inequality() -> Rule {
 }
 
 // Minkowski's inequality
-/// Constructs the Minkowski inequality rule for p ≥ 1.
+/// Implements the Minkowski inequality ||a + b||_p ≤ ||a||_p + ||b||_p for p ≥ 1.
 ///
-/// The returned rule represents the inequality ||a + b||_p ≤ ||a||_p + ||b||_p and is intended to match expressions involving vector sums or p-norm-like powers; its application produces a justification string asserting Minkowski's inequality for p ≥ 1.
+/// Matches expressions representing vector sums or p-norm-like powers and produces a RuleApplication that bounds the p-norm of the sum by the sum of p-norms; the produced application's justification includes "Minkowski".
 ///
 /// # Examples
 ///
 /// ```
 /// let rule = minkowski_inequality();
-/// // rule id and a sample justification produced by `apply`
 /// assert_eq!(rule.id, RuleId(525));
 /// let apps = (rule.apply)(&Expr::Add(Box::new(Expr::Var("a".into())), Box::new(Expr::Var("b".into()))), &Default::default());
 /// assert!(apps.iter().any(|app| app.justification.contains("Minkowski")));

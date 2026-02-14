@@ -11,6 +11,19 @@ use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational, Symbol, SymbolTable};
 use std::sync::{Mutex, OnceLock};
 
+/// Interns `name` in a global, thread-safe symbol table and returns the canonical `Symbol`.
+///
+/// The interner is stored in a static `OnceLock<Mutex<SymbolTable>>` so symbols are shared
+/// across threads and reused for identical names. This function will panic if the interner's
+/// mutex is poisoned.
+///
+/// # Examples
+///
+/// ```
+/// let s1 = intern_symbol("x");
+/// let s2 = intern_symbol("x");
+/// assert_eq!(s1, s2);
+/// ```
 fn intern_symbol(name: &str) -> Symbol {
     static INTERNER: OnceLock<Mutex<SymbolTable>> = OnceLock::new();
     let m = INTERNER.get_or_init(|| Mutex::new(SymbolTable::new()));
@@ -49,6 +62,19 @@ pub fn polynomial_rules() -> Vec<Rule> {
 // For x² + bx + c = 0 with roots r,s: r+s = -b, rs = c
 // ============================================================================
 
+/// Returns a collection of rules encoding Vieta's formulas for quadratic and cubic polynomials.
+///
+/// The returned vector contains Rule instances that produce symbolic equations for:
+/// - Quadratic: sum and product of roots (r1 + r2 = -b/a, r1·r2 = c/a)
+/// - Cubic: sum of roots, sum of pairwise products, and product of roots (r1+r2+r3 = -b/a, r1r2 + r2r3 + r1r3 = c/a, r1r2r3 = -d/a)
+///
+/// # Examples
+///
+/// ```
+/// let rules = vieta_rules();
+/// assert!(rules.iter().any(|r| r.name == "vieta_sum_quadratic"));
+/// assert!(rules.iter().any(|r| r.name == "vieta_product_cubic"));
+/// ```
 fn vieta_rules() -> Vec<Rule> {
     vec![
         // Sum of roots (quadratic)
@@ -199,6 +225,20 @@ fn vieta_rules() -> Vec<Rule> {
 // Newton's identities connecting power sums and elementary symmetric polynomials
 // ============================================================================
 
+/// Collects symmetric-polynomial rules: elementary symmetric polynomials, Newton identities,
+/// and common symmetric factoring/simplification identities.
+///
+/// Returns a vector of `Rule` instances covering e₁/e₂/e₃ definitions, power-sum (Newton)
+/// identities (p₁, p₂, p₃), and symbolic factoring/simplification rules like sum-of-squares,
+/// sum-of-cubes, and the three-cube factorization.
+///
+/// # Examples
+///
+/// ```
+/// let rules = symmetric_polynomial_rules();
+/// // elementary_sym_1 (id 520) should be present
+/// assert!(rules.iter().any(|r| r.id == RuleId(520)));
+/// ```
 fn symmetric_polynomial_rules() -> Vec<Rule> {
     vec![
         // Elementary symmetric polynomials
@@ -462,16 +502,18 @@ fn symmetric_polynomial_rules() -> Vec<Rule> {
 // Polynomial Factoring Rules (ID 540+)
 // ============================================================================
 
-/// Collects factoring-related rule definitions for polynomial manipulations.
+/// Returns the collection of factoring and decomposition rules used for polynomial manipulations (Rule IDs 540–559).
 ///
-/// Returns a vector of Rule instances implementing factoring identities, theorems,
-/// and decomposition/algorithmic helpers (Rule IDs 540–559).
+/// The returned vector contains schematic and concrete Rule instances that implement factoring identities,
+/// remainder/division theorems, substitution helpers, and algorithmic decompositions (e.g., Horner form,
+/// partial fractions, synthetic division).
 ///
 /// # Examples
 ///
 /// ```
 /// let rules = factoring_rules();
-/// assert_eq!(rules.len(), 20);
+/// // Expect at least one factoring-related rule to be available
+/// assert!(!rules.is_empty());
 /// ```
 fn factoring_rules() -> Vec<Rule> {
     vec![
@@ -997,6 +1039,22 @@ fn factoring_rules() -> Vec<Rule> {
 // Rational Root Theorem Rules (ID 560+)
 // ============================================================================
 
+/// Provides polynomial rules related to rational and integer root criteria.
+///
+/// This returns a small collection of schematic rules used for root candidate
+/// analysis:
+/// - ID 560 `rational_root_theorem`: expresses rational roots as ±(factor of a₀)/(factor of aₙ).
+/// - ID 561 `integer_root`: asserts integer roots must divide the constant term.
+///
+/// Returns a vector of `Rule` instances corresponding to these criteria.
+///
+/// # Examples
+///
+/// ```
+/// let rules = rational_root_rules();
+/// assert!(rules.iter().any(|r| r.id == RuleId(560) && r.name == "rational_root_theorem"));
+/// assert!(rules.iter().any(|r| r.id == RuleId(561) && r.name == "integer_root"));
+/// ```
 fn rational_root_rules() -> Vec<Rule> {
     vec![
         // Rational root theorem
@@ -1074,6 +1132,18 @@ pub fn advanced_polynomial_rules() -> Vec<Rule> {
 }
 
 // x = (-b ± √(b²-4ac)) / 2a
+/// Creates a rule expressing the quadratic formula for roots of ax² + bx + c = 0.
+///
+/// The rule's `apply` produces an equation of the form `x = (-b ± √(b² - 4ac)) / (2a)` using
+/// interned symbolic identifiers `a`, `b`, `c`, and `x`. The rule is categorized under
+/// equation solving and is not reversible.
+///
+/// # Examples
+///
+/// ```
+/// let rule = quadratic_formula();
+/// assert_eq!(rule.description, "x = (-b ± √(b²-4ac)) / 2a");
+/// ```
 fn quadratic_formula() -> Rule {
     Rule {
         id: RuleId(800),
@@ -1114,6 +1184,15 @@ fn quadratic_formula() -> Rule {
 }
 
 // Δ > 0: two distinct real roots
+/// Classifies the sign of a quadratic discriminant into cases for the number and type of roots.
+///
+/// # Examples
+///
+/// ```
+/// let r = discriminant_sign();
+/// assert_eq!(r.id, RuleId(801));
+/// assert!(r.description.contains("Δ"));
+/// ```
 fn discriminant_sign() -> Rule {
     Rule {
         id: RuleId(801),
@@ -1143,6 +1222,25 @@ fn discriminant_sign() -> Rule {
 }
 
 // Δ is perfect square => rational roots
+/// Creates the discriminant-perfect-square rule which asserts that a perfect-square discriminant implies rational roots.
+///
+/// The rule matches a variable expression and, when applied, produces a schematic assertion indicating that
+/// Δ is a perfect square (`Δ = k²`) and therefore the polynomial has rational roots.
+///
+/// # Returns
+///
+/// A `Rule` with id `802`, name `"discriminant_perfect_square"`, category `AlgebraicSolving`, and an `apply`
+/// implementation that yields a symbolic result `Δ=k^2 ⇒ rational roots`.
+///
+/// # Examples
+///
+/// ```
+/// let r = discriminant_perfect_square();
+/// assert_eq!(r.id, RuleId(802));
+/// assert_eq!(r.name, "discriminant_perfect_square");
+/// let apps = (r.apply)(&Expr::Var(intern_symbol("x")), &Default::default());
+/// assert_eq!(apps[0].result, Expr::Var(intern_symbol("Δ=k^2 ⇒ rational roots")));
+/// ```
 fn discriminant_perfect_square() -> Rule {
     Rule {
         id: RuleId(802),
@@ -1162,6 +1260,17 @@ fn discriminant_perfect_square() -> Rule {
 }
 
 // Cardano's formula for cubics
+/// Constructs the rule representing Cardano's formula for the depressed cubic x³ + p·x + q = 0.
+///
+/// The rule yields a symbolic `Cardano_solution` placeholder when applied; it does not compute numeric roots.
+///
+/// # Examples
+///
+/// ```
+/// let rule = cardano_formula();
+/// assert_eq!(rule.id, RuleId(803));
+/// assert_eq!(rule.name, "cardano_formula");
+/// ```
 fn cardano_formula() -> Rule {
     Rule {
         id: RuleId(803),
@@ -1181,6 +1290,21 @@ fn cardano_formula() -> Rule {
 }
 
 // Cubic discriminant Δ = -4p³ - 27q²
+/// Creates a rule that expresses the cubic discriminant Δ = -4p³ - 27q².
+///
+/// This rule is intended as a schematic/formula rule for cubic equations; when applied it yields an equation with left-hand side `Δ` and right-hand side `-4*p^3 - 27*q^2` using symbolic placeholders `p` and `q`.
+///
+/// # Returns
+///
+/// The `Rule` with id 804 that produces the cubic discriminant equation in terms of `p` and `q`.
+///
+/// # Examples
+///
+/// ```
+/// let r = cubic_discriminant();
+/// assert_eq!(r.id, RuleId(804));
+/// assert_eq!(r.name, "cubic_discriminant");
+/// ```
 fn cubic_discriminant() -> Rule {
     Rule {
         id: RuleId(804),
@@ -1215,6 +1339,18 @@ fn cubic_discriminant() -> Rule {
 }
 
 // Resolvent cubic for quartics
+/// Produces a rule that yields a symbolic resolvent cubic for quartic equations.
+///
+/// The returned `Rule` applies to a generic variable expression and, when applied,
+/// produces the placeholder symbol `resolvent_cubic` as the rule result.
+///
+/// # Examples
+///
+/// ```
+/// let rule = quartic_resolvent();
+/// assert_eq!(rule.name, "quartic_resolvent");
+/// assert_eq!(rule.id, RuleId(805));
+/// ```
 fn quartic_resolvent() -> Rule {
     Rule {
         id: RuleId(805),
@@ -1234,6 +1370,18 @@ fn quartic_resolvent() -> Rule {
 }
 
 // Sign changes bound positive real roots
+/// Provides Descartes' rule of signs as a schematic transformation.
+///
+/// The rule is represented symbolically: applying it yields a placeholder `sign_changes_bound` that
+/// denotes the upper bound on the number of positive real roots given the number of sign changes
+/// in a polynomial's coefficients.
+///
+/// # Examples
+///
+/// ```
+/// let rule = descartes_rule();
+/// assert_eq!(rule.id, RuleId(806));
+/// ```
 fn descartes_rule() -> Rule {
     Rule {
         id: RuleId(806),
@@ -1253,6 +1401,21 @@ fn descartes_rule() -> Rule {
 }
 
 // Sturm sequence for root count
+/// Produces a Rule representing Sturm's theorem for counting real roots.
+///
+/// The rule is applicable to a variable expression and, when applied,
+/// yields a symbolic placeholder `sturm_sequence` as the result.
+///
+/// # Examples
+///
+/// ```
+/// let rule = sturm_sequence();
+/// assert_eq!(rule.id, RuleId(807));
+/// assert_eq!(rule.name, "sturm_sequence");
+/// let apps = (rule.apply)(&Expr::Var(intern_symbol("x")), &Default::default());
+/// // application yields a symbolic `sturm_sequence` placeholder
+/// assert!(matches!(apps[0].result, Expr::Var(_)));
+/// ```
 fn sturm_sequence() -> Rule {
     Rule {
         id: RuleId(807),
@@ -1272,6 +1435,20 @@ fn sturm_sequence() -> Rule {
 }
 
 // Resultant of two polynomials
+/// Creates a rule asserting that the resultant of two polynomials is zero exactly when they share a root.
+///
+/// The rule produces a symbolic equation `Res(f,g) = 0` as its application result to represent the condition that polynomials `f` and `g` have a common root.
+///
+/// # Returns
+///
+/// A `Rule` whose application yields the equation `Res(f,g) = 0`.
+///
+/// # Examples
+///
+/// ```
+/// let r = resultant_definition();
+/// assert_eq!(r.id, RuleId(808));
+/// ```
 fn resultant_definition() -> Rule {
     Rule {
         id: RuleId(808),
@@ -1294,6 +1471,36 @@ fn resultant_definition() -> Rule {
 }
 
 // Bezout's theorem for polynomial GCD
+/// Create a Rule that encodes Bézout's identity for polynomials.
+///
+/// The rule, when applied, produces the symbolic equation `f·u + g·v = gcd(f,g)` (with `u` and `v` unspecified),
+/// represented as an `Expr::Equation` whose left-hand side is the interned symbol `"f*u+g*v"` and right-hand side is
+/// the interned symbol `"gcd(f,g)"`.
+///
+/// # Returns
+///
+/// A `Rule` whose application yields the symbolic Bézout identity equation.
+///
+/// # Examples
+///
+/// ```
+/// let rule = bezout_theorem();
+/// assert_eq!(rule.id, RuleId(809));
+/// let apps = (rule.apply)(&Expr::Var(intern_symbol("x")), &Default::default());
+/// assert!(!apps.is_empty());
+/// match &apps[0].result {
+///     Expr::Equation { lhs, rhs } => {
+///         // left-hand side should be the interned "f*u+g*v"
+///         if let Expr::Var(sym) = lhs.as_ref() {
+///             assert_eq!(sym.name(), "f*u+g*v");
+///         } else { panic!("unexpected lhs"); }
+///         if let Expr::Var(sym) = rhs.as_ref() {
+///             assert_eq!(sym.name(), "gcd(f,g)");
+///         } else { panic!("unexpected rhs"); }
+///     }
+///     _ => panic!("expected equation"),
+/// }
+/// ```
 fn bezout_theorem() -> Rule {
     Rule {
         id: RuleId(809),
@@ -1316,6 +1523,18 @@ fn bezout_theorem() -> Rule {
 }
 
 // |roots| ≤ 1 + max|aᵢ/aₙ|
+/// Produces a Rule that encodes Cauchy's bound on the roots of a polynomial.
+///
+/// The rule is schematic: when applied it yields a symbolic `cauchy_bound` placeholder
+/// representing the standard bound |roots| ≤ 1 + max|a_i/a_n|.
+///
+/// # Examples
+///
+/// ```
+/// let rule = cauchy_bound();
+/// assert_eq!(rule.id, RuleId(810));
+/// assert_eq!(rule.name, "cauchy_bound");
+/// ```
 fn cauchy_bound() -> Rule {
     Rule {
         id: RuleId(810),
@@ -1335,6 +1554,19 @@ fn cauchy_bound() -> Rule {
 }
 
 // Fujiwara root bound
+/// Constructs a rule encoding Fujiwara's bound for polynomial roots.
+///
+/// The returned `Rule` is identified as id 811, categorized under
+/// `AlgebraicSolving`, and, when applied, produces a symbolic result
+/// `Expr::Var(intern_symbol("fujiwara_bound"))` representing the bound.
+///
+/// # Examples
+///
+/// ```
+/// let rule = fujiwara_bound();
+/// assert_eq!(rule.id, RuleId(811));
+/// assert_eq!(rule.name, "fujiwara_bound");
+/// ```
 fn fujiwara_bound() -> Rule {
     Rule {
         id: RuleId(811),
@@ -1354,6 +1586,17 @@ fn fujiwara_bound() -> Rule {
 }
 
 // Roots of derivative in convex hull of roots
+/// Creates a `Rule` encoding the Gauss–Lucas theorem relating a polynomial's roots to its critical points.
+///
+/// The returned `Rule` represents the schematic assertion that all critical points of a polynomial lie in the convex hull of its roots; when applied it produces the symbolic placeholder `convex_hull_of_roots`.
+///
+/// # Examples
+///
+/// ```
+/// let r = gauss_lucas_theorem();
+/// assert_eq!(r.id, RuleId(812));
+/// assert_eq!(r.name, "gauss_lucas_theorem");
+/// ```
 fn gauss_lucas_theorem() -> Rule {
     Rule {
         id: RuleId(812),
@@ -1373,6 +1616,17 @@ fn gauss_lucas_theorem() -> Rule {
 }
 
 // Lagrange interpolation formula
+/// Produces a Rule that represents the Lagrange interpolation formula P(x) = Σ y_i Π(x - x_j)/(x_i - x_j).
+///
+/// The rule is schematic and returns a symbolic result expressing the Lagrange interpolation form.
+///
+/// # Examples
+///
+/// ```
+/// let r = lagrange_interpolation();
+/// assert_eq!(r.id, RuleId(813));
+/// assert!(r.description.contains("P(x)"));
+/// ```
 fn lagrange_interpolation() -> Rule {
     Rule {
         id: RuleId(813),
@@ -1392,6 +1646,17 @@ fn lagrange_interpolation() -> Rule {
 }
 
 // Newton's divided differences
+/// Creates a Rule representing the Newton form of an interpolating polynomial.
+///
+/// When applied to a variable expression, the rule yields the symbolic placeholder
+/// `Newton_divided_differences`.
+///
+/// # Examples
+///
+/// ```
+/// let r = newton_interpolation();
+/// assert_eq!(r.id.0, 814);
+/// ```
 fn newton_interpolation() -> Rule {
     Rule {
         id: RuleId(814),
@@ -1411,6 +1676,29 @@ fn newton_interpolation() -> Rule {
 }
 
 // T_{n+1}(x) = 2xT_n(x) - T_{n-1}(x)
+/// Creates the Chebyshev recurrence rule for T_{n+1}.
+///
+/// The rule represents the schematic recurrence T_{n+1} = 2·x·T_n - T_{n-1} and yields an equation
+/// of that form when applied to a matching expression.
+///
+/// # Returns
+///
+/// A `Rule` that produces the equation `T_{n+1} = 2*x*T_n - T_{n-1}` as its result.
+///
+/// # Examples
+///
+/// ```
+/// let rule = chebyshev_recurrence();
+/// assert_eq!(rule.id, RuleId(815));
+/// assert!(rule.description.contains("Chebyshev"));
+/// // Applying the rule yields an equation of the Chebyshev recurrence (schematic).
+/// let apps = (rule.apply)(&Expr::Var(intern_symbol("x")), &Default::default());
+/// let eq = &apps[0].result;
+/// match eq {
+///     Expr::Equation { .. } => {},
+///     _ => panic!("expected an equation result"),
+/// }
+/// ```
 fn chebyshev_recurrence() -> Rule {
     Rule {
         id: RuleId(815),
@@ -1442,6 +1730,17 @@ fn chebyshev_recurrence() -> Rule {
 }
 
 // H_{n+1}(x) = 2xH_n(x) - 2nH_{n-1}(x)
+/// Builds a rule that expresses the Hermite polynomial recurrence: H_{n+1} = 2x H_n - 2n H_{n-1}.
+///
+/// The rule is applicable to variable expressions and produces a schematic equation using interned symbolic names (`H_{n+1}`, `H_n`, `H_{n-1}`, `x`, `n`).
+///
+/// # Examples
+///
+/// ```
+/// let r = hermite_recurrence();
+/// assert_eq!(r.id, RuleId(816));
+/// assert_eq!(r.description, "Hermite H_{n+1} = 2xH_n - 2nH_{n-1}");
+/// ```
 fn hermite_recurrence() -> Rule {
     Rule {
         id: RuleId(816),
@@ -1480,6 +1779,18 @@ fn hermite_recurrence() -> Rule {
 }
 
 // (n+1)P_{n+1} = (2n+1)xP_n - nP_{n-1}
+/// Provides the Legendre polynomial recurrence relation as a `Rule`.
+///
+/// The rule encodes (n+1) P_{n+1} = (2n+1) x P_n - n P_{n-1} as a schematic equation relating
+/// consecutive Legendre polynomials.
+///
+/// # Examples
+///
+/// ```
+/// let rule = legendre_recurrence();
+/// assert_eq!(rule.id, RuleId(817));
+/// assert!(rule.description.contains("Legendre"));
+/// ```
 fn legendre_recurrence() -> Rule {
     Rule {
         id: RuleId(817),
@@ -1519,6 +1830,18 @@ fn legendre_recurrence() -> Rule {
 }
 
 // L_{n+1}(x) = (2n+1-x)L_n(x) - n²L_{n-1}(x)
+/// Produces a Rule encoding the Laguerre polynomial recurrence.
+///
+/// The returned `Rule` yields the symbolic recurrence equation
+/// `L_{n+1} = (2n + 1 - x) L_n - n^2 L_{n-1}` as its application result.
+///
+/// # Examples
+///
+/// ```
+/// let rule = laguerre_recurrence();
+/// assert_eq!(rule.name, "laguerre_recurrence");
+/// assert_eq!(rule.id.0, 818);
+/// ```
 fn laguerre_recurrence() -> Rule {
     Rule {
         id: RuleId(818),

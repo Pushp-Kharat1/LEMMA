@@ -30,20 +30,17 @@ fn factorial(n: u64) -> u64 {
 }
 
 impl Expr {
-    /// Evaluate this expression numerically.
+    /// Evaluate the expression to a floating-point value using the provided variable bindings.
     ///
-    /// # Arguments
+    /// Returns `Some(f64)` when the expression can be evaluated in a scalar context, or `None`
+    /// when evaluation fails (for example: undefined variable, division or modulus by zero,
+    /// domain errors such as log of non-positive numbers, overflow limits, or constructs that
+    /// are not supported in a scalar environment like vectors, integrals, derivatives, limits,
+    /// and quantifiers).
     ///
-    /// * `env` - A mapping from variable symbols to their f64 values
+    /// # Examples
     ///
-    /// # Returns
-    ///
-    /// The numerical result, or `None` if evaluation fails (e.g., division by zero,
-    /// undefined variable, or domain error).
-    ///
-    /// # Example
-    ///
-    /// ```rust
+    /// ```
     /// use mm_core::{Expr, SymbolTable, eval::Env};
     /// use std::collections::HashMap;
     ///
@@ -57,7 +54,7 @@ impl Expr {
     /// );
     ///
     /// // Evaluate with x = 2
-    /// let mut env = HashMap::new();
+    /// let mut env: HashMap<_, f64> = HashMap::new();
     /// env.insert(x, 2.0);
     ///
     /// assert_eq!(expr.evaluate(&env), Some(3.0));
@@ -344,7 +341,28 @@ impl Expr {
         true
     }
 
-    /// Collect all variable symbols in this expression.
+    /// Collects all free variable symbols that occur in this expression into `vars`.
+    ///
+    /// The function appends each distinct variable `Symbol` found (no duplicates) to the provided
+    /// vector. For constructs that introduce bound variables (summations, products with bounds,
+    /// quantifiers, derivatives, integrals, limits), the bound variable is excluded from the final
+    /// result of free variables: it is removed from `vars` after traversing the bound expression.
+    /// Non-scalar containers (e.g., `Vector`) and all expression forms are traversed to gather variables.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mm_core::{Expr, Symbol};
+    ///
+    /// let x: Symbol = 'x' as u32;
+    /// let y: Symbol = 'y' as u32;
+    /// let expr = Expr::Add(Box::new(Expr::Var(x)), Box::new(Expr::Var(y)));
+    ///
+    /// let mut vars = Vec::new();
+    /// expr.collect_vars(&mut vars);
+    /// assert!(vars.contains(&x));
+    /// assert!(vars.contains(&y));
+    /// ```
     fn collect_vars(&self, vars: &mut Vec<Symbol>) {
         match self {
             Expr::Var(s) => {

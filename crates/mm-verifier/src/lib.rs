@@ -56,16 +56,14 @@ impl VerifyResult {
     }
 }
 
-/// Detects whether an expression contains calculus operations (derivatives or integrals)
-/// or any subexpression that contains them.
+/// Returns whether an expression or any of its subexpressions is a derivative or an integral.
 ///
-/// This checks recursively: returns `true` if the expression is a derivative or integral
-/// node, or if any child/subexpression contains such a node; returns `false` for plain
-/// constants, variables, and transcendental constants that do not enclose calculus.
+/// Returns `true` if the expression contains a `Derivative` or `Integral` node anywhere in its
+/// tree, `false` otherwise.
 ///
 /// # Examples
 ///
-/// ```
+/// ```rust
 /// // A simple non-calculus expression
 /// let expr = Expr::Neg(Box::new(Expr::Const(1.0)));
 /// assert!(!is_calculus_expr(&expr));

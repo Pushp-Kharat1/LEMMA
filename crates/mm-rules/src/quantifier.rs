@@ -180,32 +180,32 @@ impl QuantifierEngine {
         suggestions
     }
 
-    /// Recursively substitutes all free occurrences of `var` with `value` in `body`.
+    /// Substitute all free occurrences of `var` with `value` inside `body`.
     ///
-    /// The substitution respects binding: occurrences of `var` that are shadowed by inner quantifiers,
-    /// summation/product indices, or other binders are not replaced, and domains of quantified
-    /// expressions are also substituted where appropriate.
+    /// The substitution respects lexical binding: occurrences of `var` that are shadowed by
+    /// inner quantifiers, summation/product indices, limits, or other binders are not replaced.
+    /// Domains of quantified expressions and bounds (e.g., summation bounds, limit approach)
+    /// are substituted when they do not themselves bind `var`.
     ///
-    /// # Parameters
-    /// - `body`: expression to perform substitution in.
-    /// - `var`: the symbol to be replaced.
-    /// - `value`: the expression to substitute for `var`.
-    ///
-    /// # Returns
-    /// An expression equivalent to `body` with every free occurrence of `var` replaced by `value`.
+    /// The function performs a deep, structural replacement and returns a new `Expr`
+    /// equivalent to `body` with every free occurrence of `var` replaced by `value`.
     ///
     /// # Examples
     ///
     /// ```
     /// use mm_core::{Expr, SymbolTable, Rational};
+    ///
     /// let st = SymbolTable::new();
     /// let x = st.intern("x");
     /// let five = Expr::Const(Rational::from(5));
+    ///
     /// let body = Expr::Add(
     ///     Box::new(Expr::Var(x)),
     ///     Box::new(Expr::Const(Rational::from(1))),
     /// );
+    ///
     /// let out = QuantifierEngine::new().substitute(&body, x, &five);
+    ///
     /// assert_eq!(
     ///     out,
     ///     Expr::Add(

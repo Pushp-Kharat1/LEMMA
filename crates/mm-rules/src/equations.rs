@@ -10,13 +10,33 @@ use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational, Symbol, SymbolTable};
 use std::sync::{Mutex, OnceLock};
 
+/// Interns a string in the global symbol interner and returns its `Symbol`.
+///
+/// This uses a lazily initialized, thread-safe global interner so the same name
+/// will produce the same `Symbol` across calls. Panics if the interner mutex
+/// is poisoned.
+///
+/// # Examples
+///
+/// ```
+/// let s1 = intern_symbol("no real roots");
+/// let s2 = intern_symbol("no real roots");
+/// assert_eq!(s1, s2);
+/// ```
 fn intern_symbol(name: &str) -> Symbol {
     static INTERNER: OnceLock<Mutex<SymbolTable>> = OnceLock::new();
     let m = INTERNER.get_or_init(|| Mutex::new(SymbolTable::new()));
     m.lock().expect("symbol interner poisoned").intern(name)
 }
 
-/// Get all equation solving rules.
+/// Collects all built-in equation-solving rules.
+///
+/// # Examples
+///
+/// ```
+/// let rules = equation_rules();
+/// assert_eq!(rules.len(), 7);
+/// ```
 pub fn equation_rules() -> Vec<Rule> {
     vec![
         isolate_variable(),
@@ -311,6 +331,21 @@ fn linear_solve() -> Rule {
 // Rule 27: Quadratic Formula
 // ============================================================================
 
+/// Produces a rule that solves quadratic equations using the quadratic formula.
+///
+/// Applies to equations where the right-hand side is zero and the left-hand side is a quadratic
+/// expression in a single variable (ax² + bx + c). If coefficients a, b, c and the variable can
+/// be extracted, the rule returns an equation of the form `x = (-b + √(b² - 4ac)) / (2a)` using a
+/// sqrt expression; if the discriminant is negative it returns an equation whose right-hand side
+/// is the interned symbol `"no real roots"`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = quadratic_formula();
+/// assert_eq!(rule.id, RuleId(27));
+/// assert_eq!(rule.name, "quadratic_formula");
+/// ```
 fn quadratic_formula() -> Rule {
     Rule {
         id: RuleId(27),

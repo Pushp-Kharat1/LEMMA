@@ -464,7 +464,22 @@ impl ExpressionEncoder {
         }
     }
 
-    /// Convert tokens to IDs with padding.
+    /// Build a fixed-length sequence of token IDs from token strings, adding start/end markers and padding.
+    ///
+    /// The returned vector begins with `START_TOKEN`, contains up to `max_length - 2` token IDs obtained from
+    /// the vocabulary (truncating any excess tokens), then an `END_TOKEN`, and is padded with `PAD_TOKEN`
+    /// until its length equals the encoder's `max_length`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let encoder = ExpressionEncoder::new(Device::Cpu);
+    /// let tokens = vec!["x".to_string(), "+".to_string(), "1".to_string()];
+    /// let ids = encoder.encode_tokens(&tokens);
+    /// assert_eq!(ids[0], START_TOKEN);
+    /// assert!(ids.contains(&END_TOKEN));
+    /// assert_eq!(ids.len(), encoder.max_length());
+    /// ```
     pub fn encode_tokens(&self, tokens: &[String]) -> Vec<u32> {
         let mut ids = vec![START_TOKEN];
 
@@ -481,7 +496,19 @@ impl ExpressionEncoder {
         ids
     }
 
-    /// Encode an expression to a tensor.
+    /// Encode an expression into a tensor of token IDs on the encoder's device.
+    ///
+    /// The resulting tensor contains a sequence of token IDs produced from `expr`,
+    /// padded or truncated to the encoder's configured `max_length`, and is created
+    /// on the encoder's `device`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // assume `enc` is an ExpressionEncoder and `expr` is an Expr
+    /// let t = enc.encode(&expr).unwrap();
+    /// assert_eq!(t.dims(), &[enc.max_length()]);
+    /// ```
     pub fn encode(&self, expr: &Expr) -> Result<Tensor> {
         let tokens = self.tokenize(expr);
         let ids = self.encode_tokens(&tokens);

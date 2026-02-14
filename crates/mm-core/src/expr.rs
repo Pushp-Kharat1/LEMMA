@@ -245,11 +245,11 @@ pub struct Factor {
 // ============================================================================
 
 impl PartialEq for Expr {
-    /// Determine whether two expressions are structurally equal.
+    /// Compare two expressions for structural equality.
     ///
-    /// Compares variants and their contained data (including boxed subexpressions,
-    /// symbol identifiers, and collection contents) so that two expressions are
-    /// equal only if they have the same variant and equal components.
+    /// This checks that both expressions have the same variant and that each contained
+    /// component (boxed subexpressions, symbol identifiers, and collection contents)
+    /// is equal.
     ///
     /// # Examples
     ///
@@ -265,7 +265,7 @@ impl PartialEq for Expr {
     ///
     /// # Returns
     ///
-    /// `true` if both expressions are the same variant and their contents are equal, `false` otherwise.
+    /// `true` if both expressions are the same variant and all their contents are equal, `false` otherwise.
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Expr::Const(a), Expr::Const(b)) => a == b,
@@ -327,9 +327,10 @@ impl PartialEq for Expr {
 impl Eq for Expr {}
 
 impl Hash for Expr {
-    /// Hashes the expression by first hashing its variant discriminant and then hashing the variant's contents.
+    /// Produces a stable structural hash of the expression suitable for use in hash maps and memoization.
     ///
-    /// This produces a stable structural hash suitable for use in hash maps and memoization: atoms hash their payloads, constants without payloads rely on the discriminant, unary variants hash their inner expression, binary variants hash both operands, and collection/compound variants hash their contained elements.
+    /// The hash reflects the expression's structure and contained data so that structurally equal expressions
+    /// produce the same hash when their contents are identical.
     ///
     /// # Examples
     ///
@@ -337,9 +338,9 @@ impl Hash for Expr {
     /// use std::collections::hash_map::DefaultHasher;
     /// use std::hash::{Hash, Hasher};
     ///
-    /// // construct two equivalent expressions and verify they produce the same hash
+    /// // construct two expressions and compute their hashes
     /// let a = Expr::int(2);
-    /// let b = Expr::frac(4, 2); // canonical equality may differ, but hashing demonstrates usage
+    /// let b = Expr::frac(4, 2);
     ///
     /// let mut ha = DefaultHasher::new();
     /// a.hash(&mut ha);
@@ -349,7 +350,6 @@ impl Hash for Expr {
     /// b.hash(&mut hb);
     /// let hb = hb.finish();
     ///
-    /// // hashes may or may not match depending on canonicalization; this demonstrates calling `hash`.
     /// let _ = (ha, hb);
     /// ```
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -596,15 +596,17 @@ impl Expr {
         matches!(self, Expr::Var(_))
     }
 
-    /// Compute a rough node count for the expression AST.
+    /// Compute a rough node count for this expression's abstract syntax tree.
     ///
-    /// The complexity is defined as 1 for atomic nodes (constants, variables, Pi, E),
-    /// plus the sum of complexities of child nodes plus 1 per composite node.
+    /// Atomic expressions (constants, variables, `Pi`, `E`) count as 1. Each composite node
+    /// contributes 1 plus the sum of the complexities of its child expressions (vectors, unary,
+    /// binary, n-ary, and other structured variants).
     ///
     /// # Examples
     ///
     /// ```
-    /// # use mm_core::expr::Expr;
+    /// use mm_core::expr::Expr;
+    ///
     /// let c = Expr::int(1);
     /// assert_eq!(c.complexity(), 1);
     ///

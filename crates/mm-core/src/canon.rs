@@ -47,10 +47,13 @@ impl Expr {
         simplified.simplify_top()
     }
 
-    /// Recursively canonicalizes each immediate child expression while tracking recursion depth.
+    /// Canonicalize each immediate child expression without descending beyond the depth limit.
     ///
-    /// If `depth` is greater than or equal to `Self::MAX_CANON_DEPTH`, this returns a clone of `self` without further recursion.
-    /// Otherwise returns a new `Expr` where every direct child has been canonicalized with the provided `depth`.
+    /// If `depth` is greater than or equal to `Self::MAX_CANON_DEPTH`, this returns a clone of `self`.
+    /// Otherwise returns a new `Expr` where every direct child has been canonicalized using `depth`.
+    ///
+    /// `depth` is the current recursion depth and is propagated to each child when calling
+    /// their `canonicalize_with_depth`.
     ///
     /// # Examples
     ///
