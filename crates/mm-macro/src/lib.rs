@@ -68,26 +68,34 @@ impl MacroInput {
     }
 }
 
-/// Convert a parsed `Expr` into a `proc_macro2::TokenStream` that constructs an equivalent `mm_core::Expr` at runtime.
+/// Convert a parsed `Expr` into a `proc_macro2::TokenStream` that, when emitted into generated code,
+/// constructs an equivalent `mm_core::Expr` value at runtime.
 ///
-/// The function recursively translates each `Expr` variant into tokens that build the corresponding
-/// `mm_core::Expr`, using `runtime_symbol_table` to intern runtime symbol names and `temp_symbols` to
-/// resolve macro-time symbol identifiers into names. This will panic if a symbol referenced in `expr`
-/// is not found in `temp_symbols`, or when encountering quantifiers or logical connectives which are
-/// not supported by the macro entry point.
+/// This translation recursively converts each `Expr` variant into tokens that build the corresponding
+/// `mm_core::Expr`. Symbol names encountered in `expr` are resolved using `temp_symbols` (a macro-time
+/// symbol table) and interned into `runtime_symbol_table` (a runtime symbol table path) in the
+/// generated tokens. The function will panic if a referenced symbol is not present in `temp_symbols`,
+/// or if unsupported constructs such as quantifiers or logical connectives are encountered.
+///
+/// `runtime_symbol_table` — path to a runtime symbol table used to intern names in the generated code.
+/// `temp_symbols` — macro-time `SymbolTable` used to resolve identifier indices to string names.
 ///
 /// # Returns
 ///
-/// A `proc_macro2::TokenStream` which, when emitted into the generated code, constructs the matching
-/// `mm_core::Expr` value.
+/// A `proc_macro2::TokenStream` which constructs the corresponding `mm_core::Expr` when compiled into
+/// the generated code.
 ///
 /// # Examples
 ///
 /// ```
 /// use syn::parse_str;
-/// // `Expr` and `SymbolTable` are from the crate's parser; this example shows a symbol-free case.
+///
+/// // Path to the runtime symbol table used by the generated code.
 /// let path: syn::Path = parse_str("crate::SYMBOL_TABLE").unwrap();
-/// let temp_symbols = mm_parse::SymbolTable::default(); // assuming a default constructor is available
+///
+/// // A temp symbol table for parsing; here we use a default/empty table for symbol-free examples.
+/// let temp_symbols = mm_parse::SymbolTable::default();
+///
 /// let expr = mm_parse::Expr::Pi;
 /// let tokens = mm_macro::expr_to_token_stream(&expr, &path, &temp_symbols);
 /// let s = tokens.to_string();

@@ -10,13 +10,44 @@ use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational, Symbol, SymbolTable};
 use std::sync::{Mutex, OnceLock};
 
+/// Return an interned `Symbol` for the given name.
+///
+/// The function maintains a single global symbol interner and returns a canonical `Symbol`
+/// for `name`; repeated calls with the same `name` yield the same `Symbol`.
+///
+/// # Panics
+///
+/// Panics if the global symbol interner's mutex is poisoned.
+///
+/// # Examples
+///
+/// ```
+/// let a = intern_symbol("alpha");
+/// let b = intern_symbol("alpha");
+/// assert_eq!(a, b);
+/// ```
 fn intern_symbol(name: &str) -> Symbol {
     static INTERNER: OnceLock<Mutex<SymbolTable>> = OnceLock::new();
     let m = INTERNER.get_or_init(|| Mutex::new(SymbolTable::new()));
     m.lock().expect("symbol interner poisoned").intern(name)
 }
 
-/// Get all number theory rules (100+).
+/// Collects the complete set of number-theory transformation rules.
+///
+/// This function aggregates rules from all number-theory subgroups (divisibility,
+/// modular arithmetic, gcd/lcm, perfect powers, parity, sum formulas, factorial,
+/// floor/ceiling, and advanced number-theory rules) into a single vector.
+///
+/// # Returns
+///
+/// A `Vec<Rule>` containing every rule provided by the number-theory modules.
+///
+/// # Examples
+///
+/// ```
+/// let rules = number_theory_rules();
+/// assert!(!rules.is_empty());
+/// ```
 pub fn number_theory_rules() -> Vec<Rule> {
     let mut rules = Vec::new();
 
@@ -419,6 +450,22 @@ fn divisibility_rules() -> Vec<Rule> {
 // Modular Arithmetic Rules (ID 120+)
 // ============================================================================
 
+/// Assembles the set of modular-arithmetic transformation rules used by the solver.
+///
+/// The returned vector contains rules for modular simplification and solving, including
+/// identities and algorithms such as a mod a = 0, 0 mod n = 0, modular inverse computation,
+/// modular exponentiation, extended GCD, Legendre symbol evaluation, Tonelli–Shanks (symbolic),
+/// primitive-root search, discrete logarithm schema, and Hensel-lifting schema. Each entry is a
+/// fully constructed `Rule` describing applicability, transformation, justification, reversibility,
+/// and cost.
+///
+/// # Examples
+///
+/// ```rust
+/// let rules = modular_rules();
+/// // Expect at least the basic mod simplification rule (id 120) to be present.
+/// assert!(rules.iter().any(|r| r.id == RuleId(120)));
+/// ```
 fn modular_rules() -> Vec<Rule> {
     vec![
         // a mod a = 0
@@ -1335,6 +1382,19 @@ fn parity_rules() -> Vec<Rule> {
 // Sum Formulas (ID 200+)
 // ============================================================================
 
+/// Returns the collection of standard summation identities as transformation rules.
+///
+/// The returned rules encode common series formulas (constant sum, arithmetic series,
+/// sum of squares, sum of cubes, and geometric series) as `Rule` items that produce
+/// symbolic equation or expression forms when applied.
+///
+/// # Examples
+///
+/// ```
+/// let rules = sum_formulas();
+/// // basic sanity: the collection contains at least the arithmetic series rule (id 201)
+/// assert!(rules.iter().any(|r| r.id == RuleId(201)));
+/// ```
 fn sum_formulas() -> Vec<Rule> {
     vec![
         // Σc (n times) = cn
@@ -1829,6 +1889,16 @@ fn fermat_little_theorem() -> Rule {
 }
 
 // x^n + y^n = z^n has no integer solutions for n > 2
+/// Constructs a rule that recognizes Diophantine equations of the form `x^n + y^n = z^n` and records that there are no nontrivial integer solutions when `n > 2`.
+///
+/// The rule matches an equation whose left-hand side is a sum of two like-powered terms and whose right-hand side is the same power; when applied it produces a canonical `0` result with a justification referencing Fermat's Last Theorem. The rule is not reversible and has low application cost.
+///
+/// # Examples
+///
+/// ```
+/// let r = fermat_last_theorem();
+/// assert_eq!(r.id, RuleId(701));
+/// ```
 fn fermat_last_theorem() -> Rule {
     Rule {
         id: RuleId(701),
@@ -1888,6 +1958,18 @@ fn euler_theorem() -> Rule {
 }
 
 // φ(mn) = φ(m)φ(n) for gcd(m,n)=1
+/// Creates a rule that applies Euler's totient multiplicativity: φ(mn) = φ(m)·φ(n) when gcd(m,n) = 1.
+///
+/// The rule matches a product expression and rewrites φ(mn) into the product of φ on each factor,
+/// with an explanatory justification. It is intended for use in simplification passes.
+///
+/// # Examples
+///
+/// ```
+/// let rule = euler_phi_multiplicative();
+/// assert_eq!(rule.id, RuleId(703));
+/// assert_eq!(rule.name, "euler_phi_multiplicative");
+/// ```
 fn euler_phi_multiplicative() -> Rule {
     Rule {
         id: RuleId(703),
@@ -1944,6 +2026,35 @@ fn euler_phi_prime_power() -> Rule {
 }
 
 // System of congruences with coprime moduli
+/// Constructs a rule that applies the Chinese Remainder Theorem to systems of congruences.
+
+///
+
+/// The rule matches a system of modular equations and produces a symbolic placeholder for the unique solution modulo the product of pairwise-coprime moduli.
+
+///
+
+/// # Returns
+
+///
+
+/// A `Rule` which, when applied to matching congruences, yields an `Expr::Var` representing `"x ≡ a_i (mod m_i)"` and a justification stating uniqueness modulo the product of coprime moduli.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let rule = chinese_remainder_theorem();
+
+/// // rule applies to congruence systems and is identified as RuleId(705)
+
+/// assert_eq!(rule.id, RuleId(705));
+
+/// ```
 fn chinese_remainder_theorem() -> Rule {
     Rule {
         id: RuleId(705),
@@ -1966,6 +2077,17 @@ fn chinese_remainder_theorem() -> Rule {
 }
 
 // a is a quadratic residue mod p if a = x² (mod p) has solution
+/// Produces a rule that recognizes modular square (quadratic residue) patterns and replaces them with a symbolic indicator.
+///
+/// The rule matches expressions of the form `x^2 (mod p)` (or equivalent modular-square patterns) and yields the symbolic variable `QR(a,p) ∈ {0,1}` to indicate whether `a` is a quadratic residue modulo `p`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = quadratic_residue();
+/// assert_eq!(rule.id, RuleId(706));
+/// assert_eq!(rule.name, "quadratic_residue");
+/// ```
 fn quadratic_residue() -> Rule {
     Rule {
         id: RuleId(706),
@@ -1994,6 +2116,20 @@ fn quadratic_residue() -> Rule {
 }
 
 // (ab/p) = (a/p)(b/p) for Legendre symbol
+/// Constructs a rule representing multiplicativity of the Legendre symbol.
+///
+/// The rule encodes the identity (ab / p) = (a / p) (b / p) for Legendre symbols and matches multiplicative expressions.
+///
+/// # Returns
+///
+/// A `Rule` that rewrites `(ab/p)` to `(a/p)(b/p)`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = legendre_symbol_multiplicative();
+/// assert_eq!(rule.id, RuleId(707));
+/// ```
 fn legendre_symbol_multiplicative() -> Rule {
     Rule {
         id: RuleId(707),
@@ -2022,6 +2158,19 @@ fn legendre_symbol_multiplicative() -> Rule {
 }
 
 // (a/p) = a^((p-1)/2) (mod p)
+/// Produces a rule implementing Euler's criterion for odd prime moduli.
+///
+/// The returned `Rule` matches expressions of the form `a^((p-1)/2) mod p` and
+/// replaces them with a symbolic value indicating the possible outcomes: `-1`, `0`, or `1`.
+/// The produced transformation carries the justification `"Euler criterion"`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = euler_criterion();
+/// // rule id and basic behavior
+/// assert_eq!(rule.id, RuleId(708));
+/// ```
 fn euler_criterion() -> Rule {
     Rule {
         id: RuleId(708),
@@ -2051,6 +2200,18 @@ fn euler_criterion() -> Rule {
 }
 
 // π(x) ~ x/ln(x)
+/// Provides a rule that recognizes expressions of the form x / ln(x) and rewrites them to x
+/// using the prime-counting asymptotic π(x) ~ x / ln(x).
+///
+/// The rule matches Div(x, Ln(x)) and, when applied, produces `x` with a justification
+/// indicating the asymptotic approximation for the prime-counting function.
+///
+/// # Examples
+///
+/// ```
+/// let r = prime_counting_approx();
+/// assert_eq!(r.name, "prime_counting_approx");
+/// ```
 fn prime_counting_approx() -> Rule {
     Rule {
         id: RuleId(709),
@@ -2082,6 +2243,17 @@ fn prime_counting_approx() -> Rule {
 }
 
 // For n > 1, there exists prime p with n < p < 2n
+/// Constructs a transformation rule encoding Bertrand's postulate.
+///
+/// The rule matches comparison expressions that express a range like n < 2n
+/// and yields a justification that for n > 1 there exists a prime p with n < p < 2n.
+///
+/// # Examples
+///
+/// ```
+/// let rule = bertrand_postulate();
+/// assert_eq!(rule.id, RuleId(710));
+/// ```
 fn bertrand_postulate() -> Rule {
     Rule {
         id: RuleId(710),
@@ -2105,6 +2277,17 @@ fn bertrand_postulate() -> Rule {
 }
 
 // ax + by = c has solutions iff gcd(a,b) | c
+/// Creates a rule encapsulating the solvability condition for linear Diophantine equations of the form `a*x + b*y = c`.
+///
+/// The rule matches an `Expr::Equation` whose left-hand side is a sum of two terms and produces a `RuleApplication` that preserves the equation while supplying the justification that the equation is solvable iff `gcd(a, b)` divides `c`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = linear_diophantine();
+/// assert_eq!(rule.id, RuleId(711));
+/// assert_eq!(rule.name, "linear_diophantine");
+/// ```
 fn linear_diophantine() -> Rule {
     Rule {
         id: RuleId(711),
@@ -2166,6 +2349,21 @@ fn pell_equation() -> Rule {
 }
 
 // n = a² + b² iff in prime factorization, primes ≡ 3 (mod 4) have even exponents
+/// Constructs the rule that recognizes sums of two squares and returns a symbolic criterion.
+///
+/// Matches expressions of the form `a^2 + b^2` and produces a symbolic placeholder expression
+/// `a^2+b^2 criterion` with justification "Sum of two squares criterion".
+///
+/// # Returns
+///
+/// A `Rule` that matches `Add(Pow(a, 2), Pow(b, 2))` and yields a symbolic `Expr::Var` describing the criterion.
+///
+/// # Examples
+///
+/// ```
+/// let rule = sum_of_two_squares();
+/// assert_eq!(rule.id.0, 713);
+/// ```
 fn sum_of_two_squares() -> Rule {
     Rule {
         id: RuleId(713),
@@ -2193,6 +2391,18 @@ fn sum_of_two_squares() -> Rule {
 }
 
 // Every n is sum of 4 squares (Lagrange)
+/// Constructs a Rule encoding Lagrange's four-square theorem for nonnegative integer constants.
+///
+/// The rule matches any nonnegative integer constant and replaces it with a symbolic
+/// representation `a^2+b^2+c^2+d^2` justified by "Lagrange four-square theorem".
+///
+/// # Examples
+///
+/// ```
+/// let r = sum_of_four_squares();
+/// // rule id corresponds to the four-squares rule
+/// assert_eq!(r.id, RuleId(714));
+/// ```
 fn sum_of_four_squares() -> Rule {
     Rule {
         id: RuleId(714),
@@ -2240,6 +2450,20 @@ fn wilson_theorem() -> Rule {
 }
 
 // Lifting solutions to higher prime powers
+/// Creates a transformation rule that represents Hensel's lemma for lifting modular roots.
+///
+/// The rule targets modular congruences or equations that may admit a solution modulo a prime p and provides a symbolic result representing a lifted root modulo p^k.
+///
+/// # Returns
+///
+/// A `Rule` configured to match modular congruences or equations and to produce a symbolic placeholder indicating a lifted root modulo p^k when applied.
+///
+/// # Examples
+///
+/// ```
+/// let r = hensel_lemma();
+/// assert_eq!(r.name, "hensel_lemma");
+/// ```
 fn hensel_lemma() -> Rule {
     Rule {
         id: RuleId(716),
@@ -2262,6 +2486,17 @@ fn hensel_lemma() -> Rule {
 }
 
 // ord_n(a) | φ(n)
+/// Create a rule asserting that the multiplicative order of `a` modulo `n` divides Euler's totient `φ(n)`.
+///
+/// The rule matches GCD or modular expressions and yields a symbolic result `ord_n(a) | φ(n)` with a justification string.
+///
+/// # Examples
+///
+/// ```
+/// let r = order_divides_phi();
+/// assert_eq!(r.id, RuleId(717));
+/// assert_eq!(r.name, "order_divides_phi");
+/// ```
 fn order_divides_phi() -> Rule {
     Rule {
         id: RuleId(717),
@@ -2284,6 +2519,41 @@ fn order_divides_phi() -> Rule {
 }
 
 // Primitive roots exist for 1, 2, 4, p^k, 2p^k (odd prime p)
+/// Constructs a rule that detects moduli which admit a primitive root.
+
+///
+
+/// The rule matches modulus expressions and, when applied, returns a symbolic
+
+/// placeholder `Expr::Var("exists primitive root")` with the justification
+
+/// "Primitive roots exist for 1,2,4,p^k,2p^k".
+
+///
+
+/// # Returns
+
+///
+
+/// A `Rule` whose application produces a symbolic existence result for moduli
+
+/// of the form 1, 2, 4, p^k, or 2·p^k (where p is an odd prime).
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let rule = primitive_root_existence();
+
+/// assert_eq!(rule.id, RuleId(718));
+
+/// assert_eq!(rule.name, "primitive_root_existence");
+
+/// ```
 fn primitive_root_existence() -> Rule {
     Rule {
         id: RuleId(718),
@@ -2306,6 +2576,18 @@ fn primitive_root_existence() -> Rule {
 }
 
 // ν_p(n!) = Σ ⌊n/p^k⌋
+/// Constructs a rule implementing Legendre's formula for the p-adic valuation of n!.
+///
+/// The rule matches factorial expressions and rewrites them to the sum
+/// `Σ_{k≥1} ⌊n / p^k⌋`, which equals `ν_p(n!)` for a prime `p`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = legendre_formula();
+/// assert_eq!(rule.id, RuleId(719));
+/// assert_eq!(rule.name, "legendre_formula");
+/// ```
 fn legendre_formula() -> Rule {
     Rule {
         id: RuleId(719),
@@ -2328,6 +2610,19 @@ fn legendre_formula() -> Rule {
 }
 
 // C(m,n) ≡ Π C(m_i, n_i) (mod p) where m_i, n_i are base-p digits
+/// Creates a Rule that applies Lucas' theorem to binomial coefficients modulo a prime p.
+///
+/// When applicable to an expression of the form binom(m, n) mod p, the rule rewrites it
+/// as the product of binomial coefficients of the base-p digits of m and n:
+/// ∏ C(m_i, n_i) mod p.
+///
+/// # Examples
+///
+/// ```
+/// let r = lucas_theorem();
+/// assert_eq!(r.id, RuleId(720));
+/// assert_eq!(r.name, "lucas_theorem");
+/// ```
 fn lucas_theorem() -> Rule {
     Rule {
         id: RuleId(720),
@@ -2350,6 +2645,18 @@ fn lucas_theorem() -> Rule {
 }
 
 // Σ μ(d)f(n/d) for divisor d of n
+/// Creates a rule representing the Möbius inversion transformation for divisor sums.
+///
+/// The rule matches divisor-sum patterns and produces a symbolic result `g(n) = Σ μ(d) f(n/d)` as the transformation.
+///
+/// # Examples
+///
+/// ```
+/// let r = mobius_inversion();
+/// // RuleId is a tuple-like newtype; verify the id and name
+/// assert_eq!(r.id.0, 721);
+/// assert_eq!(r.name, "mobius_inversion");
+/// ```
 fn mobius_inversion() -> Rule {
     Rule {
         id: RuleId(721),
@@ -2372,6 +2679,17 @@ fn mobius_inversion() -> Rule {
 }
 
 // μ(mn) = μ(m)μ(n) for gcd(m,n)=1
+/// Encodes multiplicativity of the Möbius function: μ(mn) = μ(m)·μ(n) when gcd(m, n) = 1.
+///
+/// Matches a product expression and rewrites it to the symbolic product `μ(m) * μ(n)`, representing the Möbius function evaluated multiplicatively for coprime factors.
+///
+/// # Examples
+///
+/// ```
+/// let r = mobius_multiplicative();
+/// assert_eq!(r.id, RuleId(722));
+/// assert_eq!(r.name, "mobius_multiplicative");
+/// ```
 fn mobius_multiplicative() -> Rule {
     Rule {
         id: RuleId(722),
@@ -2397,6 +2715,19 @@ fn mobius_multiplicative() -> Rule {
 }
 
 // π(x) bounds using Chebyshev
+/// Creates a transformation rule representing Chebyshev's bounds on the prime-counting function.
+///
+/// The returned `Rule` matches division or natural-log expressions and, when applied,
+/// produces a symbolic result expressing the inequality `c1 * x / ln x < π(x) < c2 * x / ln x`
+/// with a justification string "Chebyshev prime bounds".
+///
+/// # Examples
+///
+/// ```
+/// let r = chebyshev_prime_bounds();
+/// assert_eq!(r.id, RuleId(723));
+/// assert!(r.is_applicable(&Expr::Ln(Box::new(Expr::Var(intern_symbol("x")))), &()));
+/// ```
 fn chebyshev_prime_bounds() -> Rule {
     Rule {
         id: RuleId(723),
@@ -2416,6 +2747,20 @@ fn chebyshev_prime_bounds() -> Rule {
 }
 
 // Even perfect number form: 2^(p-1)(2^p - 1) where 2^p - 1 is prime
+/// Creates a rule that recognizes even perfect numbers of the form 2^(p-1)(2^p - 1).
+///
+/// The produced `Rule` matches expressions shaped like 2^(p-1) * (2^p - 1) (the standard
+/// characterization of even perfect numbers when 2^p - 1 is prime) and, when applied,
+/// emits a canonical placeholder representing that form with a justification mentioning
+/// Mersenne primes.
+///
+/// # Examples
+///
+/// ```
+/// let rule = even_perfect_number();
+/// assert_eq!(rule.id, RuleId(724));
+/// // rule.is_applicable should return true for expressions matching 2^(p-1)*(2^p-1)
+/// ```
 fn even_perfect_number() -> Rule {
     Rule {
         id: RuleId(724),
@@ -2442,6 +2787,22 @@ fn even_perfect_number() -> Rule {
 }
 
 // 2^p - 1 prime => p is prime
+/// Constructs the rule expressing the necessary condition for Mersenne primes.
+///
+/// The rule matches expressions of the form `2^p - 1` and, when applied, yields the logical
+/// consequence that `p` must be prime if `2^p - 1` is prime.
+///
+/// # Returns
+///
+/// A `Rule` that recognizes `2^p - 1` and provides the justification "Mersenne prime condition: If 2^p - 1 is prime, then p must be prime".
+///
+/// # Examples
+///
+/// ```
+/// let rule = mersenne_prime_condition();
+/// assert_eq!(rule.id, RuleId(725));
+/// assert_eq!(rule.name, "mersenne_prime_condition");
+/// ```
 fn mersenne_prime_condition() -> Rule {
     Rule {
         id: RuleId(725),
@@ -2593,6 +2954,19 @@ fn number_of_divisors() -> Rule {
 }
 
 // Σ φ(d) = n for d|n
+/// Creates the totient-sum rule encoding the identity Σ_{d|n} φ(d) = n.
+///
+/// The rule matches any constant or variable expression and, when applied,
+/// yields the equation `Σ_{d|n} φ(d) = n` as a symbolic transformation with
+/// the justification "Totient sum identity".
+///
+/// # Examples
+///
+/// ```
+/// let r = totient_sum();
+/// assert_eq!(r.id, RuleId(728));
+/// assert_eq!(r.name, "totient_sum");
+/// ```
 fn totient_sum() -> Rule {
     Rule {
         id: RuleId(728),
@@ -2615,6 +2989,19 @@ fn totient_sum() -> Rule {
 }
 
 // Number of primitive roots mod n is φ(φ(n))
+/// Provides a rule that produces the count of primitive roots modulo n.
+///
+/// When applied this rule yields the symbolic expression `φ(φ(n))`, representing
+/// the number of primitive roots modulo n. The rule has id 729 and is classified
+/// under simplification; it matches constant or power expressions.
+///
+/// # Examples
+///
+/// ```
+/// let r = primitive_root_count();
+/// assert_eq!(r.id, RuleId(729));
+/// assert_eq!(r.name, "primitive_root_count");
+/// ```
 fn primitive_root_count() -> Rule {
     Rule {
         id: RuleId(729),
@@ -2634,6 +3021,17 @@ fn primitive_root_count() -> Rule {
 }
 
 // λ(n) Carmichael function
+/// Construct a transformation Rule representing the Carmichael function λ(n).
+///
+/// The rule matches integer constants or lcm expressions and produces a symbolic
+/// placeholder `λ(n) = lcm of orders` with justification "Carmichael function".
+///
+/// # Examples
+///
+/// ```
+/// let r = carmichael_function();
+/// assert_eq!(r.name, "carmichael_function");
+/// ```
 fn carmichael_function() -> Rule {
     Rule {
         id: RuleId(730),
@@ -2653,6 +3051,16 @@ fn carmichael_function() -> Rule {
 }
 
 // Density of square-free numbers = 6/π²
+/// Creates a rule that recognizes the asymptotic density of square-free integers (6/π²).
+///
+/// The rule matches the expression 6/π² and produces the canonical representation `6/π²` with a justification stating the density of square-free integers.
+///
+/// # Examples
+///
+/// ```
+/// let r = square_free_density();
+/// assert!(r.description.contains("6/π²"));
+/// ```
 fn square_free_density() -> Rule {
     Rule {
         id: RuleId(731),
@@ -2683,6 +3091,18 @@ fn square_free_density() -> Rule {
 }
 
 // Prime gap bounds
+/// Provides a rule producing a symbolic upper bound for gaps between consecutive primes.
+///
+/// The rule, when applied to a subtraction or inequality expression, yields a symbolic variable
+/// representing the upper bound "p_{n+1}-p_n = O(p_n^{0.525})".
+///
+/// # Examples
+///
+/// ```
+/// let r = prime_gap_bound();
+/// assert_eq!(r.id, RuleId(732));
+/// assert_eq!(r.name, "prime_gap_bound");
+/// ```
 fn prime_gap_bound() -> Rule {
     Rule {
         id: RuleId(732),
@@ -2702,6 +3122,17 @@ fn prime_gap_bound() -> Rule {
 }
 
 // p is Sophie Germain prime if both p and 2p+1 are prime
+/// Creates a rule that recognizes expressions of the form `2*p + 1` and produces a symbolic assertion that `p` and `2p+1` are prime.
+///
+/// The rule matches an `Add` whose left side is a `Mul(2, p)`-like product and whose right side is the constant `1`,
+/// and when applied returns the placeholder variable `p & 2p+1 prime`.
+///
+/// # Examples
+///
+/// ```
+/// let r = sophie_germain_prime();
+/// assert_eq!(r.id, RuleId(733));
+/// ```
 fn sophie_germain_prime() -> Rule {
     Rule {
         id: RuleId(733),
@@ -2729,6 +3160,18 @@ fn sophie_germain_prime() -> Rule {
 }
 
 // (p/q)(q/p) = (-1)^((p-1)(q-1)/4)
+/// Encodes the quadratic reciprocity law as a transformation rule.
+///
+/// The rule produces an equation expressing (p/q)(q/p) = (-1)^{((p-1)/2)*((q-1)/2)} using symbolic placeholders
+/// so it can be applied to expressions involving quadratic residue Legendre symbols.
+///
+/// # Examples
+///
+/// ```
+/// let rule = quadratic_reciprocity();
+/// assert_eq!(rule.id, RuleId(734));
+/// assert_eq!(rule.name, "quadratic_reciprocity");
+/// ```
 fn quadratic_reciprocity() -> Rule {
     Rule {
         id: RuleId(734),
@@ -2772,6 +3215,17 @@ fn quadratic_reciprocity() -> Rule {
 }
 
 // Jacobi symbol generalization
+/// Creates a rule that recognizes Jacobi-symbol-like expressions and replaces them with a symbolic placeholder.
+///
+/// The returned `Rule` matches division or modular expressions that represent a Jacobi symbol and, when applied,
+/// produces the symbolic variable `(a/n) Jacobi` with the justification `"Jacobi symbol definition"`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = jacobi_symbol();
+/// assert_eq!(rule.id, RuleId(735));
+/// ```
 fn jacobi_symbol() -> Rule {
     Rule {
         id: RuleId(735),
@@ -2791,6 +3245,35 @@ fn jacobi_symbol() -> Rule {
 }
 
 // Kronecker symbol extension
+/// Constructs a rule that matches division or modular expressions and replaces them with a Kronecker-symbol placeholder.
+
+///
+
+/// The rule matches `Expr::Div` or `Expr::Mod` and, when applied, produces a symbolic variable `(a/n) Kronecker` with the justification "Kronecker symbol extends Jacobi".
+
+///
+
+/// # Returns
+
+///
+
+/// A `Rule` that recognizes `Div` or `Mod` expressions and yields an `Expr::Var(intern_symbol("(a/n) Kronecker"))` as the transformation result.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let r = kronecker_symbol();
+
+/// assert_eq!(r.id, RuleId(736));
+
+/// assert_eq!(r.name, "kronecker_symbol");
+
+/// ```
 fn kronecker_symbol() -> Rule {
     Rule {
         id: RuleId(736),
@@ -2810,6 +3293,19 @@ fn kronecker_symbol() -> Rule {
 }
 
 // Tonelli-Shanks algorithm for modular square root
+/// Constructs a rule that matches modular-square-root patterns and yields a Tonelli–Shanks symbolic solution placeholder.
+///
+/// The returned `Rule` matches expressions of the form `Mod(_, _)` or `Sqrt(_)` and, when applied,
+/// produces a symbolic variable representing a root (`x: x^2 ≡ a (mod p)`) with a justification
+/// indicating Tonelli–Shanks. The rule is non-reversible and has a cost of 4.
+///
+/// # Examples
+///
+/// ```
+/// let rule = tonelli_shanks();
+/// // rule matches modular-square-root shapes (Mod(...) or Sqrt(...))
+/// assert_eq!(rule.id, RuleId(737));
+/// ```
 fn tonelli_shanks() -> Rule {
     Rule {
         id: RuleId(737),
@@ -2829,6 +3325,16 @@ fn tonelli_shanks() -> Rule {
 }
 
 // Discrete log existence and order
+/// Produces a rule representing the discrete logarithm problem.
+///
+/// The rule signals a transformation that yields a symbolic placeholder for solving congruences of the form `g^x ≡ h (mod n)`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = discrete_log_order();
+/// assert_eq!(rule.id, RuleId(738));
+/// ```
 fn discrete_log_order() -> Rule {
     Rule {
         id: RuleId(738),
@@ -2848,6 +3354,17 @@ fn discrete_log_order() -> Rule {
 }
 
 // gcd via continued fractions
+/// Creates a rule that represents computing the greatest common divisor using continued fractions.
+///
+/// The rule matches `GCD(a, b)` or `Div(_, _)` expression shapes and, when applied, produces a symbolic
+/// placeholder `Expr::Var("gcd via CF")` with justification "Continued fraction GCD".
+///
+/// # Examples
+///
+/// ```
+/// let r = continued_fraction_gcd();
+/// assert_eq!(r.id, RuleId(739));
+/// ```
 fn continued_fraction_gcd() -> Rule {
     Rule {
         id: RuleId(739),
@@ -2867,6 +3384,18 @@ fn continued_fraction_gcd() -> Rule {
 }
 
 // Farey neighbors |ad - bc| = 1
+/// Constructs a rule that recognizes the Farey neighbor condition |a·d - b·c| = 1 for adjacent fractions.
+///
+/// The returned Rule matches expressions that represent the determinant-like difference between two fractions
+/// (or its absolute value) and produces the constant `1` with a justification identifying the Farey neighbor relation.
+///
+/// # Examples
+///
+/// ```
+/// let rule = farey_neighbors();
+/// // rule id corresponds to the Farey neighbors rule defined in the rule set
+/// assert_eq!(rule.id, RuleId(740));
+/// ```
 fn farey_neighbors() -> Rule {
     Rule {
         id: RuleId(740),
@@ -2888,6 +3417,17 @@ fn farey_neighbors() -> Rule {
 }
 
 // Mediant in Stern-Brocot tree
+/// Creates a rule that replaces a sum of two fractions with their Stern–Brocot mediant.
+///
+/// The rule matches an addition whose operands are both divisions (fractions) and
+/// rewrites (a/b) + (c/d) to (a+c)/(b+d) with the justification "Stern-Brocot mediant".
+///
+/// # Examples
+///
+/// ```
+/// let rule = stern_brocot();
+/// assert_eq!(rule.id, RuleId(741));
+/// ```
 fn stern_brocot() -> Rule {
     Rule {
         id: RuleId(741),
@@ -2914,6 +3454,16 @@ fn stern_brocot() -> Rule {
 }
 
 // Egyptian fraction representation
+/// Creates a rule that represents an Egyptian fraction decomposition for rational divisions.
+///
+/// The rule matches a division expression a/b and provides a symbolic decomposition result `Σ 1/u_i = a/b`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = egyptian_fraction();
+/// assert_eq!(rule.name, "egyptian_fraction");
+/// ```
 fn egyptian_fraction() -> Rule {
     Rule {
         id: RuleId(742),
@@ -2936,6 +3486,15 @@ fn egyptian_fraction() -> Rule {
 }
 
 // N(a + bi) = a² + b²
+/// Creates a rule that recognizes expressions of the form `a² + b²` as the Gaussian integer norm N(a + bi) = a² + b².
+///
+/// The rule matches an `Add` of two square `Pow` terms and produces the same `a² + b²` expression with a justification indicating the Gaussian norm.
+///
+/// # Examples
+///
+/// ```
+/// let _rule = gaussian_norm();
+/// ```
 fn gaussian_norm() -> Rule {
     Rule {
         id: RuleId(743),
@@ -2965,6 +3524,18 @@ fn gaussian_norm() -> Rule {
 }
 
 // Gaussian prime conditions
+/// Creates a rule that identifies Gaussian prime conditions.
+///
+/// The rule matches simple integer constants or sums and, when applied,
+/// produces a symbolic result indicating the Gaussian-prime criteria
+/// ("p≡3 mod4 or a^2+b^2 factors") with an explanatory justification.
+///
+/// # Examples
+///
+/// ```
+/// let r = gaussian_prime();
+/// assert_eq!(r.name, "gaussian_prime");
+/// ```
 fn gaussian_prime() -> Rule {
     Rule {
         id: RuleId(744),

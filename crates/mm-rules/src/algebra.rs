@@ -10,13 +10,48 @@ use crate::{Rule, RuleApplication, RuleCategory, RuleId};
 use mm_core::{Expr, Rational, Symbol, SymbolTable};
 use std::sync::{Mutex, OnceLock};
 
+/// Returns the interned `Symbol` for a given name, reusing the same `Symbol` for identical names.
+///
+/// This function is thread-safe and will return the canonical `Symbol` associated with `name`.
+///
+/// # Parameters
+///
+/// - `name`: The identifier to intern.
+///
+/// # Returns
+///
+/// `Symbol` corresponding to the interned `name`; repeated calls with the same `name` yield the same `Symbol`.
+///
+/// # Examples
+///
+/// ```
+/// let s1 = intern_symbol("x");
+/// let s2 = intern_symbol("x");
+/// assert_eq!(s1, s2);
+/// ```
 fn intern_symbol(name: &str) -> Symbol {
     static INTERNER: OnceLock<Mutex<SymbolTable>> = OnceLock::new();
     let m = INTERNER.get_or_init(|| Mutex::new(SymbolTable::new()));
     m.lock().expect("symbol interner poisoned").intern(name)
 }
 
-/// Get all algebra rules.
+/// Assemble the collection of algebraic transformation rules used for expression simplification.
+///
+/// This includes core simplification and algebraic identities (constant folding, identities, distributive
+/// and factoring rules, power/binomial rules, etc.), followed by advanced algebra rules and the
+/// Phase 4 rule set.
+///
+/// # Returns
+///
+/// A `Vec<Rule>` containing the core rules in canonical order, then `advanced_algebra_rules()`, and
+/// finally `phase4_algebra_rules()`.
+///
+/// # Examples
+///
+/// ```
+/// let rules = algebra_rules();
+/// assert!(!rules.is_empty());
+/// ```
 pub fn algebra_rules() -> Vec<Rule> {
     let mut rules = vec![
         constant_fold(),
@@ -1412,6 +1447,29 @@ fn log_power() -> Rule {
 }
 
 // log_b(a) = ln(a)/ln(b)
+/// Creates the rule that recognizes and represents the logarithm change-of-base identity.
+///
+/// The rule matches expressions of the form `ln(a) / ln(b)` and produces an equation
+/// representing `log_b(a) = ln(a) / ln(b)`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = log_base_change();
+/// let a = Expr::Var(intern_symbol("a"));
+/// let b = Expr::Var(intern_symbol("b"));
+/// let expr = Expr::Div(Box::new(Expr::Ln(Box::new(a.clone()))), Box::new(Expr::Ln(Box::new(b.clone()))));
+/// let apps = (rule.apply)(&expr, &RuleContext::default());
+/// assert_eq!(apps.len(), 1);
+/// match &apps[0].result {
+///     Expr::Equation { lhs, rhs } => {
+///         // lhs is a placeholder `log_b(a)` and rhs is the original division `ln(a)/ln(b)`
+///         assert!(matches!(lhs.as_ref(), Expr::Var(_)));
+///         assert!(matches!(rhs.as_ref(), Expr::Div(_, _)));
+///     }
+///     _ => panic!("expected an equation"),
+/// }
+/// ```
 fn log_base_change() -> Rule {
     Rule {
         id: RuleId(323),
@@ -1484,6 +1542,32 @@ fn log_same_base() -> Rule {
 }
 
 // e^a * e^b = e^(a+b)
+/// Combine a product of two exponentials with base e into a single exponential with summed exponents.
+///
+/// When given an expression of the form `e^a * e^b`, produces `e^(a + b)`.
+///
+/// # Examples
+///
+/// ```
+/// // Construct `e^1 * e^2` and assert it rewrites to `e^(1 + 2)`.
+/// use crate::expr::Expr;
+/// use crate::rules::exp_product;
+///
+/// let expr = Expr::Mul(
+///     Box::new(Expr::Pow(Box::new(Expr::E), Box::new(Expr::Const(1.into())))),
+///     Box::new(Expr::Pow(Box::new(Expr::E), Box::new(Expr::Const(2.into())))),
+/// );
+///
+/// // `apply` takes an expression and a context; provide a default context if available.
+/// let results = exp_product().apply(&expr, &mut Default::default());
+/// assert_eq!(
+///     results[0].result,
+///     Expr::Pow(
+///         Box::new(Expr::E),
+///         Box::new(Expr::Add(Box::new(Expr::Const(1.into())), Box::new(Expr::Const(2.into()))))
+///     )
+/// );
+/// ```
 fn exp_product() -> Rule {
     Rule {
         id: RuleId(326),
@@ -1521,6 +1605,20 @@ fn exp_product() -> Rule {
 }
 
 // e^a / e^b = e^(a-b)
+/// Creates a rule that rewrites quotients of base‑e exponentials into a single exponential.
+///
+/// This rule matches expressions of the form `e^a / e^b` and produces `e^(a - b)`.
+///
+/// # Returns
+///
+/// A `Rule` that transforms `e^a / e^b` into `e^(a - b)` when both numerator and denominator are powers with base `e`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = exp_quotient();
+/// assert_eq!(rule.name, "exp_quotient");
+/// ```
 fn exp_quotient() -> Rule {
     Rule {
         id: RuleId(327),
@@ -1803,6 +1901,18 @@ fn cube_root_cube() -> Rule {
 }
 
 // ⁿ√(xⁿ) = |x| for even n, x for odd n
+/// Create a rule that simplifies nested power expressions of the form (x^m)^(1/m).
+///
+/// The rule matches expressions where the outer exponent is a rational `1/m` (m > 1)
+/// and the inner exponent is the integer `m`. When applicable the rule replaces
+/// (x^m)^(1/m) with `|x|` if `m` is even, or with `x` if `m` is odd. The rule is
+/// not reversible and has cost 2.
+///
+/// # Examples
+///
+/// ```
+/// let _rule = nth_root_power();
+/// ```
 fn nth_root_power() -> Rule {
     Rule {
         id: RuleId(337),
@@ -1866,6 +1976,17 @@ fn nth_root_power() -> Rule {
 }
 
 // 1/(a+b√c) * (a-b√c)/(a-b√c) = (a-b√c)/(a²-b²c)
+/// Rationalize a division whose denominator is a binomial by multiplying with its conjugate.
+///
+/// This rule applies to expressions of the form `num / (a ± b)` and returns a transformation
+/// that multiplies numerator and denominator by the conjugate `(a ∓ b)`, producing
+/// `(num * (a ∓ b)) / (a^2 - b^2)`.
+///
+/// # Examples
+///
+/// ```
+/// let _rule = rationalize_denominator();
+/// ```
 fn rationalize_denominator() -> Rule {
     Rule {
         id: RuleId(338),
@@ -2139,6 +2260,17 @@ fn perfect_cube_diff() -> Rule {
 }
 
 // ax² + bx + c → a(x + b/2a)² - (b² - 4ac)/4a
+/// Constructs a transformation rule that rewrites quadratic expressions into completed-square form.
+///
+/// The returned `Rule` matches quadratic sum expressions of the form `a*x^2 + b*x + c` (when applicable)
+/// and produces an equivalent completed-square representation `(x + b/2)^2 - (b/2)^2 + c`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = quadratic_complete_square();
+/// assert_eq!(rule.name, "quadratic_complete_square");
+/// ```
 fn quadratic_complete_square() -> Rule {
     Rule {
         id: RuleId(344),
@@ -2162,6 +2294,17 @@ fn quadratic_complete_square() -> Rule {
 }
 
 // For x² - (r1+r2)x + r1*r2 = 0, sum of roots = r1+r2
+/// Creates a rule expressing Vieta's relation for a quadratic: the sum of roots equals -b/a.
+///
+/// The produced rule matches quadratic equations and, when applied, produces an equation of the form
+/// `r1 + r2 = -b / a` with an explanatory justification.
+///
+/// # Examples
+///
+/// ```
+/// let rule = vieta_sum();
+/// assert_eq!(rule.name, "vieta_sum");
+/// ```
 fn vieta_sum() -> Rule {
     Rule {
         id: RuleId(345),
@@ -2194,6 +2337,16 @@ fn vieta_sum() -> Rule {
 }
 
 // For x² - (r1+r2)x + r1*r2 = 0, product of roots = r1*r2
+/// Constructs the Vieta product rule: an equation stating that the product of roots r1 * r2 equals c / a.
+///
+/// The rule produces an equation of the form `r1 * r2 = c / a` using interned symbols `r1`, `r2`, `c`, and `a`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = vieta_product();
+/// assert_eq!(rule.name, "vieta_product");
+/// ```
 fn vieta_product() -> Rule {
     Rule {
         id: RuleId(346),
@@ -2220,6 +2373,17 @@ fn vieta_product() -> Rule {
 }
 
 // ax² + bx + c → a(x-r1)(x-r2)
+/// Creates a rule that factors a quadratic expression into a leading coefficient times two linear factors.
+///
+/// The rule matches quadratic addition expressions and rewrites them as `a * (x - r1) * (x - r2)`, where `a`, `r1`, `r2`, and `x` are placeholder symbols used to represent the leading coefficient, the two roots, and the variable respectively.
+///
+/// # Examples
+///
+/// ```
+/// let rule = factor_quadratic();
+/// assert_eq!(rule.id.0, 347);
+/// assert_eq!(rule.name, "factor_quadratic");
+/// ```
 fn factor_quadratic() -> Rule {
     Rule {
         id: RuleId(347),
@@ -2256,6 +2420,19 @@ fn factor_quadratic() -> Rule {
 }
 
 // Rational root theorem test
+/// Creates a rule that applies the Rational Root Theorem to polynomial expressions.
+///
+/// The rule matches polynomial-like expressions and, when applied, yields a single
+/// RuleApplication whose result is a symbolic placeholder representing the set of
+/// possible rational roots: `"± factors(a0)/factors(an)"`. The justification string
+/// for the application is `"Rational root theorem"`.
+///
+/// # Examples
+///
+/// ```
+/// let r = rational_root_test();
+/// assert_eq!(r.name, "rational_root_test");
+/// ```
 fn rational_root_test() -> Rule {
     Rule {
         id: RuleId(348),
@@ -2275,6 +2452,22 @@ fn rational_root_test() -> Rule {
 }
 
 // Synthetic division for polynomials
+/// Creates a simplification rule that applies a synthetic-division transformation to division expressions.
+///
+/// The rule matches `Expr::Div` nodes and, when applied, produces a placeholder variable `synthetic_div_result`
+/// representing the result of performing synthetic division. The produced application includes a justification
+/// string "Synthetic division schema".
+///
+/// # Returns
+///
+/// A `Rule` that targets division expressions and yields an `Expr::Var(intern_symbol("synthetic_div_result"))`
+/// as the transformation result.
+///
+/// # Examples
+///
+/// ```
+/// let _rule = synthetic_division();
+/// ```
 fn synthetic_division() -> Rule {
     Rule {
         id: RuleId(349),
@@ -2294,6 +2487,20 @@ fn synthetic_division() -> Rule {
 }
 
 // Polynomial long division
+/// Creates a rule that rewrites polynomial division expressions into quotient-and-remainder placeholders.
+///
+/// This rule is applicable to division expressions and, when applied, yields a single result
+/// expression of the form `Expr::Var(intern_symbol("Q(x),R(x)"))` representing the quotient `Q(x)`
+/// and remainder `R(x)` produced by polynomial long division. The `justification` describes the
+/// transformation as a "Polynomial long division schema".
+///
+/// # Examples
+///
+/// ```
+/// let rule = polynomial_division();
+/// assert_eq!(rule.name, "polynomial_division");
+/// // The rule targets `Expr::Div` expressions and produces a `Q(x),R(x)` placeholder result when applied.
+/// ```
 fn polynomial_division() -> Rule {
     Rule {
         id: RuleId(350),
@@ -2313,6 +2520,18 @@ fn polynomial_division() -> Rule {
 }
 
 // f(a) = remainder when f(x) divided by (x-a)
+/// Produces a rule implementing the polynomial remainder theorem: when a polynomial `P(x)` is divided by `(x - a)`, the remainder is `P(a)`.
+///
+/// The rule matches division expressions and yields a symbolic remainder expression `P(a)`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = remainder_theorem();
+/// let expr = Expr::Div(Box::new(Expr::Var(intern_symbol("P(x)"))), Box::new(Expr::Var(intern_symbol("x - a"))));
+/// let apps = (rule.apply)(&expr);
+/// assert_eq!(apps[0].result, Expr::Var(intern_symbol("P(a)")));
+/// ```
 fn remainder_theorem() -> Rule {
     Rule {
         id: RuleId(351),
@@ -2332,6 +2551,16 @@ fn remainder_theorem() -> Rule {
 }
 
 // (x-a) is factor of f(x) iff f(a) = 0
+/// Produces a rule that applies the factor theorem to polynomial expressions.
+///
+/// When applied, the rule yields an equation representing a root of a polynomial (the form `P(a) = 0`).
+///
+/// # Examples
+///
+/// ```
+/// let rule = factor_theorem();
+/// assert_eq!(rule.name, "factor_theorem");
+/// ```
 fn factor_theorem() -> Rule {
     Rule {
         id: RuleId(352),
@@ -2354,6 +2583,19 @@ fn factor_theorem() -> Rule {
 }
 
 // gcd(a,b) = ax + by for some integers x,y
+/// Produces a rule asserting Bézout's identity for two integers.
+///
+/// The returned rule matches a `GCD(a, b)` expression and rewrites it as
+/// the equation `gcd(a, b) = a*x + b*y` using interned placeholder symbols
+/// `a`, `b`, `x`, and `y`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = bezout_identity();
+/// assert_eq!(rule.id, RuleId(353));
+/// assert_eq!(rule.name, "bezout_identity");
+/// ```
 fn bezout_identity() -> Rule {
     Rule {
         id: RuleId(353),
@@ -2383,6 +2625,20 @@ fn bezout_identity() -> Rule {
 }
 
 // a = bq + r, 0 ≤ r < b
+/// Creates a simplification rule that rewrites a division into its Euclidean division equation.
+///
+/// The rule applies to any `Expr::Div` and produces an equation of the form `a = b*q + r`,
+/// introducing interned placeholder symbols `a`, `b`, `q`, and `r` to represent dividend,
+/// divisor, quotient, and remainder respectively. The produced `RuleApplication` contains
+/// the equation as the result and a justification "Euclidean division a=bq+r".
+///
+/// # Examples
+///
+/// ```
+/// let rule = euclidean_division();
+/// // The rule is identified by id 354
+/// assert_eq!(rule.id, RuleId(354));
+/// ```
 fn euclidean_division() -> Rule {
     Rule {
         id: RuleId(354),
@@ -2412,6 +2668,22 @@ fn euclidean_division() -> Rule {
 }
 
 // a/b + c/d = (ad + bc)/bd
+/// Produces a rule that adds two rational expressions into a single fraction with a common denominator.
+///
+/// The rule matches an addition of two divisions `a/b + c/d` and rewrites it to `(a*d + b*c) / (b*d)`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = fraction_add();
+/// let expr = Expr::Add(
+///     Box::new(Expr::Div(Box::new(Expr::Const(Rational::from(1))), Box::new(Expr::Const(Rational::from(2))))),
+///     Box::new(Expr::Div(Box::new(Expr::Const(Rational::from(3))), Box::new(Expr::Const(Rational::from(4))))),
+/// );
+/// let apps = (rule.apply)(&expr, &RuleContext::default());
+/// assert_eq!(apps.len(), 1);
+/// // resulting expression should represent (1*4 + 2*3) / (2*4) = (4 + 6) / 8
+/// ```
 fn fraction_add() -> Rule {
     Rule {
         id: RuleId(355),
@@ -2448,6 +2720,20 @@ fn fraction_add() -> Rule {
 }
 
 // (a/b) * (c/d) = (ac)/(bd)
+/// Creates a rule that multiplies two fractions: (a / b) * (c / d) => (a*c) / (b*d).
+///
+/// The produced `Rule` matches a multiplication whose left and right operands are both divisions,
+/// and replaces it with a single division whose numerator is the product of the two numerators
+/// and whose denominator is the product of the two denominators. The rule is reversible and has
+/// cost 2.
+///
+/// # Examples
+///
+/// ```
+/// let r = fraction_mul();
+/// assert_eq!(r.id, RuleId(356));
+/// assert_eq!(r.name, "fraction_mul");
+/// ```
 fn fraction_mul() -> Rule {
     Rule {
         id: RuleId(356),
@@ -2481,6 +2767,18 @@ fn fraction_mul() -> Rule {
 }
 
 // (a/b) / (c/d) = (ad)/(bc)
+/// Transforms a division of two fractions (a/b) / (c/d) into a single fraction (a*d)/(b*c).
+///
+/// # Examples
+///
+/// ```
+/// // Given an expression representing (a/b) / (c/d), applying this rule yields (a*d)/(b*c).
+/// // Example (pseudocode):
+/// // let rule = fraction_div();
+/// // let expr = parse_expr("(a/b)/(c/d)");
+/// // let apps = rule.apply(&expr, &RuleContext::default());
+/// // assert_eq!(apps[0].result, parse_expr("(a*d)/(b*c)"));
+/// ```
 fn fraction_div() -> Rule {
     Rule {
         id: RuleId(357),
@@ -2514,6 +2812,16 @@ fn fraction_div() -> Rule {
 }
 
 // a/b = c/d → ad = bc
+/// Creates a rule that transforms an equation of two fractions by cross-multiplication.
+///
+/// The rule matches equations of the form `a / b = c / d` and produces the equivalent equation `a * d = b * c`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = cross_multiply();
+/// // `rule` matches `a/b = c/d` and produces `a*d = b*c` when applied.
+/// ```
 fn cross_multiply() -> Rule {
     Rule {
         id: RuleId(358),
@@ -2547,6 +2855,32 @@ fn cross_multiply() -> Rule {
 }
 
 // Combine fractions using LCD
+/// Combine two fractional terms into a single fraction using the least common denominator.
+///
+/// Applies to expressions of the form `(a/b) + (c/d)` and rewrites them as `(a*d + b*c) / (b*d)`.
+///
+/// # Examples
+///
+/// ```
+/// // Construct the rule and an example expression (symbols and helpers are assumed in scope).
+/// let rule = lcd_combine();
+/// let expr = Expr::Add(
+///     Box::new(Expr::Div(Box::new(Expr::Symbol(intern_symbol("a"))), Box::new(Expr::Symbol(intern_symbol("b"))))),
+///     Box::new(Expr::Div(Box::new(Expr::Symbol(intern_symbol("c"))), Box::new(Expr::Symbol(intern_symbol("d"))))),
+/// );
+/// let apps = rule.apply(&expr, &RuleContext::default());
+/// assert_eq!(apps.len(), 1);
+/// assert_eq!(
+///     apps[0].result,
+///     Expr::Div(
+///         Box::new(Expr::Add(
+///             Box::new(Expr::Mul(Box::new(Expr::Symbol(intern_symbol("a"))), Box::new(Expr::Symbol(intern_symbol("d"))))),
+///             Box::new(Expr::Mul(Box::new(Expr::Symbol(intern_symbol("b"))), Box::new(Expr::Symbol(intern_symbol("c"))))),
+///         )),
+///         Box::new(Expr::Mul(Box::new(Expr::Symbol(intern_symbol("b"))), Box::new(Expr::Symbol(intern_symbol("d"))))),
+///     )
+/// );
+/// ```
 fn lcd_combine() -> Rule {
     Rule {
         id: RuleId(359),
@@ -2582,6 +2916,21 @@ fn lcd_combine() -> Rule {
 }
 
 // |x| ≥ 0
+/// Creates a rule asserting that the absolute value of an expression is greater than or equal to zero.
+///
+/// The rule matches `Expr::Abs(...)` and replaces it with `Expr::Gte(Abs(...), 0)` with a justification
+/// stating that absolute values are always non-negative.
+///
+/// # Returns
+///
+/// A `Rule` whose `is_applicable` checks for `Expr::Abs` and whose `apply` produces `Abs(x) ≥ 0`.
+///
+/// # Examples
+///
+/// ```
+/// let rule = abs_nonnegative();
+/// // `rule` will match `Expr::Abs(...)` and produce `Expr::Gte(Abs(...), 0)` when applied.
+/// ```
 fn abs_nonnegative() -> Rule {
     Rule {
         id: RuleId(360),
@@ -2635,6 +2984,25 @@ fn abs_square() -> Rule {
 }
 
 // |a + b| ≤ |a| + |b|
+/// Converts an absolute value of a sum into the corresponding triangle inequality.
+///
+/// When the input is `|a + b|`, produces the inequality `|a + b| ≤ |a| + |b|`.
+///
+/// # Examples
+///
+/// ```
+/// # use mm_core::{Expr, Symbol};
+/// # use crate::algebra::triangle_inequality;
+/// # use crate::intern_symbol;
+/// let a = Expr::Symbol(intern_symbol("a"));
+/// let b = Expr::Symbol(intern_symbol("b"));
+/// let expr = Expr::Abs(Box::new(Expr::Add(Box::new(a.clone()), Box::new(b.clone()))));
+/// let rule = triangle_inequality();
+/// let apps = (rule.apply)(&expr, &Default::default());
+/// assert_eq!(apps.len(), 1);
+/// // Result is `|a + b| ≤ |a| + |b|`
+/// ```
+fn triangle_inequality() -> Rule {
 fn triangle_inequality() -> Rule {
     Rule {
         id: RuleId(362),
@@ -2668,6 +3036,17 @@ fn triangle_inequality() -> Rule {
 }
 
 // ||a| - |b|| ≤ |a - b|
+/// Applies the reverse triangle inequality to an absolute difference expression.
+///
+/// Produces a rule that transforms an expression of the form `||a| - |b||` into
+/// the inequality `||a| - |b|| ≤ |a - b|`.
+///
+/// # Examples
+///
+/// ```
+/// let r = reverse_triangle();
+/// assert_eq!(r.name, "reverse_triangle");
+/// ```
 fn reverse_triangle() -> Rule {
     Rule {
         id: RuleId(363),
@@ -2704,6 +3083,17 @@ fn reverse_triangle() -> Rule {
 }
 
 // (a+b)/2 ≥ √(ab)
+/// Creates a rule that applies the two-term AM–GM inequality to expressions of the form `(a + b) / 2`.
+///
+/// The rule matches a division whose denominator is the integer `2` and whose numerator is an addition `a + b`.
+/// When applied, it produces the inequality `(a + b) / 2 ≥ √(a * b)` and includes a justification string.
+///
+/// # Examples
+///
+/// ```
+/// let r = am_gm_2();
+/// assert_eq!(r.name, "am_gm_2");
+/// ```
 fn am_gm_2() -> Rule {
     Rule {
         id: RuleId(364),
@@ -2738,6 +3128,31 @@ fn am_gm_2() -> Rule {
 }
 
 // (a+b+c)/3 ≥ ∛(abc)
+/// Creates a rule that applies the AM-GM inequality for three nonnegative terms.
+///
+/// The rule matches expressions of the form `(a + b + c) / 3` (either `(a + b) + c` or `a + (b + c)`
+/// nested as additions) and produces the inequality `(a + b + c)/3 ≥ ∛(a*b*c)`.
+///
+/// # Examples
+///
+/// ```
+/// // Construct (a + b + c) / 3 and verify the rule applies and yields a `Gte` to the geometric mean.
+/// let rule = am_gm_3();
+/// let a = Expr::Symbol(intern_symbol("a"));
+/// let b = Expr::Symbol(intern_symbol("b"));
+/// let c = Expr::Symbol(intern_symbol("c"));
+/// let sum = Expr::Add(Box::new(Expr::Add(Box::new(a.clone()), Box::new(b.clone()))), Box::new(c.clone()));
+/// let expr = Expr::Div(Box::new(sum), Box::new(Expr::Const(Rational::new(3, 1))));
+/// assert!(rule.can_apply(&expr));
+/// let apps = rule.apply(&expr, &RuleContext::default());
+/// assert_eq!(apps.len(), 1);
+/// if let Expr::Gte(_, rhs) = &apps[0].result {
+///     // rhs should be the cube root of a*b*c
+///     let expected_prod = Expr::Mul(Box::new(Expr::Mul(Box::new(a), Box::new(b))), Box::new(c));
+///     let expected_geo = Expr::Pow(Box::new(expected_prod), Box::new(Expr::Const(Rational::new(1, 3))));
+///     assert_eq!(**rhs, expected_geo);
+/// }
+/// ```
 fn am_gm_3() -> Rule {
     Rule {
         id: RuleId(365),
@@ -2798,6 +3213,29 @@ fn am_gm_3() -> Rule {
 }
 
 // QM ≥ AM
+/// QM-AM inequality rule: relates quadratic mean to arithmetic mean.
+///
+/// Produces a `Rule` that recognizes expressions of the form `√((a² + b²)/2)` and
+/// rewrites them as the inequality `√((a² + b²)/2) ≥ (a + b) / 2`.
+///
+/// # Examples
+///
+/// ```
+/// // Construct the expression sqrt((a^2 + b^2) / 2) and verify the rule applies.
+/// let rule = qm_am();
+/// let a = Expr::Sym(intern_symbol("a"));
+/// let b = Expr::Sym(intern_symbol("b"));
+/// let expr = Expr::Sqrt(Box::new(Expr::Div(
+///     Box::new(Expr::Add(
+///         Box::new(Expr::Pow(Box::new(a.clone()), Box::new(Expr::int(2)))),
+///         Box::new(Expr::Pow(Box::new(b.clone()), Box::new(Expr::int(2)))),
+///     )),
+///     Box::new(Expr::int(2)),
+/// )));
+/// assert!(rule.can_apply(&expr));
+/// let apps = rule.apply(&expr);
+/// assert_eq!(apps.len(), 1);
+/// ```
 fn qm_am() -> Rule {
     Rule {
         id: RuleId(366),
@@ -2852,6 +3290,20 @@ fn qm_am() -> Rule {
 }
 
 // (Σaᵢbᵢ)² ≤ (Σaᵢ²)(Σbᵢ²)
+/// Creates a rule that recognizes squared sums of two products of two terms and returns
+/// a Cauchy–Schwarz inequality bounding: (ab + cd)² ≤ (a² + c²)(b² + d²).
+///
+/// The rule applies to expressions of the form `(a*b + c*d)^2` and produces a `RuleApplication`
+/// whose result is an `Expr::Lte` mapping the original squared sum to the computed upper bound.
+/// The justification string cites the Cauchy–Schwarz inequality.
+///
+/// # Examples
+///
+/// ```no_run
+/// let rule = cauchy_schwarz_2();
+/// // `rule` applies to expressions matching `(a*b + c*d)^2` and yields
+/// // an `Expr::Lte((a*b + c*d)^2, (a^2 + c^2)*(b^2 + d^2))`.
+/// ```
 fn cauchy_schwarz_2() -> Rule {
     Rule {
         id: RuleId(367),
@@ -2901,6 +3353,25 @@ fn cauchy_schwarz_2() -> Rule {
 }
 
 // Holder's inequality
+/// Constructs a rule encoding Hölder's (Cauchy–Schwarz / absolute-product) inequality.
+///
+/// The rule applies to expressions of the form `|a * b|` and produces the inequality
+/// `|a * b| ≤ |a| · |b|` as the rule application result.
+///
+/// # Examples
+///
+/// ```
+/// // Construct an expression `|a * b|`, check applicability, and apply the rule.
+/// let expr = Expr::Abs(Box::new(Expr::Mul(
+///     Box::new(Expr::Symbol(intern_symbol("a"))),
+///     Box::new(Expr::Symbol(intern_symbol("b"))),
+/// )));
+/// let rule = holders_inequality();
+/// assert!(rule.can_apply(&expr));
+/// let apps = rule.apply(&expr, &RuleContext::default());
+/// assert_eq!(apps.len(), 1);
+/// // The result is `|a * b| ≤ |a| * |b|`.
+/// ```
 fn holders_inequality() -> Rule {
     Rule {
         id: RuleId(368),
@@ -2934,6 +3405,17 @@ fn holders_inequality() -> Rule {
 }
 
 // Minkowski inequality
+/// Constructs the algebraic rule expressing the Minkowski inequality consequence for p ≥ 1.
+///
+/// The rule matches expressions of the form `|a + b|^p` (where `p` is an integer ≥ 1) and
+/// produces the inequality `|a + b|^p ≤ 2^{p-1} (|a|^p + |b|^p)` as the rule application result.
+///
+/// # Examples
+///
+/// ```
+/// let rule = minkowski_inequality();
+/// assert_eq!(rule.id, RuleId(369));
+/// ```
 fn minkowski_inequality() -> Rule {
     Rule {
         id: RuleId(369),
